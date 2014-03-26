@@ -13,7 +13,7 @@ class DataLoader:
         data = np.array([[int(tok) for tok in line.split('\t')[:3]]
                          for line in open(file_path)])
 
-        #data = data[:100]
+        #data = data[:1000]
 
         ij = data[:, :2]
         ij -= 1
@@ -26,7 +26,7 @@ class DataLoader:
         return review_matrix
 
 
-movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u.data'
+movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u1.base'
 
 my_reviews = DataLoader.create_review_matrix(movielens_file_path)
 
@@ -44,10 +44,19 @@ movie_ratings = movie_reviews[movie_rated_users]
 #print(user_reviews)
 #print(user_rated_movies)
 #print(user_ratings)
-#print(np.mean(user_ratings))
+print(np.mean(user_ratings))
 #print(movie_rated_users)
 #print(movie_ratings)
 #print(np.mean(movie_ratings))
+
+user_pseudo_average_ratings = {}
+user_pseudo_average_ratings[8] = np.mean(user_ratings)
+user_pseudo_average_ratings[9] = np.mean(user_ratings)
+user_pseudo_average_ratings[10] = np.mean(user_ratings)
+print user_pseudo_average_ratings
+users, movies = my_reviews.nonzero()
+print(users)
+print dict.fromkeys(users)
 
 users_matrix = np.empty((3, 3))
 users_matrix[:] = 0.1

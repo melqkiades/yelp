@@ -8,17 +8,21 @@ __author__ = 'franpena'
 class MatrixFactorizer:
     LEARNING_RATE = 0.001
     LAMBDA = 0.02
-    NUM_FEATURES = 5
-    K = 0.02
+    NUM_FEATURES = 20
+    K = 0.015
     FEATURE_INIT_VALUE = 0.1
     MIN_IMPROVEMENT = 0.0001
-    MIN_ITERATIONS = 120
+    MIN_ITERATIONS = 100
 
     def __init__(self, review_matrix):
         self.review_matrix = review_matrix
         self.user_feature_matrix = self.create_user_feature_matrix()
         self.movie_feature_matrix = self.create_movie_feature_matrix()
         self.global_average = self.calculate_global_average()
+        users, movies = my_reviews.nonzero()
+        self.user_pseudo_average_ratings = dict.fromkeys(users)
+        self.movie_pseudo_average_ratings = dict.fromkeys(movies)
+        self.compute_averages()
 
     # OK
     def get_user_ratings(self, user_id):
@@ -55,6 +59,16 @@ class MatrixFactorizer:
         all_reviews = self.review_matrix.toarray().ravel()
         average = np.average(all_reviews, weights=(all_reviews > 0))
         return average
+
+    def compute_averages(self):
+
+        for user in self.user_pseudo_average_ratings.keys():
+            self.user_pseudo_average_ratings[user] =\
+                self.calculate_pseudo_average_user_rating(user)
+
+        for movie in self.movie_pseudo_average_ratings.keys():
+            self.movie_pseudo_average_ratings[movie] =\
+                self.calculate_pseudo_average_movie_rating(movie)
 
     # OK
     def create_user_feature_matrix(self):
@@ -128,8 +142,7 @@ class MatrixFactorizer:
         :param movie_id: the is of the movie
         :return: the average user offset
         """
-        return self.calculate_pseudo_average_movie_rating(movie_id) - \
-               self.global_average
+        return self.movie_pseudo_average_ratings[movie_id] - self.global_average
 
     # OK
     def calculate_average_user_offset(self, user_id):
@@ -141,8 +154,7 @@ class MatrixFactorizer:
         :param user_id: the is of the user
         :return: the average user offset
         """
-        return self.calculate_pseudo_average_user_rating(user_id) - \
-               self.global_average
+        return self.user_pseudo_average_ratings[user_id] - self.global_average
 
     def calculate_error(self, user_id, movie_id):
         """
@@ -188,13 +200,15 @@ class MatrixFactorizer:
         :return: a float in the range [1, 5] with the predicted rating for
         movie_id by user_id
         """
-        rating = np.dot(self.user_feature_matrix[:, user_id],
-                        self.movie_feature_matrix[:, movie_id])
+        rating = 1
+        rating += np.dot(self.user_feature_matrix[:, user_id],
+                         self.movie_feature_matrix[:, movie_id])
         # We trim the ratings in case they go above or below the stars range
-        if rating > 5:
-            rating = 5
-        elif rating < 1:
-            rating = 1
+        #if rating > 5:
+        #    rating = 5
+        #elif rating < 1:
+        #    rating = 1
+        #print 'Predicted rating = ' + str(rating)
         return rating
 
     def train(self, user_id, movie_id, feature_index):
@@ -224,7 +238,7 @@ class MatrixFactorizer:
         rmse = 0
         last_rmse = 0
         num_ratings = np.count_nonzero(self.review_matrix.toarray().ravel())
-        rows, cols = self.review_matrix.nonzero()
+        users, movies = self.review_matrix.nonzero()
         for feature in xrange(self.NUM_FEATURES):
             j = 0
             while (j < self.MIN_ITERATIONS) or\
@@ -232,13 +246,14 @@ class MatrixFactorizer:
                 squared_error = 0
                 last_rmse = rmse
 
-                for user_id, movie_id in zip(rows, cols):
-                    #print('User ID = ' + str(user_id) + '\tMovie ID = '+ str(movie_id))
+                for user_id, movie_id in zip(users, movies):
                     squared_error += self.train(user_id, movie_id, feature)
 
                 rmse = (squared_error / num_ratings) ** 0.5
                 print(rmse)
                 j += 1
+            print 'Feature = ' + str(feature)
+
 
 
 
@@ -269,17 +284,20 @@ class MatrixFactorizer:
                 self.p[u, :] += p_temp
 '''
 
-movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u.data'
+movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u1.base'
 my_reviews = DataLoader.create_review_matrix(movielens_file_path)
 matrix_factorizer = MatrixFactorizer(my_reviews)
 time1 = time.time()
 print('Time 1 = ' + str(time1))
 sqer = matrix_factorizer.train(0, 0, 0)
-matrix_factorizer.calculate_features()
+#matrix_factorizer.calculate_features()
+#print matrix_factorizer.user_pseudo_average_ratings
+#print matrix_factorizer.movie_pseudo_average_ratings
 time2 = time.time()
 print('Time 2 = ' + str(time2))
 total_time = (time2 - time1)
 print 'Total time = ' + str(total_time)
 
+
 import cProfile
-cProfile.run('matrix_factorizer.train(0, 0, 0)')
+cProfile.run('matrix_factorizer.calculate_features()')
