@@ -3,7 +3,7 @@ import time
 import sys
 from netflix.data_loader import DataLoader
 
-__author__ = 'franpena'
+__author__ = 'Anamaria Todor' # https://github.com/absynthe
 
 
 class AlternateSVD:
