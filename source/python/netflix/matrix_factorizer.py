@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import sys
 from netflix.data_loader import DataLoader
 
 __author__ = 'franpena'
@@ -62,12 +63,21 @@ class MatrixFactorizer:
 
     def compute_averages(self):
 
+        """
+        Calculates the pseudo averages for every user and movie and stores the
+        values in self.user_pseudo_average_ratings and
+        self.movie_pseudo_average_ratings arrays respectively. This is done
+        previous to the training of the data in order to save time
+        (the averages are stored in cache).
+
+        :rtype : void
+        """
         for user in self.user_pseudo_average_ratings.keys():
-            self.user_pseudo_average_ratings[user] =\
+            self.user_pseudo_average_ratings[user] = \
                 self.calculate_pseudo_average_user_rating(user)
 
         for movie in self.movie_pseudo_average_ratings.keys():
-            self.movie_pseudo_average_ratings[movie] =\
+            self.movie_pseudo_average_ratings[movie] = \
                 self.calculate_pseudo_average_movie_rating(movie)
 
     # OK
@@ -166,16 +176,11 @@ class MatrixFactorizer:
         :param movie_id: the id of the movie
         :return: the actual rating minus the predicted rating
         """
-        #print self.get_rating(user_id, movie_id)
-        #print self.global_average
-        #print self.calculate_average_user_offset(user_id)
-        #print self.calculate_average_movie_offset(movie_id)
-        #print self.predict_rating(user_id, movie_id)
 
-        return self.get_rating(user_id, movie_id) -\
-               self.global_average -\
-               self.calculate_average_user_offset(user_id) -\
-               self.calculate_average_movie_offset(movie_id) -\
+        return self.get_rating(user_id, movie_id) - \
+               self.global_average - \
+               self.calculate_average_user_offset(user_id) - \
+               self.calculate_average_movie_offset(movie_id) - \
                self.predict_rating(user_id, movie_id)
 
     def get_rating(self, user_id, movie_id):
@@ -204,14 +209,26 @@ class MatrixFactorizer:
         rating += np.dot(self.user_feature_matrix[:, user_id],
                          self.movie_feature_matrix[:, movie_id])
         # We trim the ratings in case they go above or below the stars range
-        #if rating > 5:
-        #    rating = 5
-        #elif rating < 1:
-        #    rating = 1
+        if rating > 5:
+            rating = 5
+        elif rating < 1:
+            rating = 1
         #print 'Predicted rating = ' + str(rating)
         return rating
 
     def train(self, user_id, movie_id, feature_index):
+        """
+        Updates the user_feature_matrix with the new feature values calculated
+        after obtaining the error between the real rating, the predicted rating
+        and the offsets
+
+        :rtype : float
+        :param user_id: the id of the user
+        :param movie_id: the id of the movie
+        :param feature_index: the position of the feature in the feature matrix
+        :return: the squared error between the real rating, the predicted rating
+        and the offsets
+        """
         error = self.calculate_error(user_id, movie_id)
 
         user_feature_vector = self.user_feature_matrix[feature_index]
@@ -230,74 +247,44 @@ class MatrixFactorizer:
 
         return error ** 2
 
-    def predict_baseline_rating(self, user_id, movie_id):
-        return self.calculate_pseudo_average_movie_rating(movie_id) + \
-               self.calculate_average_user_offset(user_id)
-
     def calculate_features(self):
+        """
+        Iterates through all the ratings in search for the best features that
+        minimize the error between the predictions and the real ratings.
+        This is the main function in Simon Funk SVD algorithm
+
+        :rtype : void
+        """
         rmse = 0
         last_rmse = 0
         num_ratings = np.count_nonzero(self.review_matrix.toarray().ravel())
         users, movies = self.review_matrix.nonzero()
         for feature in xrange(self.NUM_FEATURES):
             j = 0
-            while (j < self.MIN_ITERATIONS) or\
+            while (j < self.MIN_ITERATIONS) or \
                     (rmse < last_rmse - self.MIN_IMPROVEMENT):
                 squared_error = 0
                 last_rmse = rmse
 
+                start_time = time.time()
                 for user_id, movie_id in zip(users, movies):
                     squared_error += self.train(user_id, movie_id, feature)
 
                 rmse = (squared_error / num_ratings) ** 0.5
-                print(rmse)
+                print('RMSE = ' + str(rmse))
+                print('Time = ' + str(time.time() - start_time))
                 j += 1
+                sys.stdout.flush()
             print 'Feature = ' + str(feature)
 
-
-
-
-
-
-'''
-    def hola(self):
-        N = self.model.shape[0]  #no of users
-        M = self.model.shape[1]  #no of items
-        K = 96
-        learning_rate = 0.001
-        regularization = 0.25
-        self.p = np.random.rand(N, K)
-        self.q = np.random.rand(M, K)
-        rows, cols = self.model.nonzero()
-        for step in xrange(steps):
-            for u, i in zip(rows, cols):
-
-                #calculate error for gradient
-                e = self.model - np.dot(self.p, self.q.T)
-
-                p_temp = learning_rate * (
-                    e[u, i] * self.q[i, :] - regularization * self.p[u, :])
-
-                self.q[i, :] += learning_rate * (
-                    e[u, i] * self.p[u, :] - regularization * self.q[i, :])
-
-                self.p[u, :] += p_temp
-'''
 
 movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u1.base'
 my_reviews = DataLoader.create_review_matrix(movielens_file_path)
 matrix_factorizer = MatrixFactorizer(my_reviews)
-time1 = time.time()
-print('Time 1 = ' + str(time1))
-sqer = matrix_factorizer.train(0, 0, 0)
-#matrix_factorizer.calculate_features()
+matrix_factorizer.calculate_features()
 #print matrix_factorizer.user_pseudo_average_ratings
 #print matrix_factorizer.movie_pseudo_average_ratings
-time2 = time.time()
-print('Time 2 = ' + str(time2))
-total_time = (time2 - time1)
-print 'Total time = ' + str(total_time)
 
 
 import cProfile
-cProfile.run('matrix_factorizer.calculate_features()')
+#cProfile.run('matrix_factorizer.calculate_features()')

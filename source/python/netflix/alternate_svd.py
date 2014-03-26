@@ -92,14 +92,15 @@ class AlternateSVD:
             squared_error = 0
             for u, i in zip(rows,cols):
                 e_ui=self.model[u,i]-np.dot(self.p[u,:],self.q[:,i]) #calculate error for gradient
-                for k in xrange(K):
+                for k in xrange(1):
                     # adjust P and Q based on error gradient
                     temp =self.p[u,k] + learning_rate * (e_ui * self.q[k,i] - regularization * self.p[u,k])
                     self.q[k,i]=self.q[k,i] + learning_rate * (e_ui * self.p[u,k] - regularization * self.q[k,i])
                     self.p[u,k]= temp
                 squared_error += e_ui
             rmse = (squared_error / num_ratings) ** 0.5
-            print('RMSE' + str(rmse))
+            print('RMSE = ' + str(rmse))
+            print('Time = ' + str(time.time() - start_time))
             average_time +=time.time() - start_time
         sys.stdout.flush()
         print "One plain step took on average" + str(average_time/steps), " seconds"
