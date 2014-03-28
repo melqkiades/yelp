@@ -112,6 +112,3 @@ class ReviewETL:
 
 
 review = ReviewETL()
-#review.simple_lineal_regression()
-#review.multiple_lineal_regression()
-#review.cross_validation()
