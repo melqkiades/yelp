@@ -18,3 +18,9 @@ class ETLUtils:
         for record in dictionary_list:
             for field in fields:
                 del (record[field])
+
+    @staticmethod
+    def filter_records(records, field, values):
+        filtered_records = [record for record in records if
+                            record[field] in values]
+        return filtered_records
