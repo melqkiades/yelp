@@ -278,7 +278,7 @@ class MatrixFactorizer:
             print 'Feature = ' + str(feature)
 
 
-movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u1.base'
+movielens_file_path = '../../../../../../datasets/ml-100k/u1.base'
 my_reviews = DataLoader.create_review_matrix(movielens_file_path)
 matrix_factorizer = MatrixFactorizer(my_reviews)
 matrix_factorizer.calculate_features()

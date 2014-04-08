@@ -26,7 +26,7 @@ class DataLoader:
         return review_matrix
 
 
-movielens_file_path = 'E:/UCC/Thesis/datasets/ml-100k/u1.base'
+movielens_file_path = '../../../../../../datasets/ml-100k/u1.base'
 
 my_reviews = DataLoader.create_review_matrix(movielens_file_path)
 
