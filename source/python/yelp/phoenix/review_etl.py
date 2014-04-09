@@ -16,7 +16,7 @@ class ReviewETL:
         Loads the Yelp Phoenix Academic Data Set file for business data, and
         transforms it so it can be analyzed
 
-        :type file_path: list of dictionaries
+        :type file_path: string
         :param file_path: the path for the file that contains the businesses
         data
         :return: a list of dictionaries with the preprocessed data
