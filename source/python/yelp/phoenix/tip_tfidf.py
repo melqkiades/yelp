@@ -81,7 +81,7 @@ class TipTfidf:
     def clustering(file_path):
 
         vectorized = TipTfidf.tf_idf_tips(file_path)
-        Clusterer.k_means_scikit(vectorized)
+        Clusterer.cluster_and_evaluate_data(vectorized, 'k-means-scikit')
 
 
 data_folder = '../../../../../../datasets/yelp_phoenix_academic_dataset/'
