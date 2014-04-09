@@ -1,7 +1,9 @@
 from pandas import DataFrame
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.cluster import KMeans, DBSCAN, MeanShift, Ward
+from sklearn.feature_extraction.text import TfidfVectorizer
+from datamining.clusterer import Clusterer
 from etl.etl_utils import ETLUtils
-from yelp.phoenix.tip_etl import TipETL
+from etl.stemmer import StemmedTfidfVectorizer
 import numpy as np
 import nltk
 
@@ -14,7 +16,7 @@ class TipTfidf:
 
     @staticmethod
     def tf_idf(file_path):
-        records = TipETL.load_file(file_path)
+        records = ETLUtils.load_json_file(file_path)
         data = [record['text'] for record in records]
         vectorizer = TfidfVectorizer(min_df=1, stop_words='english')
         train = vectorizer.fit_transform(data)
@@ -52,7 +54,7 @@ class TipTfidf:
 
     @staticmethod
     def analyze(file_path):
-        records = TipETL.load_file(file_path)
+        records = ETLUtils.load_json_file(file_path)
         ETLUtils.drop_fields(['text', 'type', 'date', 'user_id', 'likes'],
                              records)
         data_frame = DataFrame(records)
@@ -63,12 +65,29 @@ class TipTfidf:
 
         print records[0].keys()
 
-#samples: 2, #features: 37
+    @staticmethod
+    def tf_idf_tips(file_path):
+        records = ETLUtils.load_json_file(file_path)
+        data = [record['text'] for record in records]
+        vectorizer = StemmedTfidfVectorizer(min_df=1, stop_words='english')
+        vectorized = vectorizer.fit_transform(data)
+        num_samples, num_features = vectorized.shape
+        print("#samples: %d, #features: %d" % (
+            num_samples, num_features))
+
+        return vectorized
+
+    @staticmethod
+    def clustering(file_path):
+
+        vectorized = TipTfidf.tf_idf_tips(file_path)
+        Clusterer.k_means_scikit(vectorized)
 
 
 data_folder = '../../../../../../datasets/yelp_phoenix_academic_dataset/'
 tip_file_path = data_folder + 'yelp_academic_dataset_tip.json'
-my_records = TipETL.load_file(tip_file_path)
-TipTfidf.tf_idf(tip_file_path)
+# my_records = ETLUtils.load_json_file(tip_file_path)
+# TipTfidf.tf_idf(tip_file_path)
 #TipTfidf.analyze(tip_file_path)
+TipTfidf.clustering(tip_file_path)
 
