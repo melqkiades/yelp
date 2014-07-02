@@ -1,4 +1,5 @@
 import json
+import nltk
 
 __author__ = 'franpena'
 
@@ -24,21 +25,68 @@ class ETLUtils:
     @staticmethod
     def drop_fields(fields, dictionary_list):
         """
-        Removes the specified fields from every dictionary in the list records
+        Removes the specified fields from every dictionary in the dictionary
+        list
 
         :rtype : void
         :param fields: a list of strings, which contains the fields that are
-        going to be removed from every dictionary in the list records
+        going to be removed from every dictionary in the dictionary list
         :param dictionary_list: a list of dictionaries
         """
-        for record in dictionary_list:
+        for dictionary in dictionary_list:
             for field in fields:
-                del (record[field])
+                del (dictionary[field])
 
     @staticmethod
-    def filter_records(records, field, values):
-        filtered_records = [record for record in records if
-                            record[field] in values]
+    def select_fields(fields, dictionary_list):
+        """
+        Returns a list of dictionaries with each dictionary containing only the
+        keys given in the fields list
+
+        :param fields: a list of the keys that each dictionary will have.
+        This list must be a subset of all the keys available in each dictionary
+        :param dictionary_list: a list of dictionaries
+        :return: a list of dictionaries with each dictionary containing only the
+        keys given in the fields list
+        """
+        filtered_records = [{field: dictionary[field] for field in fields} for
+                            dictionary in dictionary_list]
+        return filtered_records
+
+    @staticmethod
+    def filter_records(dictionary_list, field, values):
+        """
+        Returns a list with the dictionaries in dictionary_list that contain any
+        of the values inside the field key. This method is the equivalent of
+        SELECT * FROM my_table WHERE field IN (values) in SQL
+
+        :param dictionary_list: a list of dictionaries
+        :param field: the key of the dictionaries that is going to be used for
+        filtering
+        :param values: a list of values
+        :return: a list with the dictionaries in dictionary_list that contain
+        any of the values inside the field key
+        """
+        filtered_records = [dictionary for dictionary in dictionary_list if
+                            dictionary[field] in values]
+        return filtered_records
+
+    @staticmethod
+    def filter_out_records(dictionary_list, field, values):
+        """
+        Returns a list with the dictionaries in dictionary_list that do not
+        contain any of the values inside the field key. This method is the
+        equivalent of SELECT * FROM my_table WHERE field NOT IN (values) in SQL
+
+        :param dictionary_list: a list of dictionaries
+        :param field: the key of the dictionaries that is going to be used for
+        filtering
+        :param values: a list of values
+        :return: a list with the dictionaries in dictionary_list that do not
+        contain any of the values inside the field key
+        """
+        filtered_records = [dictionary for dictionary in dictionary_list if
+                            dictionary[field] not in values]
         return filtered_records
 
     @staticmethod
@@ -93,3 +141,21 @@ class ETLUtils:
                     dictionary[value] = 0
 
         return dictionary_list
+
+    @staticmethod
+    def search_sentences(tips, noun):
+
+        sentence_tokenizer = nltk.data.load(
+            'tokenizers/punkt/english.pickle')
+        stemmer = nltk.stem.SnowballStemmer('english')
+        stemmed_noun = stemmer.stem(noun)
+
+        founded_tips = []
+
+        for tip in tips:
+            sentences = sentence_tokenizer.tokenize(tip)
+            for sentence in sentences:
+                if stemmed_noun in sentence:
+                    founded_tips.append(sentence)
+
+        return founded_tips
