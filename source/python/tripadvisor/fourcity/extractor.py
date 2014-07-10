@@ -1,6 +1,8 @@
+import json
+
 import numpy
 from pandas import DataFrame
-import time
+
 from etl import ETLUtils
 from tripadvisor.fourcity.user import User
 
@@ -10,28 +12,6 @@ __author__ = 'fpena'
 
 def get_dictionary_subfield(dataDict, mapList):
     return reduce(lambda d, k: d[k], mapList, dataDict)
-
-
-def extract_fields(reviews):
-
-    ratings_criteria = [
-        'cleanliness',
-        'location',
-        'rooms',
-        'service',
-        # 'sleep_quality',
-        'value'
-    ]
-
-    for review in reviews:
-        # review['user_id'] = get_dictionary_subfield(review, ['author', 'id'])
-        review['user_id'] = review['author']['id']
-        review['overall_rating'] = review['ratings']['overall']
-
-        ratings = review['ratings']
-        for criterion in ratings_criteria:
-            if criterion in ratings:
-                review[criterion + '_rating'] = review['ratings'][criterion]
 
 
 def remove_empty_user_reviews(reviews):
@@ -46,6 +26,27 @@ def remove_empty_user_reviews(reviews):
     filtered_reviews = [review for review in reviews if
                         review['user_id'] != '']
     return filtered_reviews
+
+
+def extract_fields(reviews):
+
+    ratings_criteria = [
+        'cleanliness',
+        'location',
+        'rooms',
+        'service',
+        # 'sleep_quality',
+        'value'
+    ]
+
+    for review in reviews:
+        review['user_id'] = review['author']['id']
+        review['overall_rating'] = review['ratings']['overall']
+
+        ratings = review['ratings']
+        for criterion in ratings_criteria:
+            if criterion in ratings:
+                review[criterion + '_rating'] = review['ratings'][criterion]
 
 
 def remove_users_with_low_reviews(reviews, min_reviews):
@@ -133,7 +134,7 @@ def clean_reviews(reviews):
     print('Finished remove_missing_ratings_reviews')
     filtered_reviews = remove_users_with_low_reviews(filtered_reviews, 10)
     print('Finished remove_users_with_low_reviews')
-    # filtered_reviews = remove_single_review_hotels(filtered_reviews)
+    filtered_reviews = remove_single_review_hotels(filtered_reviews)
     print('Finished remove_single_review_hotels')
     return filtered_reviews
 
@@ -233,6 +234,23 @@ def get_user_list(reviews, min_reviews):
     print('Number of reviews: %i' % num_reviews)
 
     users = filtered_counts.index.get_level_values(1).tolist()
+    return users
+
+
+def get_groupby_list(reviews, column):
+    """
+    Groups the reviews by the given column and then returns all the distinct
+    column values in a list
+
+    :param reviews: the list of reviews
+    :param column: the column which is going to be used to group the data
+    :return: a list of all the distinct values of the given column in the
+    reviews
+    """
+    data_frame = DataFrame(reviews)
+    counts = data_frame.groupby(column).size()
+
+    users = counts.index.get_level_values(1).tolist()
     return users
 
 
@@ -336,9 +354,9 @@ def get_significant_criteria(criteria_weights):
     for index, value in enumerate(criteria_weights):
         # if (0.8 < value < 1.2) or (-1.2 < value < -0.8):
         # if (0.7 < value < 1.3) or (-1.3 < value < -0.7):
-        if (0.5 < value < 1.5) or (-1.5 < value < -0.5):
+        # if (0.5 < value < 1.5) or (-1.5 < value < -0.5):
         # if (0.1 < value < 1.9) or (-1.1 < value < -0.9):
-        # if True:
+        if True:
             significant_criteria[rating_criteria[index]] = value
             cluster_name += '1'
         else:
@@ -347,9 +365,17 @@ def get_significant_criteria(criteria_weights):
     return significant_criteria, cluster_name
 
 
-def initialize_users(reviews, min_reviews):
+def initialize_users(reviews):
+    """
+    Builds a dictionary containing all the users in the reviews. Each user
+    contains information about its average overall rating, the list of reviews
+    that user has made, and the cluster the user belongs to
 
-    user_ids = get_user_list(reviews, min_reviews)
+    :param reviews: the list of reviews
+    :return: a dictionary with the users initialized, the keys of the
+    dictionaries are the users' ID
+    """
+    user_ids = get_groupby_list(reviews, 'user_id')
     user_dictionary = {}
 
     for user_id in user_ids:
@@ -361,23 +387,43 @@ def initialize_users(reviews, min_reviews):
             user_reviews, user_id, apply_filter=False)
         _, user.cluster = get_significant_criteria(user.criteria_weights)
         user_dictionary[user_id] = user
+        user.item_ratings = get_user_item_ratings(user_reviews)
 
-    # for user_id, user in user_dictionary.iteritems():
-    #     print('ID: %s\tOverall average: %f\tCluster: %s' % (user.user_id, user.average_overall_rating, user.cluster))
-        # print(user.user_id)
-        # print('Average rating: ' + str(user.average_overall_rating))
-        # print('Cluster: ' + str(user.cluster))
     print('Total users: %i' % len(user_ids))
 
     return user_dictionary
 
 
-def get_five_star_hotels_from_user(user_reviews):
+def get_user_item_ratings(user_reviews):
 
     data_frame = DataFrame(user_reviews)
     column = 'offering_id'
     counts = data_frame.groupby(column).mean()
-    filtered_counts = counts[counts['overall_rating'] >= 4.5]
+
+    items = counts.index.get_level_values(1).tolist()
+    items_ratings = {}
+
+    for item, mean in zip(items, counts['overall_rating']):
+        items_ratings[item] = mean
+
+    return items_ratings
+
+
+def get_five_star_hotels_from_user(user_reviews, min_value):
+    """
+    Returns the list of hotels that this user has reviewed with an average
+    overall rating higher than min_value
+
+    :param user_reviews: the reviews the user has made
+    :param min_value: the minimum value for the average overall rating that this
+    user has given to a hotel
+    :return: the list of hotels that this user has reviewed with an average
+    overall rating higher than min_value
+    """
+    data_frame = DataFrame(user_reviews)
+    column = 'offering_id'
+    counts = data_frame.groupby(column).mean()
+    filtered_counts = counts[counts['overall_rating'] >= min_value]
 
     # print(filtered_counts)
 
@@ -385,16 +431,44 @@ def get_five_star_hotels_from_user(user_reviews):
     return items
 
 
+def save_dictionary_list_to_file(records, file_name):
+    with open(file_name, 'wb') as out_file:
+        for record in records:
+            json.dump(record, out_file)
+            out_file.write('\n')
+
+
+def load_json_file(file_name):
+    data = []
+    with open(file_name) as f:
+        for line in f:
+            data.append(json.loads(line))
+    return data
+
+
 def main():
-    reviews = pre_process_reviews()
+    # reviews = pre_process_reviews()
+    # save_dictionary_list_to_file(reviews, '/Users/fpena/tmp/filtered_reviews.json')
+    reviews = load_json_file('/Users/fpena/tmp/filtered_reviews.json')
+    data_frame = DataFrame(reviews)
+    column = 'offering_id'
+    groupby = data_frame.groupby(column)
+    counts = groupby.mean()
+    print(counts)
+
+    items = counts.index.get_level_values(1).tolist()
+
+    for item, mean in zip(items, counts['overall_rating']):
+        print(item, mean)
+
     # print(get_item_list(reviews, 2))
-    print(len(reviews))
+    # print(len(reviews))
     # initialize_users(reviews, 10)
     pass
 
 
-start_time = time.time()
-main()
-end_time = time.time() - start_time
-print("--- %s seconds ---" % end_time)
+# start_time = time.time()
+# main()
+# end_time = time.time() - start_time
+# print("--- %s seconds ---" % end_time)
 

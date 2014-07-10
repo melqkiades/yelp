@@ -1,5 +1,6 @@
 import json
 import nltk
+from numpy.random import shuffle
 
 __author__ = 'franpena'
 
@@ -29,7 +30,7 @@ class ETLUtils:
         list
 
         :rtype : void
-        :param fields: a list of strings, which contains the fields that are
+        :param fields: a list of     strings, which contains the fields that are
         going to be removed from every dictionary in the dictionary list
         :param dictionary_list: a list of dictionaries
         """
@@ -159,3 +160,31 @@ class ETLUtils:
                     founded_tips.append(sentence)
 
         return founded_tips
+
+
+    @staticmethod
+    def split_train_test(records, percent=80, shuffle_data=True):
+        """
+        Splits the data in two disjunct datasets: train and test
+
+        :param percent: % of training set to be used (test set size = 100-percent)
+        :type percent: int
+        :param shuffle_data: shuffle dataset?
+        :type shuffle_data: Boolean
+
+        :returns: a tuple <Data, Data>
+        """
+        if shuffle_data:
+            shuffle(records)
+        length = len(records)
+        train_list = records[:int(round(length*percent/100.0))]
+        test_list = records[-int(round(length*(100-percent)/100.0)):]
+
+        return train_list, test_list
+
+
+# X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+# y = [1, 2, 3, 4, 5]
+# train, test = ETLUtils.split_train_test(y)
+# print(train)
+# print(test)

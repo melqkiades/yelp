@@ -31,6 +31,6 @@ def main():
 
 
 start_time = time.time()
-# main()
+main()
 end_time = time.time() - start_time
 print("--- %s seconds ---" % end_time)

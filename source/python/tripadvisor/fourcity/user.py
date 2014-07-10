@@ -8,6 +8,7 @@ class User:
         self.average_overall_rating = None
         self.criteria_weights = None
         self.cluster = None
+        self.item_ratings = None
 
     @property
     def user_id(self):
@@ -40,3 +41,11 @@ class User:
     @cluster.setter
     def cluster(self, cluster):
         self.cluster = cluster
+
+    @property
+    def item_ratings(self):
+        return self.item_ratings
+
+    @item_ratings.setter
+    def item_ratings(self, item_ratings):
+        self.item_ratings = item_ratings
