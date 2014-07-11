@@ -170,7 +170,7 @@ class ETLUtils:
         :param percent: % of training set to be used (test set size = 100-percent)
         :type percent: int
         :param shuffle_data: shuffle dataset?
-        :type shuffle_data: Boolean
+        :type shuffle_data: bool
 
         :returns: a tuple <Data, Data>
         """

@@ -97,7 +97,7 @@ class CluCFEuc:
             hotel_id = review['offering_id']
             predicted_rating = self.predict_rating(user_id, hotel_id)
             actual_rating = None
-            if hotel_id in self.user_dictionary[user_id].item_ratings:
+            if user_id in self.user_dictionary and hotel_id in self.user_dictionary[user_id].item_ratings:
                 actual_rating = self.user_dictionary[user_id].item_ratings[hotel_id]
 
             error = None
