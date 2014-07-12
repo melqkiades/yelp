@@ -163,12 +163,12 @@ class ETLUtils:
 
 
     @staticmethod
-    def split_train_test(records, percent=80, shuffle_data=True):
+    def split_train_test(records, split=0.8, shuffle_data=True, start=0.):
         """
         Splits the data in two disjunct datasets: train and test
 
-        :param percent: % of training set to be used (test set size = 100-percent)
-        :type percent: int
+        :param split: % of training set to be used (test set size = 100-percent)
+        :type split: float
         :param shuffle_data: shuffle dataset?
         :type shuffle_data: bool
 
@@ -177,14 +177,34 @@ class ETLUtils:
         if shuffle_data:
             shuffle(records)
         length = len(records)
-        train_list = records[:int(round(length*percent/100.0))]
-        test_list = records[-int(round(length*(100-percent)/100.0)):]
+        split_start = split + start
 
-        return train_list, test_list
+        if start == 0:
+            train = y[:int(round(split*length))]
+            test = y[int(round(split*length)):]
+        elif split_start > 1:
+            train = y[int(round(start*length)):] + y[:int(round((split_start-1)*length))]
+            test = y[int(round((split_start-1)*length)):int(round(start*length))]
+        else:
+            train = y[int(round(start*length)):int(round(split_start*length))]
+            test = y[int(round(split_start*length)):] + y[:int(round(start*length))]
+
+        return train, test
 
 
-# X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
-# y = [1, 2, 3, 4, 5]
-# train, test = ETLUtils.split_train_test(y)
+X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+y = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+# train, test = ETLUtils.split_train_test(y, shuffle_data=False, start=0.)
 # print(train)
 # print(test)
+
+split = 0.8
+start = 0.1
+
+train, test = ETLUtils.split_train_test(y, split=split, shuffle_data=False, start=start)
+
+print('Train: ', train)
+print('Test: ', test)
+
+
+
