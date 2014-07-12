@@ -180,31 +180,16 @@ class ETLUtils:
         split_start = split + start
 
         if start == 0:
-            train = y[:int(round(split*length))]
-            test = y[int(round(split*length)):]
+            train = records[:int(round(split*length))]
+            test = records[int(round(split*length)):]
         elif split_start > 1:
-            train = y[int(round(start*length)):] + y[:int(round((split_start-1)*length))]
-            test = y[int(round((split_start-1)*length)):int(round(start*length))]
+            train = records[int(round(start*length)):] + records[:int(round((split_start-1)*length))]
+            test = records[int(round((split_start-1)*length)):int(round(start*length))]
         else:
-            train = y[int(round(start*length)):int(round(split_start*length))]
-            test = y[int(round(split_start*length)):] + y[:int(round(start*length))]
+            train = records[int(round(start*length)):int(round(split_start*length))]
+            test = records[int(round(split_start*length)):] + records[:int(round(start*length))]
 
         return train, test
-
-
-X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
-y = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-# train, test = ETLUtils.split_train_test(y, shuffle_data=False, start=0.)
-# print(train)
-# print(test)
-
-split = 0.8
-start = 0.1
-
-train, test = ETLUtils.split_train_test(y, split=split, shuffle_data=False, start=start)
-
-print('Train: ', train)
-print('Test: ', test)
 
 
 
