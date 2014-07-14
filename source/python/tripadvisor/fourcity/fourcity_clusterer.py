@@ -6,61 +6,6 @@ from tripadvisor.fourcity import extractor
 __author__ = 'fpena'
 
 
-
-
-def clu_overall(reviews, user_id, user_cluster_dictionary, hotel_id):
-
-    actual_user_item_rating =\
-        get_user_item_overall_rating(reviews, user_id, hotel_id)
-    weights =\
-        extractor.get_criteria_weights(reviews, user_id)
-    significant_criteria, cluster_name =\
-        extractor.get_significant_criteria(weights)
-
-    # We remove the given user from the cluster in order to avoid bias
-    cluster_users = list(user_cluster_dictionary[cluster_name])
-    cluster_users.remove(user_id)
-
-    filtered_reviews = ETLUtils.filter_records(reviews, 'offering_id',
-                                               [hotel_id])
-    filtered_reviews = ETLUtils.filter_out_records(filtered_reviews, 'user_id',
-                                                   [user_id])
-    ratings_sum = 0
-    ratings_count = 0
-    for user in cluster_users:
-
-        user_reviews = ETLUtils.filter_records(filtered_reviews, 'user_id',
-                                               [user])
-        # print('User reviews: ' + str(user_reviews))
-
-        for review in user_reviews:
-            ratings_sum += review['overall_rating']
-            ratings_count += 1
-
-    predicted_rating = None
-    error = None
-    if ratings_count > 0:
-        # predicted_rating = 3.9
-        predicted_rating = float(ratings_sum) / float(ratings_count)
-        error = abs(predicted_rating - actual_user_item_rating)
-
-    return predicted_rating, error
-
-
-def clu_overall_list(reviews, user_cluster_dictionary):
-    average_ratings = []
-    errors = []
-
-    for review in reviews:
-        average_rating, error = clu_overall(
-            reviews, review['user_id'], user_cluster_dictionary,
-            review['offering_id'])
-        average_ratings.append(average_rating)
-        errors.append(error)
-
-    return average_ratings, errors
-
-
 def build_user_clusters(reviews):
     """
     Builds a series of clusters for users according to their significant
@@ -141,24 +86,42 @@ def build_user_reviews_dictionary(reviews, users):
     return user_reviews_dictionary
 
 
-def main():
-    # reviews = extractor.pre_process_reviews()
-    reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-    user_cluster_dictionary = build_user_clusters(reviews)
-    _, errors = clu_overall_list(reviews, user_cluster_dictionary)
-    # _, errors = clu_cf_euc_list(reviews, user_cluster_dictionary)
-    # mean_absolute_error = calculate_mean_average_error(errors)
-    # print('Mean Absolute error: %f' % mean_absolute_error)
-    # root_mean_square_error = calculate_root_mean_square_error(errors)
-    # print('Root mean square error: %f' % root_mean_square_error)
-    pass
+def calculate_users_similarity(user_dictionary, user_id1, user_id2):
+    """
+    Calculates the similarity between two users based on how similar are their
+    ratings in the reviews
+
+    :param user_id1: the ID of user 1
+    :param user_id2: the ID of user 2
+    :return: a float with the similarity between the two users. Since this
+    function is based on euclidean distance to calculate the similarity, a
+    similarity of 0 indicates that the users share exactly the same tastes
+    """
+    user_weights1 = user_dictionary[user_id1].criteria_weights
+    user_weights2 = user_dictionary[user_id2].criteria_weights
+
+    return calculate_euclidean_distance(user_weights1, user_weights2)
+    # return spatial.distance.cosine(user_weights1, user_weights2)
+    # return 0
 
 
-# start_time = time.time()
-# perform_cross_validation()
-# # main()
-# end_time = time.time() - start_time
-# print("--- %s seconds ---" % end_time)
+def build_user_similarities_matrix(user_ids, user_dictionary):
+    """
+    Builds a matrix that contains the similarity between every pair of users
+    in the dataset of this recommender system. This is particularly useful
+    to prevent repeating the same calculations in each cycle
+
+    """
+    user_similarity_matrix = {}
+
+    for user1 in user_ids:
+        user_similarity_matrix[user1] = {}
+        for user2 in user_ids:
+            user_similarity_matrix[user1][user2] =\
+                calculate_users_similarity(user_dictionary, user1, user2)
+
+    return user_similarity_matrix
+
 
 # x1 = [1, 2, 4, 4, 5]
 # x2 = [1, 2, 3, 4, 5]

@@ -8,8 +8,9 @@ __author__ = 'fpena'
 
 class CluCFEuc:
 
-    def __init__(self, reviews):
+    def __init__(self, reviews, is_collaborative=True):
         self.reviews = reviews
+        self.is_collaborative = is_collaborative
         self.user_dictionary = extractor.initialize_users(self.reviews)
         print('Users Initialized')
         self.user_cluster_dictionary = fourcity_clusterer.build_user_clusters(self.reviews)
@@ -18,8 +19,9 @@ class CluCFEuc:
         self.item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
         self.user_reviews_dictionary = fourcity_clusterer.build_user_reviews_dictionary(self.reviews, self.user_ids)
         print('User reviews dictionary built')
-        self.user_similarity_matrix = {}
-        self.build_user_similarities_matrix()
+        self.user_similarity_matrix =\
+            fourcity_clusterer.build_user_similarities_matrix(
+                self.user_ids, self.user_dictionary)
         print('Users similarities matrix built')
 
     def predict_rating(self, user_id, item_id):
@@ -52,17 +54,23 @@ class CluCFEuc:
             if item_id in self.user_dictionary[cluster_user].item_ratings:
                 cluster_user_item_rating = self.user_dictionary[cluster_user].item_ratings[item_id]
                 similarities_sum += users_similarity
-                similarities_ratings_sum += users_similarity * (cluster_user_item_rating - cluster_user_overall_rating)
-                # similarities_ratings_sum += (cluster_user_item_rating - cluster_user_overall_rating)
+
+                if self.is_collaborative:
+                    similarities_ratings_sum += users_similarity *\
+                                                (cluster_user_item_rating - cluster_user_overall_rating)
+                else:
+                    similarities_ratings_sum += (cluster_user_item_rating - cluster_user_overall_rating)
                 num_users += 1
         predicted_rating = None
 
         if similarities_sum > 0:
             user_average_rating = self.user_dictionary[user_id].average_overall_rating
-            predicted_rating = \
-                user_average_rating + similarities_ratings_sum / similarities_sum
-            # predicted_rating = \
-            #     user_average_rating + similarities_ratings_sum / num_users #/ similarities_sum
+            if self.is_collaborative:
+                predicted_rating = \
+                    user_average_rating + similarities_ratings_sum / similarities_sum
+            else:
+                predicted_rating = \
+                    user_average_rating + similarities_ratings_sum / num_users
 
             if predicted_rating > 5:
                 predicted_rating = 5
@@ -70,45 +78,6 @@ class CluCFEuc:
                 predicted_rating = 1
 
         return predicted_rating
-
-    def predict_ratings_list(self, reviews):
-        """
-        For each one of the reviews this method predicts the rating for the
-        user and item contained in the review and also returns the error
-        between the predicted rating and the actual rating the user gave to the
-        item
-
-        :param reviews: a list of reviews (the test data)
-        :return: a tuple with a list of the predicted ratings and the list of
-        errors for those predictions
-        """
-        predicted_ratings = []
-        errors = []
-
-        index = 0
-        print('CluCFEuc')
-        print('Total reviews: %i' % len(self.reviews))
-
-        for review in reviews:
-            # print('Index: %i' % index)
-            index += 1
-
-            user_id = review['user_id']
-            hotel_id = review['offering_id']
-            predicted_rating = self.predict_rating(user_id, hotel_id)
-            actual_rating = None
-            if user_id in self.user_dictionary and hotel_id in self.user_dictionary[user_id].item_ratings:
-                actual_rating = self.user_dictionary[user_id].item_ratings[hotel_id]
-
-            error = None
-
-            if predicted_rating is not None and actual_rating is not None:
-                error = abs(predicted_rating - actual_rating)
-
-            predicted_ratings.append(predicted_rating)
-            errors.append(error)
-
-        return predicted_ratings, errors
 
     def predict_user_ratings(self, user, items):
         """
@@ -189,32 +158,32 @@ class CluCFEuc:
 
         return average_recall
 
-    def calculate_users_similarity(self, user_id1, user_id2):
-        """
-        Calculates the similarity between two users based on how similar are their
-        ratings in the reviews
+    # def calculate_users_similarity(self, user_id1, user_id2):
+    #     """
+    #     Calculates the similarity between two users based on how similar are their
+    #     ratings in the reviews
+    #
+    #     :param user_id1: the ID of user 1
+    #     :param user_id2: the ID of user 2
+    #     :return: a float with the similarity between the two users. Since this
+    #     function is based on euclidean distance to calculate the similarity, a
+    #     similarity of 0 indicates that the users share exactly the same tastes
+    #     """
+    #     user_weights1 = self.user_dictionary[user_id1].criteria_weights
+    #     user_weights2 = self.user_dictionary[user_id2].criteria_weights
+    #
+    #     return fourcity_clusterer.calculate_euclidean_distance(user_weights1, user_weights2)
+    #     # return spatial.distance.cosine(user_weights1, user_weights2)
+    #     # return 0
 
-        :param user_id1: the ID of user 1
-        :param user_id2: the ID of user 2
-        :return: a float with the similarity between the two users. Since this
-        function is based on euclidean distance to calculate the similarity, a
-        similarity of 0 indicates that the users share exactly the same tastes
-        """
-        user_weights1 = self.user_dictionary[user_id1].criteria_weights
-        user_weights2 = self.user_dictionary[user_id2].criteria_weights
-
-        return fourcity_clusterer.calculate_euclidean_distance(user_weights1, user_weights2)
-        # return spatial.distance.cosine(user_weights1, user_weights2)
-        # return 0
-
-    def build_user_similarities_matrix(self):
-        """
-        Builds a matrix that contains the similarity between every pair of users
-        in the dataset of this recommender system. This is particularly useful
-        to prevent repeating the same calculations in each cycle
-
-        """
-        for user1 in self.user_ids:
-            self.user_similarity_matrix[user1] = {}
-            for user2 in self.user_ids:
-                self.user_similarity_matrix[user1][user2] = self.calculate_users_similarity(user1, user2)
+    # def build_user_similarities_matrix(self):
+    #     """
+    #     Builds a matrix that contains the similarity between every pair of users
+    #     in the dataset of this recommender system. This is particularly useful
+    #     to prevent repeating the same calculations in each cycle
+    #
+    #     """
+    #     for user1 in self.user_ids:
+    #         self.user_similarity_matrix[user1] = {}
+    #         for user2 in self.user_ids:
+    #             self.user_similarity_matrix[user1][user2] = self.calculate_users_similarity(user1, user2)

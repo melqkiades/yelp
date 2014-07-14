@@ -352,9 +352,15 @@ def get_significant_criteria(criteria_weights):
 
     significant_criteria = {}
     for index, value in enumerate(criteria_weights):
+        # if (value == 1.) or (value == -1.):
+        # if (0.999 < value < 1.001) or (-1.001 < value < -0.999):
+        # if (0.99 < value < 1.01) or (-1.01 < value < -0.99):
+        # if (0.95 < value < 1.05) or (-1.05 < value < -0.95):
+        # if (0.9 < value < 1.1) or (-1.1 < value < -0.9):
         # if (0.8 < value < 1.2) or (-1.2 < value < -0.8):
         # if (0.7 < value < 1.3) or (-1.3 < value < -0.7):
         # if (0.5 < value < 1.5) or (-1.5 < value < -0.5):
+        # if (0.3 < value < 1.7) or (-1.3 < value < -0.7):
         # if (0.1 < value < 1.9) or (-1.1 < value < -0.9):
         if True:
             significant_criteria[rating_criteria[index]] = value
