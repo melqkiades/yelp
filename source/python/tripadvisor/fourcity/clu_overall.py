@@ -12,9 +12,12 @@ class CluOverall:
         self.is_collaborative = is_collaborative
         self.user_dictionary = extractor.initialize_users(self.reviews)
         self.user_cluster_dictionary = fourcity_clusterer.build_user_clusters(self.reviews)
-        pass
+        self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
+        self.user_similarity_matrix =\
+            fourcity_clusterer.build_user_similarities_matrix(
+                self.user_ids, self.user_dictionary)
 
-    def predict_rating(self, user_id, hotel_id):
+    def predict_rating(self, user_id, item_id):
 
         if user_id not in self.user_dictionary:
             return None
@@ -23,32 +26,34 @@ class CluOverall:
 
         # We remove the given user from the cluster in order to avoid bias
         cluster_users = list(self.user_cluster_dictionary[cluster_name])
-
-        if user_id not in cluster_users:
-            print(user_id)
-            print(cluster_name)
-
         cluster_users.remove(user_id)
 
-        filtered_reviews = ETLUtils.filter_records(self.reviews, 'offering_id',
-                                                   [hotel_id])
-        filtered_reviews = ETLUtils.filter_out_records(filtered_reviews, 'user_id',
-                                                       [user_id])
+        similarities_sum = 0.
+        similarities_ratings_sum = 0.
+        num_users = 0
+        for cluster_user in cluster_users:
+            users_similarity = self.user_similarity_matrix[cluster_user][user_id]
 
-        ratings_sum = 0
-        ratings_count = 0
-        for user in cluster_users:
+            if item_id in self.user_dictionary[cluster_user].item_ratings:
+                cluster_user_item_rating = self.user_dictionary[cluster_user].item_ratings[item_id]
+                similarities_sum += users_similarity
 
-            user_reviews = ETLUtils.filter_records(filtered_reviews, 'user_id',
-                                                   [user])
-
-            for review in user_reviews:
-                ratings_sum += review['overall_rating']
-                ratings_count += 1
+                if self.is_collaborative:
+                    similarities_ratings_sum += users_similarity * cluster_user_item_rating
+                else:
+                    similarities_ratings_sum += cluster_user_item_rating
+                num_users += 1
 
         predicted_rating = None
-        if ratings_count > 0:
-            # predicted_rating = 3.9
-            predicted_rating = float(ratings_sum) / float(ratings_count)
+        if num_users > 0:
+            if self.is_collaborative:
+                predicted_rating = float(similarities_ratings_sum) / float(similarities_sum)
+            else:
+                predicted_rating = float(similarities_ratings_sum) / float(num_users)
+
+            if predicted_rating > 5:
+                predicted_rating = 5
+            elif predicted_rating < 1:
+                predicted_rating = 1
 
         return predicted_rating
