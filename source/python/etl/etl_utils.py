@@ -1,3 +1,4 @@
+import csv
 import json
 import nltk
 from numpy.random import shuffle
@@ -191,5 +192,17 @@ class ETLUtils:
 
         return train, test
 
+    @staticmethod
+    def load_csv_file(file_path):
 
+        records = []
 
+        with open(file_path) as read_file:
+            reader = csv.DictReader(read_file)  # read rows into a dictionary format
+            for row in reader:
+                dictionary = {}
+                for (key, value) in row.items(): # go over each column name and value
+                    dictionary[key] = value
+                records.append(dictionary)
+
+        return records

@@ -35,9 +35,6 @@ class CluCFEuc:
         if user_id not in self.user_reviews_dictionary:
             return None
 
-        # if True:
-        #     return 3.9
-
         cluster_name = self.user_dictionary[user_id].cluster
 
         # We remove the given user from the cluster in order to avoid bias
@@ -157,33 +154,3 @@ class CluCFEuc:
         print('Average recall: %f' % average_recall)
 
         return average_recall
-
-    # def calculate_users_similarity(self, user_id1, user_id2):
-    #     """
-    #     Calculates the similarity between two users based on how similar are their
-    #     ratings in the reviews
-    #
-    #     :param user_id1: the ID of user 1
-    #     :param user_id2: the ID of user 2
-    #     :return: a float with the similarity between the two users. Since this
-    #     function is based on euclidean distance to calculate the similarity, a
-    #     similarity of 0 indicates that the users share exactly the same tastes
-    #     """
-    #     user_weights1 = self.user_dictionary[user_id1].criteria_weights
-    #     user_weights2 = self.user_dictionary[user_id2].criteria_weights
-    #
-    #     return fourcity_clusterer.calculate_euclidean_distance(user_weights1, user_weights2)
-    #     # return spatial.distance.cosine(user_weights1, user_weights2)
-    #     # return 0
-
-    # def build_user_similarities_matrix(self):
-    #     """
-    #     Builds a matrix that contains the similarity between every pair of users
-    #     in the dataset of this recommender system. This is particularly useful
-    #     to prevent repeating the same calculations in each cycle
-    #
-    #     """
-    #     for user1 in self.user_ids:
-    #         self.user_similarity_matrix[user1] = {}
-    #         for user2 in self.user_ids:
-    #             self.user_similarity_matrix[user1][user2] = self.calculate_users_similarity(user1, user2)
