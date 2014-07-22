@@ -193,12 +193,12 @@ class ETLUtils:
         return train, test
 
     @staticmethod
-    def load_csv_file(file_path):
+    def load_csv_file(file_path, delimiter=','):
 
         records = []
 
         with open(file_path) as read_file:
-            reader = csv.DictReader(read_file)  # read rows into a dictionary format
+            reader = csv.DictReader(read_file, delimiter=delimiter)  # read rows into a dictionary format
             for row in reader:
                 dictionary = {}
                 for (key, value) in row.items(): # go over each column name and value
@@ -206,3 +206,30 @@ class ETLUtils:
                 records.append(dictionary)
 
         return records
+
+    @staticmethod
+    def save_csv_file(file_path, records, headers, delimiter=','):
+
+        with open(file_path, 'wb') as write_file:
+            writer = csv.DictWriter(write_file, headers, delimiter=delimiter)
+            writer.writeheader()
+
+            for record in records:
+                writer.writerow(record)
+
+
+# headers = ['Algorithm',
+#            # 'Multi-cluster',
+#            # 'Similarity',
+#            # 'Distance metric',
+#            # 'Dataset',
+#            # 'MAE	RMSE',
+#            # 'Execution time',
+#            # 'Cross validation',
+#            'Machine']
+# records = [
+#     {'Algorithm': 'Clu_Overall', 'Machine': 'Mac'},
+#     {'Algorithm': 'Clu_CF_Euc', 'Machine': 'Mac'},
+#     {'Algorithm': 'Single_CF', 'Machine': 'PC'}
+# ]
+# ETLUtils.save_csv_file('/Users/fpena/tmp/test.csv', records, headers, delimiter='|')
