@@ -4,6 +4,7 @@ import numpy
 from pandas import DataFrame
 
 from etl import ETLUtils
+from tripadvisor.fourcity import preflib_extractor
 from tripadvisor.fourcity.user import User
 
 
@@ -108,15 +109,15 @@ def verify_rating_criteria(review):
     review, False otherwise
     """
     expected_criteria = [
-        'cleanliness',
-        'location',
-        'rooms',
-        'service',
-        # 'sleep_quality',
-        'value'
+        'cleanliness_rating',
+        'location_rating',
+        'rooms_rating',
+        'service_rating',
+        # 'sleep_quality_rating',
+        'value_rating'
     ]
     expected_criteria = set(expected_criteria)
-    actual_criteria = set(review['ratings'])
+    actual_criteria = set(review)
     return expected_criteria.issubset(actual_criteria)
 
 
@@ -155,7 +156,9 @@ def pre_process_reviews():
     select_fields = ['ratings', 'author', 'offering_id']
     reviews = ETLUtils.select_fields(select_fields, reviews)
     extract_fields(reviews)
-    ETLUtils.drop_fields(['author'], reviews)
+    ETLUtils.drop_fields(['author', 'ratings'], reviews)
+    # reviews = load_json_file('/Users/fpena/tmp/filtered_reviews.json')
+    # reviews = preflib_extractor.load_csv_file('/Users/fpena/UCC/Thesis/datasets/TripAdvisor/PrefLib/trip/CD-00001-00000001-copy.dat')
     reviews = clean_reviews(reviews)
 
     return reviews
@@ -183,22 +186,22 @@ def create_ratings_matrix(reviews):
     missing_count = 0
 
     for review in reviews:
-        ratings = review['ratings']
+        # ratings = review['ratings']
         ratings_list = []
 
         rating_criteria = [
-            'cleanliness',
-            'location',
-            'rooms',
-            'service',
-            # 'sleep_quality',
-            'value'
+            'cleanliness_rating',
+            'location_rating',
+            'rooms_rating',
+            'service_rating',
+            # 'sleep_quality_rating',
+            'value_rating'
         ]
         contains_missing_rating = 0
 
         for criterion in rating_criteria:
-            if criterion in ratings:
-                ratings_list.append(ratings[criterion])
+            if criterion in review:
+                ratings_list.append(review[criterion])
 
         missing_count += contains_missing_rating
 
@@ -206,7 +209,7 @@ def create_ratings_matrix(reviews):
         # In other words, we are ignoring reviews with missing ratings
         if not contains_missing_rating:
             ratings_matrix.append(ratings_list)
-            overall_ratings_list.append(ratings['overall'])
+            overall_ratings_list.append(review['overall_rating'])
             review['ratings_list'] = ratings_list
             # review['overall_rating'] = ratings['overall']
 
@@ -296,7 +299,7 @@ def get_user_average_overall_rating(reviews, user_id, apply_filter=True):
     ratings_count = len(user_reviews)
 
     for review in user_reviews:
-        ratings_sum += review['overall_rating']
+        ratings_sum += float(review['overall_rating'])
 
     average_rating = float(ratings_sum) / float(ratings_count)
 
@@ -311,7 +314,6 @@ def get_criteria_weights(reviews, user_id, apply_filter=True):
     :param user_id: the ID of the user
     :return: a list with the weights for each of the criterion of the given user
     """
-    # filtered_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
     if apply_filter:
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
     else:
@@ -326,7 +328,7 @@ def get_criteria_weights(reviews, user_id, apply_filter=True):
     return m
 
 
-def get_significant_criteria(criteria_weights):
+def get_significant_criteria(criteria_weights, ranges=None):
     """
     Returns (significant_criteria, cluster_name) where significant_criteria is a
     dictionary with the criteria that are significant and their values.
@@ -351,18 +353,11 @@ def get_significant_criteria(criteria_weights):
     cluster_name = ''
 
     significant_criteria = {}
+    if ranges is None:
+        ranges = [(float("-inf"), float("inf"))]
+
     for index, value in enumerate(criteria_weights):
-        # if (value == 1.) or (value == -1.):
-        # if (0.999 < value < 1.001) or (-1.001 < value < -0.999):
-        # if (0.99 < value < 1.01) or (-1.01 < value < -0.99):
-        # if (0.95 < value < 1.05) or (-1.05 < value < -0.95):
-        # if (0.9 < value < 1.1) or (-1.1 < value < -0.9):
-        # if (0.8 < value < 1.2) or (-1.2 < value < -0.8):
-        # if (0.7 < value < 1.3) or (-1.3 < value < -0.7):
-        # if (0.5 < value < 1.5) or (-1.5 < value < -0.5):
-        # if (0.3 < value < 1.7) or (-1.3 < value < -0.7):
-        # if (0.1 < value < 1.9) or (-1.1 < value < -0.9):
-        if True:
+        if any(lower < value < upper for (lower, upper) in ranges):
             significant_criteria[rating_criteria[index]] = value
             cluster_name += '1'
         else:
@@ -371,7 +366,7 @@ def get_significant_criteria(criteria_weights):
     return significant_criteria, cluster_name
 
 
-def initialize_users(reviews):
+def initialize_users(reviews, significant_criteria_ranges=None):
     """
     Builds a dictionary containing all the users in the reviews. Each user
     contains information about its average overall rating, the list of reviews
@@ -391,7 +386,8 @@ def initialize_users(reviews):
             user_reviews, user_id, apply_filter=False)
         user.criteria_weights = get_criteria_weights(
             user_reviews, user_id, apply_filter=False)
-        _, user.cluster = get_significant_criteria(user.criteria_weights)
+        _, user.cluster = get_significant_criteria(
+            user.criteria_weights, significant_criteria_ranges)
         user_dictionary[user_id] = user
         user.item_ratings = get_user_item_ratings(user_reviews)
 
