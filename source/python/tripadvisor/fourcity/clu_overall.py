@@ -7,7 +7,9 @@ __author__ = 'fpena'
 
 class CluOverall:
 
-    def __init__(self, reviews, is_collaborative=False):
+    def __init__(
+            self, reviews, significant_criteria_range=None,
+            is_collaborative=False, similarity_metric='euclidean'):
         self.reviews = reviews
         self.is_collaborative = is_collaborative
         self.user_dictionary = extractor.initialize_users(self.reviews)
@@ -15,7 +17,7 @@ class CluOverall:
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         self.user_similarity_matrix =\
             fourcity_clusterer.build_user_similarities_matrix(
-                self.user_ids, self.user_dictionary)
+                self.user_ids, self.user_dictionary, similarity_metric)
 
     def predict_rating(self, user_id, item_id):
 

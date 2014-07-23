@@ -1,5 +1,4 @@
 import operator
-from scipy import spatial
 from tripadvisor.fourcity import extractor
 from tripadvisor.fourcity import fourcity_clusterer
 
@@ -8,21 +7,22 @@ __author__ = 'fpena'
 
 class CluCFEuc:
 
-    def __init__(self, reviews, is_collaborative=True):
+    def __init__(
+            self, reviews, is_collaborative=True,
+            significant_criteria_ranges=None, similarity_metric='euclidean'):
         self.reviews = reviews
         self.is_collaborative = is_collaborative
-        self.user_dictionary = extractor.initialize_users(self.reviews)
-        print('Users Initialized')
-        self.user_cluster_dictionary = fourcity_clusterer.build_user_clusters(self.reviews)
-        print('User cluster built')
+        self.user_dictionary =\
+            extractor.initialize_users(self.reviews, significant_criteria_ranges)
+        self.user_cluster_dictionary = fourcity_clusterer.build_user_clusters(
+            self.reviews, significant_criteria_ranges)
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         self.item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
-        self.user_reviews_dictionary = fourcity_clusterer.build_user_reviews_dictionary(self.reviews, self.user_ids)
-        print('User reviews dictionary built')
+        self.user_reviews_dictionary =\
+            fourcity_clusterer.build_user_reviews_dictionary(self.reviews, self.user_ids)
         self.user_similarity_matrix =\
             fourcity_clusterer.build_user_similarities_matrix(
-                self.user_ids, self.user_dictionary)
-        print('Users similarities matrix built')
+                self.user_ids, self.user_dictionary, similarity_metric)
 
     def predict_rating(self, user_id, item_id):
         """
@@ -73,6 +73,8 @@ class CluCFEuc:
                 predicted_rating = 5
             elif predicted_rating < 1:
                 predicted_rating = 1
+
+            # predicted_rating = round(predicted_rating)
 
         return predicted_rating
 

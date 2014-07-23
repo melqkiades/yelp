@@ -1,12 +1,14 @@
 import math
+import numpy
 from scipy import spatial
 from etl import ETLUtils
+from etl import similarity
 from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
 
 
-def build_user_clusters(reviews):
+def build_user_clusters(reviews, significant_criteria_ranges=None):
     """
     Builds a series of clusters for users according to their significant
     criteria. Users that have exactly the same significant criteria will belong
@@ -23,7 +25,7 @@ def build_user_clusters(reviews):
     for user in user_list:
         weights = extractor.get_criteria_weights(reviews, user)
         significant_criteria, cluster_name =\
-            extractor.get_significant_criteria(weights)
+            extractor.get_significant_criteria(weights, significant_criteria_ranges)
 
         if cluster_name in user_cluster_dictionary:
             user_cluster_dictionary[cluster_name].append(user)
@@ -86,7 +88,7 @@ def build_user_reviews_dictionary(reviews, users):
     return user_reviews_dictionary
 
 
-def calculate_users_similarity(user_dictionary, user_id1, user_id2):
+def calculate_users_similarity(user_dictionary, user_id1, user_id2, similarity_metric='euclidean'):
     """
     Calculates the similarity between two users based on how similar are their
     ratings in the reviews
@@ -100,12 +102,21 @@ def calculate_users_similarity(user_dictionary, user_id1, user_id2):
     user_weights1 = user_dictionary[user_id1].criteria_weights
     user_weights2 = user_dictionary[user_id2].criteria_weights
 
-    return calculate_euclidean_distance(user_weights1, user_weights2)
-    # return spatial.distance.cosine(user_weights1, user_weights2)
-    # return 0
+    if similarity_metric == 'euclidean':
+        return similarity.euclidean(user_weights1, user_weights2)
+    if similarity_metric == 'cosine':
+        return similarity.cosine(user_weights1, user_weights2)
+    if similarity_metric == 'pearson':
+        similarity_value = numpy.corrcoef(user_weights1, user_weights2)[0, 1]
+        if similarity_value <= 0:
+            return None
+        return similarity_value
+
+    msg = 'Unrecognized similarity metric \'' + similarity_metric + '\''
+    raise ValueError(msg)
 
 
-def build_user_similarities_matrix(user_ids, user_dictionary):
+def build_user_similarities_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):
     """
     Builds a matrix that contains the similarity between every pair of users
     in the dataset of this recommender system. This is particularly useful
@@ -118,13 +129,6 @@ def build_user_similarities_matrix(user_ids, user_dictionary):
         user_similarity_matrix[user1] = {}
         for user2 in user_ids:
             user_similarity_matrix[user1][user2] =\
-                calculate_users_similarity(user_dictionary, user1, user2)
+                calculate_users_similarity(user_dictionary, user1, user2, similarity_metric)
 
     return user_similarity_matrix
-
-
-# x1 = [1, 2, 4, 4, 5]
-# x2 = [1, 2, 3, 4, 5]
-#
-# print(calculate_euclidean_distance(x1, x2))
-# print(spatial.distance.cosine(x1, x2))
