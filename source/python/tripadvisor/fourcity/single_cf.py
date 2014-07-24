@@ -1,19 +1,18 @@
-from etl import similarity
-from tripadvisor.fourcity.reviews_holder import ReviewsHolder
+from tripadvisor.fourcity import fourcity_clusterer
+from tripadvisor.fourcity.base_recommender import BaseRecommender
 
 __author__ = 'fpena'
 
 
-class SingleCF(object):
+class SingleCF(BaseRecommender):
 
-    def __init__(self, reviews):
-        self.reviews = reviews
-        self.reviews_holder = ReviewsHolder(self.reviews)
-        self.user_ids = self.reviews_holder.user_ids
+    def __init__(self, similarity_metric='cosine'):
+        super(SingleCF, self).__init__('SingleCF')
+        self.similarity_metric = similarity_metric
 
     def predict_rating(self, user_id, item_id):
-        # return self.calculate_weighted_sum(user_id, item_id)
-        return self.calculate_adjusted_weighted_sum(user_id, item_id)
+        return self.calculate_weighted_sum(user_id, item_id)
+        # return self.calculate_adjusted_weighted_sum(user_id, item_id)
 
     def calculate_weighted_sum(self, user_id, item_id):
 
@@ -71,7 +70,7 @@ class SingleCF(object):
         user_average_rating = self.reviews_holder.get_user_average_rating(user_id)
         predicted_rating = user_average_rating + weighted_sum / z_denominator
 
-        print('Predicted rating', predicted_rating)
+        # print('Predicted rating', predicted_rating)
 
         return predicted_rating
 
@@ -84,10 +83,10 @@ class SingleCF(object):
         user1_ratings = self.reviews_holder.extract_user_ratings(user1, common_items)
         user2_ratings = self.reviews_holder.extract_user_ratings(user2, common_items)
 
-        similarity_value = similarity.cosine(user1_ratings, user2_ratings)
+        similarity_value = fourcity_clusterer.calculate_similarity(
+            user1_ratings, user2_ratings, self.similarity_metric)
 
         return similarity_value
-
 
     @property
     def name(self):
