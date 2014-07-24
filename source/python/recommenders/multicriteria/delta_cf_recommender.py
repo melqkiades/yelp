@@ -50,9 +50,4 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
         predicted_rating = \
             user_average_rating + similarities_ratings_sum / similarities_sum
 
-        if predicted_rating > 5:
-            predicted_rating = 5
-        elif predicted_rating < 1:
-            predicted_rating = 1
-
         return predicted_rating

@@ -49,9 +49,4 @@ class DeltaRecommender(MultiCriteriaBaseRecommender):
         predicted_rating = \
             user_average_rating + similarities_ratings_sum / num_users
 
-        if predicted_rating > 5:
-            predicted_rating = 5
-        elif predicted_rating < 1:
-            predicted_rating = 1
-
         return predicted_rating
