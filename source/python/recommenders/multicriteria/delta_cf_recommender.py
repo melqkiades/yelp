@@ -8,9 +8,10 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
 
     def __init__(
             self, similarity_metric='euclidean', significant_criteria_ranges=None):
-        super(DeltaCFRecommender, self).__init__('DeltaCFRecommender')
-        self.similarity_metric = similarity_metric
-        self.significant_criteria_ranges = significant_criteria_ranges
+        super(DeltaCFRecommender, self).__init__(
+            'DeltaCFRecommender',
+            similarity_metric=similarity_metric,
+            significant_criteria_ranges=significant_criteria_ranges)
 
     def predict_rating(self, user_id, item_id):
         """
@@ -51,3 +52,11 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
             user_average_rating + similarities_ratings_sum / similarities_sum
 
         return predicted_rating
+
+    @property
+    def similarity_metric(self):
+        return self._similarity_metric
+
+    @similarity_metric.setter
+    def similarity_metric(self, similarity_metric):
+        self._similarity_metric = similarity_metric

@@ -10,11 +10,11 @@ class MultiCriteriaBaseRecommender(object):
     __metaclass__ = ABCMeta
 
     def __init__(
-            self, name, similarity_metric='euclidean',
+            self, name, similarity_metric=None,
             significant_criteria_ranges=None):
         self._name = name
-        self.similarity_metric = similarity_metric
-        self.significant_criteria_ranges = significant_criteria_ranges
+        self._similarity_metric = similarity_metric
+        self._significant_criteria_ranges = significant_criteria_ranges
         self.reviews = None
         self.user_ids = None
         self.user_dictionary = None
@@ -24,13 +24,14 @@ class MultiCriteriaBaseRecommender(object):
     def load(self, reviews):
         self.reviews = reviews
         self.user_dictionary =\
-            extractor.initialize_users(self.reviews, self.significant_criteria_ranges)
+            extractor.initialize_users(self.reviews, self._significant_criteria_ranges)
         self.user_cluster_dictionary = fourcity_clusterer.build_user_clusters(
-            self.reviews, self.significant_criteria_ranges)
+            self.reviews, self._significant_criteria_ranges)
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
-        self.user_similarity_matrix =\
-            fourcity_clusterer.build_user_similarities_matrix(
-                self.user_ids, self.user_dictionary, self.similarity_metric)
+        if self._similarity_metric is not None:
+            self.user_similarity_matrix =\
+                fourcity_clusterer.build_user_similarities_matrix(
+                    self.user_ids, self.user_dictionary, self._similarity_metric)
 
     def clear(self):
         self.reviews = None
