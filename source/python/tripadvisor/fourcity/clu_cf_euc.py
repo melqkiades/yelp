@@ -18,8 +18,6 @@ class CluCFEuc:
             self.reviews, significant_criteria_ranges)
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         self.item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
-        self.user_reviews_dictionary =\
-            fourcity_clusterer.build_user_reviews_dictionary(self.reviews, self.user_ids)
         self.user_similarity_matrix =\
             fourcity_clusterer.build_user_similarities_matrix(
                 self.user_ids, self.user_dictionary, similarity_metric)
@@ -32,7 +30,7 @@ class CluCFEuc:
         :param item_id: the ID of the hotel
         :return: a float between 1 and 5 with the predicted rating
         """
-        if user_id not in self.user_reviews_dictionary:
+        if user_id not in self.user_dictionary:
             return None
 
         cluster_name = self.user_dictionary[user_id].cluster
