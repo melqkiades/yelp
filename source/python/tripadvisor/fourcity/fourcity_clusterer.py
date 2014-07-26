@@ -1,6 +1,5 @@
 import math
 import numpy
-from etl import ETLUtils
 from etl import similarity
 from tripadvisor.fourcity import extractor
 
@@ -32,59 +31,6 @@ def build_user_clusters(reviews, significant_criteria_ranges=None):
             user_cluster_dictionary[cluster_name] = [user]
 
     return user_cluster_dictionary
-
-
-def calculate_euclidean_distance(vector1, vector2):
-    """
-    Calculates the euclidean distance between two vectors of dimension N
-
-    :param vector1: a list of numeric values of size N
-    :param vector2: a list of numeric values of size N
-    :return: a float with the euclidean distance between vector1 and vector2
-    """
-    distance = 0.
-    for value1, value2 in zip(vector1, vector2):
-        distance += (value2 - value1) ** 2
-
-    return math.sqrt(distance)
-
-
-def get_user_item_overall_rating(reviews, user_id, item_id):
-    filtered_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
-    filtered_reviews = ETLUtils.filter_records(filtered_reviews, 'offering_id',
-                                               [item_id])
-
-    if not filtered_reviews:
-        return None
-
-    overall_rating_sum = 0.
-
-    for review in filtered_reviews:
-        overall_rating_sum += review['ratings']['overall']
-
-    user_item_overall_rating = overall_rating_sum / len(filtered_reviews)
-    return user_item_overall_rating
-
-
-def build_user_reviews_dictionary(reviews, users):
-    """
-    Builds a dictionary that contains all the reviews the users have made where
-    the key is the user ID and the value is a list of the reviews this user has
-    made.
-
-    :param reviews: a list of reviews
-    :param users: the list of users to be considered
-    :return: a dictionary that contains all the reviews the users have made
-    where the key is the user ID and the value is a list of the reviews this
-    user has made.
-    """
-    user_reviews_dictionary = {}
-
-    for user in users:
-        user_reviews_dictionary[user] =\
-            ETLUtils.filter_records(reviews, 'user_id', user)
-
-    return user_reviews_dictionary
 
 
 def calculate_users_similarity(user_dictionary, user_id1, user_id2, similarity_metric='euclidean'):
