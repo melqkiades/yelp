@@ -1,4 +1,4 @@
-from tripadvisor.fourcity.base_recommender import BaseRecommender
+from recommenders.base_recommender import BaseRecommender
 
 __author__ = 'fpena'
 

@@ -1,7 +1,9 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+
 from tripadvisor.fourcity import extractor
 from tripadvisor.fourcity import fourcity_clusterer
-from tripadvisor.fourcity.base_recommender import BaseRecommender
+from recommenders.base_recommender import BaseRecommender
+
 
 __author__ = 'fpena'
 
