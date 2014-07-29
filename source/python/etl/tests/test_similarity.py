@@ -22,7 +22,8 @@ class TestSimilarity(TestCase):
 
         v1 = [1, 2, 3, 4, 5]
         v2 = [1, 22, 3000, 4, 5000000000]
-        print(1 - similarity.cosine(v1, v2))
+        print(similarity.cosine(v1, v2))
+        print(1 / (1 + spatial.distance.cosine(v1, v2)))
         print(spatial.distance.cosine(v1, v2))
         print(1 - (np.dot(v1, v2) / (np.sqrt(np.dot(v1, v1)) * np.sqrt(np.dot(v2, v2)))))
         # (4.5 * 4 + 3 * 2) / (4.5**2 + 3**2)**0.5 * (4**2 + 2**2)**0.5

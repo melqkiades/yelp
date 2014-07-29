@@ -1,5 +1,8 @@
-from scipy import spatial
 from unittest import TestCase
+from evaluation.mean_absolute_error import MeanAbsoluteError
+from evaluation.root_mean_square_error import RootMeanSquareError
+from tripadvisor.fourcity import four_city_evaluator
+from tripadvisor.fourcity.dummy_predictor import DummyPredictor
 from tripadvisor.fourcity.single_cf import SingleCF
 
 __author__ = 'fpena'
@@ -71,13 +74,6 @@ reviews_matrix_5 = [
 
 class TestSingleCF(TestCase):
 
-    def test_calculate_similarity(self):
-
-        single_cf = SingleCF()
-        single_cf.load(reviews)
-        similarity = (4.5 * 4 + 3 * 2) / ((4.5**2 + 3**2)**0.5 * (4**2 + 2**2)**0.5)
-        self.assertEqual(similarity, single_cf.calculate_similarity('A1', 'A2'))
-
     def test_calculate_adjusted_weighted_sum(self):
 
         single_cf = SingleCF()
@@ -88,11 +84,6 @@ class TestSingleCF(TestCase):
         actual_rating_2 = 3.5 + 0.99227787671366752 * (2.0 - 3.0) / 0.99227787671366752
         self.assertEqual(actual_rating_2, single_cf.calculate_adjusted_weighted_sum('A1', 3))
 
-        single_cf.load(reviews_matrix_5)
-        print('Adjusted weighted sum', single_cf.calculate_adjusted_weighted_sum('U1', 5))
-        print('Adjusted weighted sum', single_cf.calculate_adjusted_weighted_sum('U1', 1))
-
-
     def test_calculate_weighted_sum(self):
 
         single_cf = SingleCF()
@@ -102,9 +93,21 @@ class TestSingleCF(TestCase):
         self.assertEqual(actual_rating_1, single_cf.calculate_weighted_sum('A1', 1))
         actual_rating_2 = 2.0
         self.assertEqual(actual_rating_2, single_cf.calculate_weighted_sum('A1', 3))
-        # print(single_cf.calculate_weighted_sum('A1', 3))
 
-        single_cf.load(reviews_matrix_5)
-        print('Weighted sum', single_cf.calculate_weighted_sum('U1', 5))
-        print('Weighted sum', single_cf.calculate_weighted_sum('U1', 1))
+    def test_compare_against_dummy_recommender(self):
+        clusterer = SingleCF()
+        clusterer.load(reviews_matrix_5)
+        _, errors = four_city_evaluator.predict_rating_list(clusterer, reviews_matrix_5)
+        single_mean_absolute_error = MeanAbsoluteError.compute_list(errors)
+        single_root_mean_square_error = RootMeanSquareError.compute_list(errors)
+        print('Mean Absolute error:', single_mean_absolute_error)
+        print('Root mean square error:',  single_root_mean_square_error)
 
+        clusterer = DummyPredictor(6.0)
+        _, errors = four_city_evaluator.predict_rating_list(clusterer, reviews_matrix_5)
+        dummy_mean_absolute_error = MeanAbsoluteError.compute_list(errors)
+        dummy_root_mean_square_error = RootMeanSquareError.compute_list(errors)
+        print('Mean Absolute error:', dummy_mean_absolute_error)
+        print('Root mean square error:',  dummy_root_mean_square_error)
+
+        self.assertLess(single_mean_absolute_error, dummy_mean_absolute_error)
