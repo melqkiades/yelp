@@ -1,9 +1,11 @@
 from unittest import TestCase
+
 from evaluation.mean_absolute_error import MeanAbsoluteError
 from evaluation.root_mean_square_error import RootMeanSquareError
 from tripadvisor.fourcity import four_city_evaluator
-from tripadvisor.fourcity.dummy_predictor import DummyPredictor
+from recommenders.dummy_recommender import DummyRecommender
 from tripadvisor.fourcity.single_cf import SingleCF
+
 
 __author__ = 'fpena'
 
@@ -103,7 +105,7 @@ class TestSingleCF(TestCase):
         print('Mean Absolute error:', single_mean_absolute_error)
         print('Root mean square error:',  single_root_mean_square_error)
 
-        clusterer = DummyPredictor(6.0)
+        clusterer = DummyRecommender(6.0)
         _, errors = four_city_evaluator.predict_rating_list(clusterer, reviews_matrix_5)
         dummy_mean_absolute_error = MeanAbsoluteError.compute_list(errors)
         dummy_root_mean_square_error = RootMeanSquareError.compute_list(errors)

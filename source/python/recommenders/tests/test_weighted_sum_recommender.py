@@ -1,9 +1,11 @@
 from unittest import TestCase
+
 from evaluation.mean_absolute_error import MeanAbsoluteError
 from evaluation.root_mean_square_error import RootMeanSquareError
 from recommenders.weighted_sum_recommender import WeightedSumRecommender
 from tripadvisor.fourcity import four_city_evaluator
-from tripadvisor.fourcity.dummy_predictor import DummyPredictor
+from recommenders.dummy_recommender import DummyRecommender
+
 
 __author__ = 'fpena'
 
@@ -93,7 +95,7 @@ class TestWeightedSumRecommender(TestCase):
         print('Mean Absolute error:', wsr_mean_absolute_error)
         print('Root mean square error:',  wsr_root_mean_square_error)
 
-        recommender = DummyPredictor(6.0)
+        recommender = DummyRecommender(6.0)
         _, errors = four_city_evaluator.predict_rating_list(recommender, reviews_matrix_5)
         dummy_mean_absolute_error = MeanAbsoluteError.compute_list(errors)
         dummy_root_mean_square_error = RootMeanSquareError.compute_list(errors)
