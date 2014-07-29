@@ -3,7 +3,7 @@ from tripadvisor.fourcity import fourcity_clusterer
 __author__ = 'fpena'
 
 
-def build_user_similarities_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):
+def build_similarity_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):
     """
     Builds a matrix that contains the similarity between every pair of users
     in the dataset of this recommender system. This is particularly useful

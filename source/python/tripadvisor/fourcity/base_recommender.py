@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from tripadvisor.fourcity import extractor
 from tripadvisor.fourcity import similarity_matrix_builder
-from tripadvisor.fourcity.reviews_holder import ReviewsHolder
 
 __author__ = 'fpena'
 
@@ -25,7 +24,7 @@ class BaseRecommender(object):
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         if self._similarity_metric is not None:
             self.user_similarity_matrix =\
-                similarity_matrix_builder.build_user_similarities_matrix(
+                similarity_matrix_builder.build_similarity_matrix(
                     self.user_ids, self.user_dictionary, self._similarity_metric)
 
     def clear(self):
