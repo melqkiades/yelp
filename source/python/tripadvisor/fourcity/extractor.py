@@ -4,7 +4,6 @@ import numpy
 from pandas import DataFrame
 
 from etl import ETLUtils
-from tripadvisor.fourcity import preflib_extractor
 from tripadvisor.fourcity.user import User
 
 
