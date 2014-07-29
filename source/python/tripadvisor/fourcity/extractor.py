@@ -384,12 +384,36 @@ def initialize_users(reviews, significant_criteria_ranges=None):
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
         user.average_overall_rating = get_user_average_overall_rating(
             user_reviews, user_id, apply_filter=False)
+        user.item_ratings = get_user_item_ratings(user_reviews)
+        user_dictionary[user_id] = user
+
+    return user_dictionary
+
+
+def initialize_cluster_users(reviews, significant_criteria_ranges=None):
+    """
+    Builds a dictionary containing all the users in the reviews. Each user
+    contains information about its average overall rating, the list of reviews
+    that user has made, and the cluster the user belongs to
+
+    :param reviews: the list of reviews
+    :return: a dictionary with the users initialized, the keys of the
+    dictionaries are the users' ID
+    """
+    user_ids = get_groupby_list(reviews, 'user_id')
+    user_dictionary = {}
+
+    for user_id in user_ids:
+        user = User(user_id)
+        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user.average_overall_rating = get_user_average_overall_rating(
+            user_reviews, user_id, apply_filter=False)
         user.criteria_weights = get_criteria_weights(
             user_reviews, user_id, apply_filter=False)
         _, user.cluster = get_significant_criteria(
             user.criteria_weights, significant_criteria_ranges)
-        user_dictionary[user_id] = user
         user.item_ratings = get_user_item_ratings(user_reviews)
+        user_dictionary[user_id] = user
 
     print('Total users: %i' % len(user_ids))
 
