@@ -47,23 +47,7 @@ def calculate_users_similarity(user_dictionary, user_id1, user_id2, similarity_m
     user_weights1 = user_dictionary[user_id1].criteria_weights
     user_weights2 = user_dictionary[user_id2].criteria_weights
 
-    return calculate_similarity(user_weights1, user_weights2, similarity_metric)
-
-
-def calculate_similarity(vector1, vector2, similarity_metric='euclidean'):
-
-    if similarity_metric == 'euclidean':
-        return similarity.euclidean(vector1, vector2)
-    if similarity_metric == 'cosine':
-        return similarity.cosine(vector1, vector2)
-    if similarity_metric == 'pearson':
-        similarity_value = numpy.corrcoef(vector1, vector2)[0, 1]
-        if similarity_value <= 0 or math.isnan(similarity_value):
-            return None
-        return similarity_value
-
-    msg = 'Unrecognized similarity metric \'' + similarity_metric + '\''
-    raise ValueError(msg)
+    return similarity.calculate_similarity(user_weights1, user_weights2, similarity_metric)
 
 
 def build_user_similarities_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):

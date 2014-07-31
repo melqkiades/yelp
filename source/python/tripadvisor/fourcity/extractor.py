@@ -414,7 +414,7 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
         user.item_ratings = get_user_item_ratings(user_reviews)
         user_dictionary[user_id] = user
 
-    print('Total users: %i' % len(user_ids))
+    # print('Total users: %i' % len(user_ids))
 
     return user_dictionary
 

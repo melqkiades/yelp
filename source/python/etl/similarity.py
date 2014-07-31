@@ -1,28 +1,29 @@
+import math
+import numpy
 from scipy import spatial
 
 __author__ = 'fpena'
 
 
 def cosine(vector1, vector2):
-
-    numerator = 0.
-    vector1_denominator = 0.
-    vector2_denominator = 0.
-
-    for value1, value2 in zip(vector1, vector2):
-        numerator += value1 * value2
-        vector1_denominator += value1 ** 2
-        vector2_denominator += value2 ** 2
-
-    denominator = (vector1_denominator ** 0.5) * (vector2_denominator ** 0.5)
-
-    if denominator == 0:
-        return None
-
-    similarity = numerator / denominator
-
-    return similarity
+    return 1 - spatial.distance.cosine(vector1, vector2)
 
 
 def euclidean(vector1, vector2):
     return 1. / (1 + spatial.distance.euclidean(vector1, vector2))
+
+
+def calculate_similarity(vector1, vector2, similarity_metric='euclidean'):
+
+    if similarity_metric == 'euclidean':
+        return euclidean(vector1, vector2)
+    if similarity_metric == 'cosine':
+        return cosine(vector1, vector2)
+    if similarity_metric == 'pearson':
+        similarity_value = numpy.corrcoef(vector1, vector2)[0, 1]
+        if similarity_value <= 0 or math.isnan(similarity_value):
+            return None
+        return similarity_value
+
+    msg = 'Unrecognized similarity metric \'' + similarity_metric + '\''
+    raise ValueError(msg)
