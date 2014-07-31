@@ -1,4 +1,4 @@
-from tripadvisor.fourcity import fourcity_clusterer
+from etl import similarity
 
 __author__ = 'fpena'
 
@@ -39,7 +39,7 @@ def calculate_similarity(user_dictionary, user1, user2, similarity_metric):
     user1_ratings = extract_user_ratings(user_dictionary, user1, common_items)
     user2_ratings = extract_user_ratings(user_dictionary, user2, common_items)
 
-    similarity_value = fourcity_clusterer.calculate_similarity(
+    similarity_value = similarity.calculate_similarity(
         user1_ratings, user2_ratings, similarity_metric)
 
     return similarity_value
