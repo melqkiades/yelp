@@ -5,8 +5,8 @@ __author__ = 'fpena'
 
 class AdjustedWeightedSumRecommender(BaseRecommender):
     def __init__(self, similarity_metric='cosine'):
-        super(AdjustedWeightedSumRecommender, self).__init__('SingleCF',
-                                                             'cosine')
+        super(AdjustedWeightedSumRecommender, self).__init__(
+            'AdjustedWeightedSumRecommender', 'cosine')
         self.similarity_metric = similarity_metric
 
     def predict_rating(self, user_id, item_id):
