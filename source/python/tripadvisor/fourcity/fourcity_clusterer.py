@@ -1,6 +1,6 @@
 import math
 import numpy
-from etl import similarity
+from etl import similarity_calculator
 from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
@@ -47,7 +47,7 @@ def calculate_users_similarity(user_dictionary, user_id1, user_id2, similarity_m
     user_weights1 = user_dictionary[user_id1].criteria_weights
     user_weights2 = user_dictionary[user_id2].criteria_weights
 
-    return similarity.calculate_similarity(user_weights1, user_weights2, similarity_metric)
+    return similarity_calculator.calculate_similarity(user_weights1, user_weights2, similarity_metric)
 
 
 def build_user_similarities_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):
