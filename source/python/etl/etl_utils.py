@@ -25,6 +25,13 @@ class ETLUtils:
         return records
 
     @staticmethod
+    def save_json_file(file_path, records):
+        with open(file_path, 'w') as outfile:
+            for record in records:
+                json.dump(record, outfile)
+                outfile.write('\n')
+
+    @staticmethod
     def drop_fields(fields, dictionary_list):
         """
         Removes the specified fields from every dictionary in the dictionary
@@ -233,3 +240,5 @@ class ETLUtils:
 #     {'Algorithm': 'Single_CF', 'Machine': 'PC'}
 # ]
 # ETLUtils.save_csv_file('/Users/fpena/tmp/test.csv', records, headers, delimiter='|')
+
+
