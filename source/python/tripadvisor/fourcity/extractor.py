@@ -44,9 +44,15 @@ def extract_fields(reviews):
         review['overall_rating'] = review['ratings']['overall']
 
         ratings = review['ratings']
+        multi_ratings = []
         for criterion in ratings_criteria:
             if criterion in ratings:
-                review[criterion + '_rating'] = review['ratings'][criterion]
+                # review[criterion + '_rating'] = review['ratings'][criterion]
+                multi_ratings.append(review['ratings'][criterion])
+            else:
+                multi_ratings.append(-1)
+
+        review['multi_ratings'] = multi_ratings
 
 
 def remove_users_with_low_reviews(reviews, min_reviews):
@@ -88,11 +94,11 @@ def remove_missing_ratings_reviews(reviews):
     missing ratings
     """
     filtered_reviews = [review for review in reviews if
-                        verify_rating_criteria(review)]
+                        verify_rating_criteria2(review)]
     return filtered_reviews
 
 
-def verify_rating_criteria(review):
+def verify_rating_criteria2(review):
     """
     Verifies if the given review contains all the ratings criteria required.
     Returns True in case the review contains all the necessary keys. Returns
@@ -107,17 +113,8 @@ def verify_rating_criteria(review):
     :return: True in case all the desired ratings criteria are present in the
     review, False otherwise
     """
-    expected_criteria = [
-        'cleanliness_rating',
-        'location_rating',
-        'rooms_rating',
-        'service_rating',
-        # 'sleep_quality_rating',
-        'value_rating'
-    ]
-    expected_criteria = set(expected_criteria)
-    actual_criteria = set(review)
-    return expected_criteria.issubset(actual_criteria)
+
+    return -1 not in review['multi_ratings']
 
 
 def clean_reviews(reviews):
@@ -163,7 +160,7 @@ def pre_process_reviews():
     return reviews
 
 
-def create_ratings_matrix(reviews):
+def create_ratings_matrix2(reviews):
     """
     Returns (ratings_matrix, overall_ratings_list), where ratings_matrix is a
     list of lists containing the values for all the rating criteria (except
@@ -182,37 +179,16 @@ def create_ratings_matrix(reviews):
     ratings_matrix = []
     overall_ratings_list = []
 
-    missing_count = 0
-
     for review in reviews:
         # ratings = review['ratings']
-        ratings_list = []
-
-        rating_criteria = [
-            'cleanliness_rating',
-            'location_rating',
-            'rooms_rating',
-            'service_rating',
-            # 'sleep_quality_rating',
-            'value_rating'
-        ]
-        contains_missing_rating = 0
-
-        for criterion in rating_criteria:
-            if criterion in review:
-                ratings_list.append(review[criterion])
-
-        missing_count += contains_missing_rating
+        ratings_list = review['multi_ratings']
 
         # If there are not missing ratings, we add the ratings to the matrix
         # In other words, we are ignoring reviews with missing ratings
-        if not contains_missing_rating:
+        if -1 not in ratings_list:
             ratings_matrix.append(ratings_list)
             overall_ratings_list.append(review['overall_rating'])
-            review['ratings_list'] = ratings_list
-            # review['overall_rating'] = ratings['overall']
 
-    # print(missing_count)
     return ratings_matrix, overall_ratings_list
 
 
@@ -318,7 +294,7 @@ def get_criteria_weights(reviews, user_id, apply_filter=True):
     else:
         user_reviews = reviews
 
-    ratings_matrix, overall_ratings_list = create_ratings_matrix(user_reviews)
+    ratings_matrix, overall_ratings_list = create_ratings_matrix2(user_reviews)
 
     overall_ratings_matrix = numpy.vstack(
         [overall_ratings_list, numpy.ones(len(overall_ratings_list))]).T
@@ -496,4 +472,3 @@ def main():
 # main()
 # end_time = time.time() - start_time
 # print("--- %s seconds ---" % end_time)
-

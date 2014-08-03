@@ -3,7 +3,15 @@ import time
 from etl import ETLUtils
 from evaluation.mean_absolute_error import MeanAbsoluteError
 from evaluation.root_mean_square_error import RootMeanSquareError
+from recommenders.adjusted_weighted_sum_recommender import \
+    AdjustedWeightedSumRecommender
+from recommenders.average_recommender import AverageRecommender
 from recommenders.multicriteria.delta_cf_recommender import DeltaCFRecommender
+from recommenders.multicriteria.delta_recommender import DeltaRecommender
+from recommenders.multicriteria.overall_cf_recommender import \
+    OverallCFRecommender
+from recommenders.multicriteria.overall_recommender import OverallRecommender
+from recommenders.weighted_sum_recommender import WeightedSumRecommender
 from tripadvisor.fourcity import extractor
 from tripadvisor.fourcity.clu_cf_euc import CluCFEuc
 from recommenders.dummy_recommender import DummyRecommender
@@ -207,23 +215,38 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         'Machine'
     ]
     similarity_metrics = ['euclidean', 'cosine', 'pearson']
-
+    ranges = [
+        # [(-1.001, -0.999), (0.999, 1.001)],
+        # [(-1.01, -0.99), (0.99, 1.01)],
+        # [(-1.05, -0.95), (0.95, 1.05)],
+        # [(-1.1, -0.9), (0.9, 1.1)],
+        # [(-1.2, -0.8), (0.8, 1.2)],
+        # [(-1.3, -0.7), (0.7, 1.3)],
+        # [(-1.5, -0.5), (0.5, 1.5)],
+        # [(-1.7, -0.3), (0.3, 1.7)],
+        [(-1.9, -0.1), (0.1, 1.9)],
+        # None
+    ]
     results = []
 
     for similarity_metric in similarity_metrics:
 
-        recommender.similarity_metric = similarity_metric
-        num_folds = 5
-        result = perform_cross_validation(reviews, recommender, num_folds)
+        for cluster_range in ranges:
 
-        result['Algorithm'] = recommender.name
-        result['Similarity'] = recommender.similarity_metric
-        result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
-        result['Dataset'] = 'Four City'
-        result['Machine'] = 'Mac'
-        results.append(result)
+            recommender._similarity_metric = similarity_metric
+            recommender._significant_criteria_ranges = cluster_range
+            num_folds = 5
+            result = perform_cross_validation(reviews, recommender, num_folds)
 
-    file_name = '/Users/fpena/tmp/rs-test/test6-' + recommender.name + '.csv'
+            result['Algorithm'] = recommender.name
+            result['Multi-cluster'] = recommender._significant_criteria_ranges
+            result['Similarity'] = recommender._similarity_metric
+            result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
+            result['Dataset'] = 'Four City'
+            result['Machine'] = 'Mac'
+            results.append(result)
+
+    file_name = '/Users/fpena/tmp/rs-test/test8-' + recommender.name + '.csv'
     ETLUtils.save_csv_file(file_name, results, headers)
 
 
@@ -237,8 +260,10 @@ def evaluate_recommenders(reviews, recommender_list):
 
 start_time = time.time()
 # main()
-# reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
+# file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
+# reviews = extractor.load_json_file(file_path)
 # reviews = extractor.pre_process_reviews()
+# ETLUtils.save_json_file(file_path, reviews)
 # print(reviews[0])
 # print(reviews[1])
 # print(reviews[2])
@@ -251,16 +276,19 @@ start_time = time.time()
 
 my_recommender_list = [
     # SingleCF(),
+    # AdjustedWeightedSumRecommender(),
+    # WeightedSumRecommender(),
     # DeltaRecommender(),
     DeltaCFRecommender(),
     # OverallRecommender(),
     # OverallCFRecommender(),
+    # AverageRecommender(),
     # DummyRecommender(4.0)
 ]
 
 
 # my_reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-# evaluate_recommenders(my_reviews, my_recommender_list)
+# evaluate_recommenders(reviews, my_recommender_list)
 # recommender = SingleCF('pearson')
 # evaluate_recommender_similarity_metrics(recommender)
 # recommender = OverallCFRecommender('euclidean')
