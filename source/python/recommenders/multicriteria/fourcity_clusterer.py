@@ -1,5 +1,3 @@
-import math
-import numpy
 from etl import similarity_calculator
 from tripadvisor.fourcity import extractor
 
@@ -50,7 +48,7 @@ def calculate_users_similarity(user_dictionary, user_id1, user_id2, similarity_m
     return similarity_calculator.calculate_similarity(user_weights1, user_weights2, similarity_metric)
 
 
-def build_user_similarities_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):
+def build_similarity_matrix(user_ids, user_dictionary, similarity_metric='euclidean'):
     """
     Builds a matrix that contains the similarity between every pair of users
     in the dataset of this recommender system. This is particularly useful

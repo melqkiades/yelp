@@ -1,6 +1,5 @@
-from etl import ETLUtils
+from recommenders.multicriteria import fourcity_clusterer
 from tripadvisor.fourcity import extractor
-from tripadvisor.fourcity import fourcity_clusterer
 
 __author__ = 'fpena'
 
