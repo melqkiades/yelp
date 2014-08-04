@@ -1,6 +1,6 @@
 from abc import ABCMeta
 
-from recommenders.multicriteria import fourcity_clusterer
+from recommenders.multicriteria import weights_similarity_matrix_builder
 from tripadvisor.fourcity import extractor
 from recommenders.base_recommender import BaseRecommender
 
@@ -23,11 +23,11 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
         super(MultiCriteriaBaseRecommender, self).load(reviews)
         self.user_dictionary =\
             extractor.initialize_cluster_users(self.reviews, self._significant_criteria_ranges)
-        self.user_cluster_dictionary = fourcity_clusterer.build_user_clusters(
+        self.user_cluster_dictionary = weights_similarity_matrix_builder.build_user_clusters(
             self.reviews, self._significant_criteria_ranges)
         if self._similarity_metric is not None:
             self.user_similarity_matrix =\
-                fourcity_clusterer.build_similarity_matrix(
+                weights_similarity_matrix_builder.build_similarity_matrix(
                     self.user_ids, self.user_dictionary, self._similarity_metric)
 
     def clear(self):

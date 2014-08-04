@@ -13,7 +13,6 @@ from recommenders.multicriteria.overall_cf_recommender import \
 from recommenders.multicriteria.overall_recommender import OverallRecommender
 from recommenders.weighted_sum_recommender import WeightedSumRecommender
 from tripadvisor.fourcity import extractor
-from tripadvisor.fourcity.clu_cf_euc import CluCFEuc
 from recommenders.dummy_recommender import DummyRecommender
 
 
@@ -54,110 +53,6 @@ def predict_rating_list(predictor, reviews):
         errors.append(error)
 
     return predicted_ratings, errors
-
-
-def perform_clu_cf_euc_top_n_validation():
-    reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-    clusterer = CluCFEuc(reviews)
-    users = extractor.get_groupby_list(reviews, 'user_id')
-    clusterer.calculate_recall(users, 10)
-
-
-def perform_clu_overall_cross_validation():
-
-    headers = [
-        'Algorithm',
-        'Multi-cluster',
-        'Similarity',
-        'Distance metric',
-        'Dataset',
-        'MAE',
-        'RMSE',
-        'Execution time',
-        'Cross validation',
-        'Machine'
-    ]
-
-    # reviews = extractor.pre_process_reviews()
-    reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-    num_iterations = 5
-    split = 1 - (1/float(num_iterations))
-    ranges = [
-        # [(-1.001, -0.999), (0.999, 1.001)],
-        # [(-1.01, -0.99), (0.99, 1.01)],
-        # [(-1.05, -0.95), (0.95, 1.05)],
-        # [(-1.1, -0.9), (0.9, 1.1)],
-        # [(-1.2, -0.8), (0.8, 1.2)],
-        # [(-1.3, -0.7), (0.7, 1.3)],
-        # [(-1.5, -0.5), (0.5, 1.5)],
-        # [(-1.7, -0.3), (0.3, 1.7)],
-        # [(-1.9, -0.1), (0.1, 1.9)],
-        None
-    ]
-    results = []
-
-    for my_range in ranges:
-
-        start_time = time.time()
-        total_mean_absolute_error = 0.
-        total_mean_square_error = 0.
-        num_cycles = 0
-        for i in xrange(0, num_iterations):
-            start = float(i) / num_iterations
-            train, test = ETLUtils.split_train_test(reviews, split=split, shuffle_data=False, start=start)
-            # clusterer = CluOverall(train, my_range, True)
-            clusterer = CluCFEuc(train, True, my_range)
-            # clusterer = DummyPredictor(train)
-            # clusterer = SingleCF(train)
-            _, errors = predict_rating_list(clusterer, test)
-            mean_absolute_error = MeanAbsoluteError.compute_list(errors)
-            # print('Mean Absolute error:', mean_absolute_error)
-            root_mean_square_error = RootMeanSquareError.compute_list(errors)
-            # print('Root mean square error:',  root_mean_square_error)
-
-            if mean_absolute_error is not None:
-                total_mean_absolute_error += mean_absolute_error
-                total_mean_square_error += root_mean_square_error
-                num_cycles += 1
-
-        print(my_range)
-        final_mean_absolute_error = total_mean_absolute_error / num_cycles
-        final_root_squared_error = total_mean_square_error / num_cycles
-        print('Final mean absolute error: %f' % final_mean_absolute_error)
-        print('Final root mean square error: %f' % final_root_squared_error)
-
-        execution_time = time.time() - start_time
-        print("--- %s seconds ---" % execution_time)
-
-        result = {}
-        result['Algorithm'] = 'Clu_CF',
-        result['Multi-cluster'] = my_range,
-        result['Similarity'] = 'Pearson',
-        # results['Distance metric'] = ,
-        result['Dataset'] = 'Four City',
-        result['MAE'] = final_mean_absolute_error,
-        result['RMSE'] = final_root_squared_error,
-        result['Execution time'] = execution_time,
-        result['Cross validation'] = 'Folds=' + str(num_iterations) + ', Iterations = ' + str(num_iterations),
-        result['Machine'] = 'Mac'
-
-        results.append(result)
-
-    ETLUtils.save_csv_file('/Users/fpena/tmp/test2.csv', results, headers)
-
-
-def perform_clu_overall_whole_dataset_evaluation():
-
-    # reviews = extractor.pre_process_reviews()
-    reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-
-    clusterer = CluCFEuc(reviews)
-    # clusterer = DummyPredictor(reviews)
-    _, errors = predict_rating_list(clusterer, reviews)
-    mean_absolute_error = MeanAbsoluteError.compute_list(errors)
-    print('Mean Absolute error: %f' % mean_absolute_error)
-    root_mean_square_error = RootMeanSquareError.compute_list(errors)
-    print('Root mean square error: %f' % root_mean_square_error)
 
 
 def perform_cross_validation(reviews, recommender, num_folds):
@@ -260,8 +155,8 @@ def evaluate_recommenders(reviews, recommender_list):
 
 start_time = time.time()
 # main()
-# file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
-# reviews = extractor.load_json_file(file_path)
+file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
+reviews = extractor.load_json_file(file_path)
 # reviews = extractor.pre_process_reviews()
 # ETLUtils.save_json_file(file_path, reviews)
 # print(reviews[0])
@@ -288,7 +183,7 @@ my_recommender_list = [
 
 
 # my_reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-# evaluate_recommenders(reviews, my_recommender_list)
+evaluate_recommenders(reviews, my_recommender_list)
 # recommender = SingleCF('pearson')
 # evaluate_recommender_similarity_metrics(recommender)
 # recommender = OverallCFRecommender('euclidean')

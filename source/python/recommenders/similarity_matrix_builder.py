@@ -16,7 +16,7 @@ def build_similarity_matrix(user_ids, user_dictionary, similarity_metric='euclid
         user_similarity_matrix[user1] = {}
         for user2 in user_ids:
             user_similarity_matrix[user1][user2] =\
-                calculate_similarity(user_dictionary, user1, user2, similarity_metric)
+                calculate_users_similarity(user_dictionary, user1, user2, similarity_metric)
 
     return user_similarity_matrix
 
@@ -30,7 +30,7 @@ def get_common_items(user_dictionary, user1, user2):
     return common_items
 
 
-def calculate_similarity(user_dictionary, user1, user2, similarity_metric):
+def calculate_users_similarity(user_dictionary, user1, user2, similarity_metric):
     common_items = get_common_items(user_dictionary, user1, user2)
 
     if not common_items:
