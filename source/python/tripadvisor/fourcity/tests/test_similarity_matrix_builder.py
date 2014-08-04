@@ -1,6 +1,8 @@
 from unittest import TestCase
+
+from recommenders import similarity_matrix_builder
 from tripadvisor.fourcity import extractor
-from tripadvisor.fourcity import similarity_matrix_builder
+
 
 __author__ = 'fpena'
 
