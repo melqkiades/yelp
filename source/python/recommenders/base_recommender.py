@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from recommenders import single_similarity_matrix_builder
-from recommenders.single_similarity_matrix_builder import \
+from recommenders.similarity.single_similarity_matrix_builder import \
     SingleSimilarityMatrixBuilder
 from tripadvisor.fourcity import extractor
 from utils import dictionary_utils

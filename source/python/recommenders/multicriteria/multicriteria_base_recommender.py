@@ -1,11 +1,9 @@
 from abc import ABCMeta
 
-from recommenders.multicriteria import weights_similarity_matrix_builder
-from recommenders.multicriteria.weights_similarity_matrix_builder import \
+from recommenders.similarity.weights_similarity_matrix_builder import \
     WeightsSimilarityMatrixBuilder
 from tripadvisor.fourcity import extractor
 from recommenders.base_recommender import BaseRecommender
-from utils import dictionary_utils
 
 
 __author__ = 'fpena'
