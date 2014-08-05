@@ -1,34 +1,6 @@
 from etl import similarity_calculator
-from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
-
-
-def build_user_clusters(reviews, significant_criteria_ranges=None):
-    """
-    Builds a series of clusters for users according to their significant
-    criteria. Users that have exactly the same significant criteria will belong
-    to the same cluster.
-
-    :param reviews: the list of reviews
-    :return: a dictionary where all the keys are the cluster names and the
-    values for those keys are list of users that belong to that cluster
-    """
-
-    user_list = extractor.get_groupby_list(reviews, 'user_id')
-    user_cluster_dictionary = {}
-
-    for user in user_list:
-        weights = extractor.get_criteria_weights(reviews, user)
-        significant_criteria, cluster_name =\
-            extractor.get_significant_criteria(weights, significant_criteria_ranges)
-
-        if cluster_name in user_cluster_dictionary:
-            user_cluster_dictionary[cluster_name].append(user)
-        else:
-            user_cluster_dictionary[cluster_name] = [user]
-
-    return user_cluster_dictionary
 
 
 def calculate_users_similarity(user_dictionary, user_id1, user_id2, similarity_metric='euclidean'):
