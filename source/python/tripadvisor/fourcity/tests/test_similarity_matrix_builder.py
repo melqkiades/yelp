@@ -1,6 +1,8 @@
 from unittest import TestCase
 
-from recommenders import similarity_matrix_builder
+from recommenders import single_similarity_matrix_builder
+from recommenders.single_similarity_matrix_builder import \
+    SingleSimilarityMatrixBuilder
 from tripadvisor.fourcity import extractor
 
 
@@ -67,22 +69,25 @@ class TestSimilarityMatrixBuilder(TestCase):
         user_dictionary =\
             extractor.initialize_users(reviews_matrix_5, None)
         user_ids = extractor.get_groupby_list(reviews_matrix_5, 'user_id')
+        similarity_matrix_builder = SingleSimilarityMatrixBuilder('euclidean')
         self.assertEqual(euclidean_matrix, similarity_matrix_builder.build_similarity_matrix(
-            user_ids, user_dictionary, 'euclidean'))
+            user_dictionary, user_ids))
 
     def test_build_similarity_matrix_cosine(self):
 
         user_dictionary =\
             extractor.initialize_users(reviews_matrix_5, None)
         user_ids = extractor.get_groupby_list(reviews_matrix_5, 'user_id')
+        similarity_matrix_builder = SingleSimilarityMatrixBuilder('cosine')
         self.assertEqual(cosine_matrix, similarity_matrix_builder.build_similarity_matrix(
-            user_ids, user_dictionary, 'cosine'))
+            user_dictionary, user_ids))
 
     def test_build_similarity_matrix_pearson(self):
 
         user_dictionary =\
             extractor.initialize_users(reviews_matrix_5, None)
         user_ids = extractor.get_groupby_list(reviews_matrix_5, 'user_id')
+        similarity_matrix_builder = SingleSimilarityMatrixBuilder('pearson')
         self.assertEqual(pearson_matrix, similarity_matrix_builder.build_similarity_matrix(
-            user_ids, user_dictionary, 'pearson'))
+            user_dictionary, user_ids))
 

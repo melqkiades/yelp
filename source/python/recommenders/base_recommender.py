@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod
 
-from recommenders import similarity_matrix_builder
+from recommenders import single_similarity_matrix_builder
+from recommenders.single_similarity_matrix_builder import \
+    SingleSimilarityMatrixBuilder
 from tripadvisor.fourcity import extractor
 from utils import dictionary_utils
 
@@ -16,6 +18,8 @@ class BaseRecommender(object):
         self._name = name
         self._similarity_metric = similarity_metric
         self._num_neighbors = num_neighbors
+        self._similarity_matrix_builder =\
+            SingleSimilarityMatrixBuilder(self._similarity_metric)
         self.reviews = None
         self.user_ids = None
         self.user_dictionary = None
@@ -28,8 +32,8 @@ class BaseRecommender(object):
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         if self._similarity_metric is not None:
             self.user_similarity_matrix =\
-                similarity_matrix_builder.build_similarity_matrix(
-                    self.user_ids, self.user_dictionary, self._similarity_metric)
+                self._similarity_matrix_builder.build_similarity_matrix(
+                    self.user_dictionary, self.user_ids)
 
     def clear(self):
         self.reviews = None
