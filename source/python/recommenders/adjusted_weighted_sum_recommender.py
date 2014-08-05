@@ -4,19 +4,18 @@ __author__ = 'fpena'
 
 
 class AdjustedWeightedSumRecommender(BaseRecommender):
-    def __init__(self, similarity_metric='cosine'):
+    def __init__(self, similarity_metric='cosine', num_neighbors=None):
         super(AdjustedWeightedSumRecommender, self).__init__(
-            'AdjustedWeightedSumRecommender', 'cosine')
-        self.similarity_metric = similarity_metric
+            'AdjustedWeightedSumRecommender', similarity_metric, num_neighbors)
 
     def predict_rating(self, user_id, item_id):
 
-        other_users = list(self.user_ids)
-
-        if user_id not in other_users:
+        if user_id not in self.user_ids:
             return None
 
-        other_users.remove(user_id)
+        # other_users = list(self.user_ids)
+        other_users = self.get_most_similar_users(user_id)
+
         weighted_sum = 0.
         z_denominator = 0.
 
@@ -42,7 +41,3 @@ class AdjustedWeightedSumRecommender(BaseRecommender):
         predicted_rating = user_average_rating + weighted_sum / z_denominator
 
         return predicted_rating
-
-    @property
-    def name(self):
-        return 'Single_CF'
