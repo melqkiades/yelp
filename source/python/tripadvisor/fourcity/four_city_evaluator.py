@@ -128,20 +128,20 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
 
         for cluster_range in ranges:
 
-            recommender._similarity_metric = similarity_metric
+            recommender._similarity_matrix_builder._similarity_metric = similarity_metric
             recommender._significant_criteria_ranges = cluster_range
             num_folds = 5
             result = perform_cross_validation(reviews, recommender, num_folds)
 
             result['Algorithm'] = recommender.name
             result['Multi-cluster'] = recommender._significant_criteria_ranges
-            result['Similarity'] = recommender._similarity_metric
+            result['Similarity'] = recommender._similarity_matrix_builder._similarity_metric
             result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
             result['Dataset'] = 'Four City'
             result['Machine'] = 'Mac'
             results.append(result)
 
-    file_name = '/Users/fpena/tmp/rs-test/test8-' + recommender.name + '.csv'
+    file_name = '/Users/fpena/tmp/rs-test/test9-' + recommender.name + '.csv'
     ETLUtils.save_csv_file(file_name, results, headers)
 
 
@@ -171,8 +171,8 @@ reviews = extractor.load_json_file(file_path)
 
 my_recommender_list = [
     # SingleCF(),
-    # AdjustedWeightedSumRecommender(),
-    # WeightedSumRecommender(),
+    # AdjustedWeightedSumRecommender(num_neighbors=4),
+    # WeightedSumRecommender(num_neighbors=None),
     # DeltaRecommender(),
     DeltaCFRecommender(),
     # OverallRecommender(),

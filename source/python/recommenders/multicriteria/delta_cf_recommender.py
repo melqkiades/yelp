@@ -52,11 +52,3 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
             user_average_rating + similarities_ratings_sum / similarities_sum
 
         return predicted_rating
-
-    @property
-    def similarity_metric(self):
-        return self._similarity_metric
-
-    @similarity_metric.setter
-    def similarity_metric(self, similarity_metric):
-        self._similarity_metric = similarity_metric
