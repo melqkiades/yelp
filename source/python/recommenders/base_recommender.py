@@ -27,7 +27,7 @@ class BaseRecommender(object):
     def load(self, reviews):
         self.reviews = reviews
         self.user_dictionary =\
-            extractor.initialize_users(self.reviews, None)
+            extractor.initialize_users(self.reviews)
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         if self._similarity_metric is not None:
             self.user_similarity_matrix =\

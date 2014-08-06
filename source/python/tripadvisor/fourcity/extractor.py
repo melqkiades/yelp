@@ -1,6 +1,8 @@
 import json
+import itertools
 
 import numpy
+import operator
 from pandas import DataFrame
 
 from etl import ETLUtils
@@ -341,7 +343,7 @@ def get_significant_criteria(criteria_weights, ranges=None):
     return significant_criteria, cluster_name
 
 
-def initialize_users(reviews, significant_criteria_ranges=None):
+def initialize_users(reviews):
     """
     Builds a dictionary containing all the users in the reviews. Each user
     contains information about its average overall rating, the list of reviews
@@ -388,6 +390,7 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
         _, user.cluster = get_significant_criteria(
             user.criteria_weights, significant_criteria_ranges)
         user.item_ratings = get_user_item_ratings(user_reviews)
+        user.item_multi_ratings = get_user_item_multi_ratings(user_reviews)
         user_dictionary[user_id] = user
 
     # print('Total users: %i' % len(user_ids))
@@ -395,7 +398,12 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
     return user_dictionary
 
 
-def get_user_item_ratings(user_reviews):
+def get_user_item_ratings(reviews, user_id=None, apply_filter=False):
+
+    if apply_filter:
+        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+    else:
+        user_reviews = reviews
 
     data_frame = DataFrame(user_reviews)
     column = 'offering_id'
@@ -408,6 +416,34 @@ def get_user_item_ratings(user_reviews):
         items_ratings[item] = mean
 
     return items_ratings
+
+
+def get_user_item_multi_ratings(reviews, user_id=None, apply_filter=False):
+
+    if apply_filter:
+        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+    else:
+        user_reviews = reviews
+
+    user_multi_item_ratings = {}
+
+    for item_id, item_reviews_it in itertools.groupby(
+            user_reviews, operator.itemgetter('offering_id')):
+
+        item_reviews = list(item_reviews_it)
+        averaged_multi_ratings = [0] * len(item_reviews[0]['multi_ratings'])
+        for review in item_reviews:
+
+            averaged_rating = 0.
+            rating_index = 0
+            for rating in review['multi_ratings']:
+                averaged_multi_ratings[rating_index] += rating / len(item_reviews)
+                averaged_rating += rating
+                rating_index += 1
+
+        user_multi_item_ratings[item_id] = averaged_multi_ratings
+
+    return user_multi_item_ratings
 
 
 def get_five_star_hotels_from_user(user_reviews, min_value):
