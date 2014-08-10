@@ -37,6 +37,16 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
         super(MultiCriteriaBaseRecommender, self).clear()
         self.user_cluster_dictionary = None
 
+    def get_most_similar_users(self, user_id):
+
+        cluster_name = self.user_dictionary[user_id].cluster
+
+        # We remove the given user from the cluster in order to avoid bias
+        most_similar_users = list(self.user_cluster_dictionary[cluster_name])
+        most_similar_users.remove(user_id)
+
+        return most_similar_users
+
     @staticmethod
     def build_user_clusters(reviews, significant_criteria_ranges=None):
         """

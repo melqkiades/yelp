@@ -50,7 +50,6 @@ class BaseRecommender(object):
 
         most_similar_users = dictionary_utils.sort_dictionary_keys(
             similarity_matrix)[:self._num_neighbors]
-        # print('user ID', user_id, 'most similar user', my_dict[0], 'similarity', similarity_matrix[my_dict[0]])
 
         return most_similar_users
 

@@ -15,30 +15,26 @@ class OverallCFRecommender(MultiCriteriaBaseRecommender):
 
     def predict_rating(self, user_id, item_id):
 
-        if user_id not in self.user_dictionary:
+        if user_id not in self.user_ids:
             return None
 
-        cluster_name = self.user_dictionary[user_id].cluster
+        other_users = self.get_most_similar_users(user_id)
 
-        # We remove the given user from the cluster in order to avoid bias
-        cluster_users = list(self.user_cluster_dictionary[cluster_name])
-        cluster_users.remove(user_id)
+        weighted_sum = 0.
+        z_denominator = 0.
 
-        similarities_sum = 0.
-        similarities_ratings_sum = 0.
-        num_users = 0
-        for cluster_user in cluster_users:
-            users_similarity = self.user_similarity_matrix[cluster_user][user_id]
+        for other_user in other_users:
+            similarity = self.user_similarity_matrix[other_user][user_id]
 
-            if item_id in self.user_dictionary[cluster_user].item_ratings and users_similarity is not None:
-                cluster_user_item_rating = self.user_dictionary[cluster_user].item_ratings[item_id]
-                similarities_sum += users_similarity
-                similarities_ratings_sum += users_similarity * cluster_user_item_rating
-                num_users += 1
+            if item_id in self.user_dictionary[other_user].item_ratings and similarity is not None:
+                other_user_item_rating =\
+                    self.user_dictionary[other_user].item_ratings[item_id]
+                weighted_sum += similarity * other_user_item_rating
+                z_denominator += abs(similarity)
 
-        if num_users == 0:
+        if z_denominator == 0:
             return None
 
-        predicted_rating = similarities_ratings_sum / similarities_sum
+        predicted_rating = weighted_sum / z_denominator
 
         return predicted_rating

@@ -21,34 +21,33 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
         :param item_id: the ID of the hotel
         :return: a float between 1 and 5 with the predicted rating
         """
-        if user_id not in self.user_dictionary:
+        if user_id not in self.user_ids:
             return None
 
-        cluster_name = self.user_dictionary[user_id].cluster
+        other_users = self.get_most_similar_users(user_id)
 
-        # We remove the given user from the cluster in order to avoid bias
-        cluster_users = list(self.user_cluster_dictionary[cluster_name])
-        cluster_users.remove(user_id)
+        weighted_sum = 0.
+        z_denominator = 0.
 
-        similarities_sum = 0.
-        similarities_ratings_sum = 0.
-        num_users = 0
-        for cluster_user in cluster_users:
-            cluster_user_overall_rating = self.user_dictionary[cluster_user].average_overall_rating
-            users_similarity = self.user_similarity_matrix[cluster_user][user_id]
+        for other_user in other_users:
 
-            if item_id in self.user_dictionary[cluster_user].item_ratings and users_similarity is not None:
-                cluster_user_item_rating = self.user_dictionary[cluster_user].item_ratings[item_id]
-                similarities_sum += users_similarity
-                similarities_ratings_sum +=\
-                    users_similarity * (cluster_user_item_rating - cluster_user_overall_rating)
-                num_users += 1
+            similarity = self.user_similarity_matrix[other_user][user_id]
 
-        if num_users == 0:
+            if item_id in self.user_dictionary[other_user].item_ratings and similarity is not None:
+                other_user_item_rating = \
+                    self.user_dictionary[other_user].item_ratings[item_id]
+                other_user_average_rating = \
+                    self.user_dictionary[other_user].average_overall_rating
+
+                weighted_sum += similarity * (
+                    other_user_item_rating - other_user_average_rating)
+                z_denominator += abs(similarity)
+
+        if z_denominator == 0:
             return None
 
-        user_average_rating = self.user_dictionary[user_id].average_overall_rating
-        predicted_rating = \
-            user_average_rating + similarities_ratings_sum / similarities_sum
+        user_average_rating = \
+            self.user_dictionary[user_id].average_overall_rating
+        predicted_rating = user_average_rating + weighted_sum / z_denominator
 
         return predicted_rating
