@@ -45,8 +45,15 @@ class BaseRecommender(object):
             return most_similar_users
 
         # Sort the users by similarity
-        return dictionary_utils.sort_dictionary_keys(
-            self.user_similarity_matrix[user_id])[:self._num_neighbors]
+        similarity_matrix = self.user_similarity_matrix[user_id].copy()
+        similarity_matrix.pop(user_id, None)
+
+        most_similar_users = dictionary_utils.sort_dictionary_keys(
+            similarity_matrix)[:self._num_neighbors]
+        # print('user ID', user_id, 'most similar user', my_dict[0], 'similarity', similarity_matrix[my_dict[0]])
+
+        return most_similar_users
+
 
     @abstractmethod
     def predict_rating(self, user, item):
