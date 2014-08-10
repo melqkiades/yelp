@@ -7,8 +7,10 @@ class BaseSimilarityMatrixBuilder:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, similarity_metric):
+    def __init__(self, name, similarity_metric, is_multi_criteria):
+        self._name = name
         self._similarity_metric = similarity_metric
+        self._is_multi_criteria = is_multi_criteria
 
     def build_similarity_matrix(self, user_dictionary, user_ids):
         """

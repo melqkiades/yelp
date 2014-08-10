@@ -9,7 +9,7 @@ class WeightsSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
 
     def __init__(self, similarity_metric):
         super(WeightsSimilarityMatrixBuilder, self).__init__(
-            similarity_metric)
+            'MultiWeightsSimilarity', similarity_metric, True)
 
     def calculate_users_similarity(self, user_dictionary, user_id1, user_id2):
         """

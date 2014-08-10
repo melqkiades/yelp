@@ -343,7 +343,7 @@ def get_significant_criteria(criteria_weights, ranges=None):
     return significant_criteria, cluster_name
 
 
-def initialize_users(reviews):
+def initialize_users(reviews, is_multi_criteria):
     """
     Builds a dictionary containing all the users in the reviews. Each user
     contains information about its average overall rating, the list of reviews
@@ -363,6 +363,9 @@ def initialize_users(reviews):
             user_reviews, user_id, apply_filter=False)
         user.item_ratings = get_user_item_ratings(user_reviews)
         user_dictionary[user_id] = user
+
+        if is_multi_criteria:
+            user.item_multi_ratings = get_user_item_multi_ratings(user_reviews)
 
     return user_dictionary
 

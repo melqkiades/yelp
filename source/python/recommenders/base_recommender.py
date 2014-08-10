@@ -1,4 +1,6 @@
 from abc import ABCMeta, abstractmethod
+from recommenders.similarity.average_similarity_matrix_builder import \
+    AverageSimilarityMatrixBuilder
 
 from recommenders.similarity.single_similarity_matrix_builder import \
     SingleSimilarityMatrixBuilder
@@ -27,7 +29,9 @@ class BaseRecommender(object):
     def load(self, reviews):
         self.reviews = reviews
         self.user_dictionary =\
-            extractor.initialize_users(self.reviews)
+            extractor.initialize_users(
+                self.reviews,
+                self._similarity_matrix_builder._is_multi_criteria)
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
         if self._similarity_metric is not None:
             self.user_similarity_matrix =\

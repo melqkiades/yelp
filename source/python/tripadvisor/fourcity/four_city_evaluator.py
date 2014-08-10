@@ -101,7 +101,7 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         'Algorithm',
         'Multi-cluster',
         'Similarity',
-        'Distance metric',
+        'Num Neighbors',
         'Dataset',
         'MAE',
         'RMSE',
@@ -109,7 +109,7 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         'Cross validation',
         'Machine'
     ]
-    similarity_metrics = ['euclidean', 'cosine', 'pearson']
+    similarity_metrics = ['euclidean', 'cosine']  # , 'pearson']
     ranges = [
         # [(-1.001, -0.999), (0.999, 1.001)],
         # [(-1.01, -0.99), (0.99, 1.01)],
@@ -119,29 +119,34 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         # [(-1.3, -0.7), (0.7, 1.3)],
         # [(-1.5, -0.5), (0.5, 1.5)],
         # [(-1.7, -0.3), (0.3, 1.7)],
-        [(-1.9, -0.1), (0.1, 1.9)],
-        # None
+        # [(-1.9, -0.1), (0.1, 1.9)],
+        None
     ]
+    num_neighbors_list = [None]  # , 1, 3, 5, 10, 15, 20, 30, 40, 50]
     results = []
 
-    for similarity_metric in similarity_metrics:
+    for num_neighbors in num_neighbors_list:
 
-        for cluster_range in ranges:
+        for similarity_metric in similarity_metrics:
 
-            recommender._similarity_matrix_builder._similarity_metric = similarity_metric
-            recommender._significant_criteria_ranges = cluster_range
-            num_folds = 5
-            result = perform_cross_validation(reviews, recommender, num_folds)
+            for cluster_range in ranges:
 
-            result['Algorithm'] = recommender.name
-            result['Multi-cluster'] = recommender._significant_criteria_ranges
-            result['Similarity'] = recommender._similarity_matrix_builder._similarity_metric
-            result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
-            result['Dataset'] = 'Four City'
-            result['Machine'] = 'Mac'
-            results.append(result)
+                recommender._similarity_matrix_builder._similarity_metric = similarity_metric
+                recommender._significant_criteria_ranges = cluster_range
+                recommender._num_neighbors = num_neighbors
+                num_folds = 5
+                result = perform_cross_validation(reviews, recommender, num_folds)
 
-    file_name = '/Users/fpena/tmp/rs-test/test9-' + recommender.name + '.csv'
+                result['Algorithm'] = recommender.name
+                result['Multi-cluster'] = recommender._significant_criteria_ranges
+                result['Similarity'] = recommender._similarity_matrix_builder._similarity_metric
+                result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
+                result['Num Neighbors'] = recommender._num_neighbors
+                result['Dataset'] = 'Four City'
+                result['Machine'] = 'Mac'
+                results.append(result)
+
+    file_name = '/Users/fpena/tmp/rs-test/test11-' + recommender.name + '.csv'
     ETLUtils.save_csv_file(file_name, results, headers)
 
 
@@ -156,7 +161,7 @@ def evaluate_recommenders(reviews, recommender_list):
 start_time = time.time()
 # main()
 file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
-reviews = extractor.load_json_file(file_path)
+# reviews = extractor.load_json_file(file_path)
 # reviews = extractor.pre_process_reviews()
 # ETLUtils.save_json_file(file_path, reviews)
 # print(reviews[0])
@@ -171,11 +176,11 @@ reviews = extractor.load_json_file(file_path)
 
 my_recommender_list = [
     # SingleCF(),
-    # AdjustedWeightedSumRecommender(num_neighbors=4),
-    # WeightedSumRecommender(num_neighbors=None),
+    # AdjustedWeightedSumRecommender(),
+    # WeightedSumRecommender(),
     # DeltaRecommender(),
     DeltaCFRecommender(),
-    # OverallRecommender(),
+    OverallRecommender(),
     # OverallCFRecommender(),
     # AverageRecommender(),
     # DummyRecommender(4.0)
@@ -183,7 +188,7 @@ my_recommender_list = [
 
 
 # my_reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-evaluate_recommenders(reviews, my_recommender_list)
+# evaluate_recommenders(reviews, my_recommender_list)
 # recommender = SingleCF('pearson')
 # evaluate_recommender_similarity_metrics(recommender)
 # recommender = OverallCFRecommender('euclidean')

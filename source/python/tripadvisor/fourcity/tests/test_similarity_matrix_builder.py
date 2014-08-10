@@ -66,7 +66,7 @@ class TestSimilarityMatrixBuilder(TestCase):
     def test_build_similarity_matrix_euclidean(self):
 
         user_dictionary =\
-            extractor.initialize_users(reviews_matrix_5)
+            extractor.initialize_users(reviews_matrix_5, False)
         user_ids = extractor.get_groupby_list(reviews_matrix_5, 'user_id')
         similarity_matrix_builder = SingleSimilarityMatrixBuilder('euclidean')
         self.assertEqual(euclidean_matrix, similarity_matrix_builder.build_similarity_matrix(
@@ -75,7 +75,7 @@ class TestSimilarityMatrixBuilder(TestCase):
     def test_build_similarity_matrix_cosine(self):
 
         user_dictionary =\
-            extractor.initialize_users(reviews_matrix_5)
+            extractor.initialize_users(reviews_matrix_5, False)
         user_ids = extractor.get_groupby_list(reviews_matrix_5, 'user_id')
         similarity_matrix_builder = SingleSimilarityMatrixBuilder('cosine')
         self.assertEqual(cosine_matrix, similarity_matrix_builder.build_similarity_matrix(
@@ -84,7 +84,7 @@ class TestSimilarityMatrixBuilder(TestCase):
     def test_build_similarity_matrix_pearson(self):
 
         user_dictionary =\
-            extractor.initialize_users(reviews_matrix_5)
+            extractor.initialize_users(reviews_matrix_5, False)
         user_ids = extractor.get_groupby_list(reviews_matrix_5, 'user_id')
         similarity_matrix_builder = SingleSimilarityMatrixBuilder('pearson')
         self.assertEqual(pearson_matrix, similarity_matrix_builder.build_similarity_matrix(

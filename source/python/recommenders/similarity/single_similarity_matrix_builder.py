@@ -9,7 +9,7 @@ class SingleSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
 
     def __init__(self, similarity_metric):
         super(SingleSimilarityMatrixBuilder, self).__init__(
-            similarity_metric)
+            'SingleSimilarity', similarity_metric, False)
 
     def calculate_users_similarity(self, user_dictionary, user1, user2):
         common_items = self.get_common_items(user_dictionary, user1, user2)
