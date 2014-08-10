@@ -11,6 +11,10 @@ from recommenders.multicriteria.delta_recommender import DeltaRecommender
 from recommenders.multicriteria.overall_cf_recommender import \
     OverallCFRecommender
 from recommenders.multicriteria.overall_recommender import OverallRecommender
+from recommenders.similarity.average_similarity_matrix_builder import \
+    AverageSimilarityMatrixBuilder
+from recommenders.similarity.single_similarity_matrix_builder import \
+    SingleSimilarityMatrixBuilder
 from recommenders.weighted_sum_recommender import WeightedSumRecommender
 from tripadvisor.fourcity import extractor
 from recommenders.dummy_recommender import DummyRecommender
@@ -100,8 +104,9 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
     headers = [
         'Algorithm',
         'Multi-cluster',
-        'Similarity',
-        'Num Neighbors',
+        'Similarity algorithm',
+        'Similarity metric',
+        'Num neighbors',
         'Dataset',
         'MAE',
         'RMSE',
@@ -122,7 +127,7 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         # [(-1.9, -0.1), (0.1, 1.9)],
         None
     ]
-    num_neighbors_list = [None]  # , 1, 3, 5, 10, 15, 20, 30, 40, 50]
+    num_neighbors_list = [5]  # , 1, 3, 5, 10, 15, 20, 30, 40, 50]
     results = []
 
     for num_neighbors in num_neighbors_list:
@@ -139,9 +144,10 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
 
                 result['Algorithm'] = recommender.name
                 result['Multi-cluster'] = recommender._significant_criteria_ranges
-                result['Similarity'] = recommender._similarity_matrix_builder._similarity_metric
+                result['Similarity algorithm'] = recommender._similarity_matrix_builder._name
+                result['Similarity metric'] = recommender._similarity_matrix_builder._similarity_metric
                 result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
-                result['Num Neighbors'] = recommender._num_neighbors
+                result['Num neighbors'] = recommender._num_neighbors
                 result['Dataset'] = 'Four City'
                 result['Machine'] = 'Mac'
                 results.append(result)
@@ -176,11 +182,11 @@ file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
 
 my_recommender_list = [
     # SingleCF(),
-    # AdjustedWeightedSumRecommender(),
-    # WeightedSumRecommender(),
+    # AdjustedWeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean')),
+    WeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean')),
     # DeltaRecommender(),
-    DeltaCFRecommender(),
-    OverallRecommender(),
+    # DeltaCFRecommender(),
+    # OverallRecommender(),
     # OverallCFRecommender(),
     # AverageRecommender(),
     # DummyRecommender(4.0)

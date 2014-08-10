@@ -4,6 +4,8 @@ from evaluation.mean_absolute_error import MeanAbsoluteError
 from evaluation.root_mean_square_error import RootMeanSquareError
 from recommenders.adjusted_weighted_sum_recommender import \
     AdjustedWeightedSumRecommender
+from recommenders.similarity.single_similarity_matrix_builder import \
+    SingleSimilarityMatrixBuilder
 from tripadvisor.fourcity import four_city_evaluator
 from recommenders.dummy_recommender import DummyRecommender
 
@@ -79,7 +81,7 @@ class TestAdjustedWeightedSumRecommender(TestCase):
 
     def test_predict_rating(self):
 
-        recommender = AdjustedWeightedSumRecommender()
+        recommender = AdjustedWeightedSumRecommender(SingleSimilarityMatrixBuilder('cosine'))
         recommender.load(reviews)
 
         actual_rating_1 = 3.5 + 0.99227787671366752 * (4.0 - 3.0) / 0.99227787671366752
@@ -88,7 +90,7 @@ class TestAdjustedWeightedSumRecommender(TestCase):
         self.assertEqual(actual_rating_2, recommender.predict_rating('A1', 3))
 
     def test_compare_against_dummy_recommender(self):
-        recommender = AdjustedWeightedSumRecommender()
+        recommender = AdjustedWeightedSumRecommender(SingleSimilarityMatrixBuilder('cosine'))
         recommender.load(reviews_matrix_5)
         _, errors = four_city_evaluator.predict_rating_list(recommender, reviews_matrix_5)
         wsr_mean_absolute_error = MeanAbsoluteError.compute_list(errors)

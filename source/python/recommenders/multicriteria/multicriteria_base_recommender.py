@@ -16,9 +16,9 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
     def __init__(
             self, name, similarity_metric=None,
             significant_criteria_ranges=None):
-        super(MultiCriteriaBaseRecommender, self).__init__(name, similarity_metric)
+        super(MultiCriteriaBaseRecommender, self).__init__(name, None)
         self._significant_criteria_ranges = significant_criteria_ranges
-        self._similarity_matrix_builder = WeightsSimilarityMatrixBuilder(self._similarity_metric)
+        self._similarity_matrix_builder = WeightsSimilarityMatrixBuilder(similarity_metric)
         self.user_cluster_dictionary = None
 
     def load(self, reviews):
@@ -28,7 +28,7 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
             extractor.initialize_cluster_users(self.reviews, self._significant_criteria_ranges)
         self.user_cluster_dictionary = self.build_user_clusters(
             self.reviews, self._significant_criteria_ranges)
-        if self._similarity_metric is not None:
+        if self._similarity_matrix_builder._similarity_metric is not None:
             self.user_similarity_matrix =\
                 self._similarity_matrix_builder.build_similarity_matrix(
                     self.user_dictionary, self.user_ids)
