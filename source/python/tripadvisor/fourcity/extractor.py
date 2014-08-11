@@ -361,11 +361,11 @@ def initialize_users(reviews, is_multi_criteria):
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
         user.average_overall_rating = get_user_average_overall_rating(
             user_reviews, user_id, apply_filter=False)
-        user.item_ratings = get_user_item_ratings(user_reviews)
+        user.item_ratings = get_user_item_ratings(user_reviews, user_id)
         user_dictionary[user_id] = user
 
         if is_multi_criteria:
-            user.item_multi_ratings = get_user_item_multi_ratings(user_reviews)
+            user.item_multi_ratings = get_user_item_multi_ratings(user_reviews, user_id)
 
     return user_dictionary
 
@@ -392,8 +392,8 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
             user_reviews, user_id, apply_filter=False)
         _, user.cluster = get_significant_criteria(
             user.criteria_weights, significant_criteria_ranges)
-        user.item_ratings = get_user_item_ratings(user_reviews)
-        user.item_multi_ratings = get_user_item_multi_ratings(user_reviews)
+        user.item_ratings = get_user_item_ratings(user_reviews, user_id)
+        user.item_multi_ratings = get_user_item_multi_ratings(user_reviews, user_id)
         user_dictionary[user_id] = user
 
     # print('Total users: %i' % len(user_ids))
@@ -401,7 +401,7 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
     return user_dictionary
 
 
-def get_user_item_ratings(reviews, user_id=None, apply_filter=False):
+def get_user_item_ratings(reviews, user_id, apply_filter=False):
 
     if apply_filter:
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
@@ -421,7 +421,7 @@ def get_user_item_ratings(reviews, user_id=None, apply_filter=False):
     return items_ratings
 
 
-def get_user_item_multi_ratings(reviews, user_id=None, apply_filter=False):
+def get_user_item_multi_ratings(reviews, user_id, apply_filter=False):
 
     if apply_filter:
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
