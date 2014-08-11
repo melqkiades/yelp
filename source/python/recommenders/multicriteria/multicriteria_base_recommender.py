@@ -4,6 +4,7 @@ from recommenders.similarity.weights_similarity_matrix_builder import \
     WeightsSimilarityMatrixBuilder
 from tripadvisor.fourcity import extractor
 from recommenders.base_recommender import BaseRecommender
+from utils import dictionary_utils
 
 
 __author__ = 'fpena'
@@ -40,12 +41,22 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
     def get_most_similar_users(self, user_id):
 
         cluster_name = self.user_dictionary[user_id].cluster
+        cluster_users = list(self.user_cluster_dictionary[cluster_name])
+        cluster_users.remove(user_id)
 
         # We remove the given user from the cluster in order to avoid bias
-        most_similar_users = list(self.user_cluster_dictionary[cluster_name])
-        most_similar_users.remove(user_id)
+        if self._num_neighbors is None:
+            return cluster_users
 
-        return most_similar_users
+        similarity_matrix = self.user_similarity_matrix[user_id].copy()
+        similarity_matrix.pop(user_id, None)
+        ordered_similar_users = dictionary_utils.sort_dictionary_keys(
+            similarity_matrix)
+
+        intersection_set = set.intersection(set(ordered_similar_users), set(cluster_users))
+        intersection_lst = [t for t in ordered_similar_users if t in intersection_set]
+
+        return intersection_lst[:self._num_neighbors]
 
     @staticmethod
     def build_user_clusters(reviews, significant_criteria_ranges=None):
