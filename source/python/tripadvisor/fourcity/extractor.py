@@ -486,6 +486,52 @@ def load_json_file(file_name):
     return data
 
 
+def get_common_items(user_dictionary, user1, user2):
+    items_user1 = set(user_dictionary[user1].item_ratings.keys())
+    items_user2 = set(user_dictionary[user2].item_ratings.keys())
+
+    common_items = items_user1.intersection(items_user2)
+
+    return common_items
+
+
+def extract_user_ratings(user_dictionary, user, items):
+
+    ratings = []
+
+    for item in items:
+        ratings.append(get_rating(user_dictionary, user, item))
+
+    return ratings
+
+
+def get_rating(user_dictionary, user, item):
+    if item in user_dictionary[user].item_ratings:
+        return user_dictionary[user].item_ratings[item]
+    return None
+
+
+def extract_user_multi_ratings(user_dictionary, user, items):
+
+    ratings = []
+
+    for item in items:
+        ratings.append(get_multi_ratings(
+            user_dictionary, user, item))
+
+    return ratings
+
+
+def get_multi_ratings(user_dictionary, user, item):
+    if item in user_dictionary[user].item_multi_ratings:
+        return user_dictionary[user].item_multi_ratings[item]
+    return None
+
+
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+
 def main():
     # reviews = pre_process_reviews()
     # save_dictionary_list_to_file(reviews, '/Users/fpena/tmp/filtered_reviews.json')
