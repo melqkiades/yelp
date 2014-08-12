@@ -14,7 +14,7 @@ class MultiSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
 
     def calculate_users_similarity(self, user_dictionary, user1, user2):
 
-        common_items = self.get_common_items(user_dictionary, user1, user2)
+        common_items = extractor.get_common_items(user_dictionary, user1, user2)
 
         if not common_items:
             return None
@@ -39,12 +39,3 @@ class MultiSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
         similarity = similarity_sum / len(common_items)
 
         return similarity
-
-    @staticmethod
-    def get_common_items(user_dictionary, user1, user2):
-        items_user1 = set(user_dictionary[user1].item_ratings.keys())
-        items_user2 = set(user_dictionary[user2].item_ratings.keys())
-
-        common_items = items_user1.intersection(items_user2)
-
-        return common_items
