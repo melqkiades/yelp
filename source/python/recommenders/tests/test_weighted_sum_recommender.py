@@ -1,12 +1,8 @@
 from unittest import TestCase
 
-from evaluation.mean_absolute_error import MeanAbsoluteError
-from evaluation.root_mean_square_error import RootMeanSquareError
 from recommenders.similarity.single_similarity_matrix_builder import \
     SingleSimilarityMatrixBuilder
 from recommenders.weighted_sum_recommender import WeightedSumRecommender
-from tripadvisor.fourcity import four_city_evaluator
-from recommenders.dummy_recommender import DummyRecommender
 
 
 __author__ = 'fpena'
