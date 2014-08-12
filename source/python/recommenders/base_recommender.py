@@ -37,21 +37,21 @@ class BaseRecommender(object):
         self.user_dictionary = None
         self.user_similarity_matrix = None
 
-    def get_most_similar_users(self, user_id):
+    def get_neighbourhood(self, user_id):
 
         if self._num_neighbors is None:
-            most_similar_users = list(self.user_ids)
-            most_similar_users.remove(user_id)
-            return most_similar_users
+            neighbourhood = list(self.user_ids)
+            neighbourhood.remove(user_id)
+            return neighbourhood
 
         # Sort the users by similarity
         similarity_matrix = self.user_similarity_matrix[user_id].copy()
         similarity_matrix.pop(user_id, None)
 
-        most_similar_users = dictionary_utils.sort_dictionary_keys(
-            similarity_matrix)[:self._num_neighbors]
+        neighbourhood = dictionary_utils.sort_dictionary_keys(
+            similarity_matrix)  # [:self._num_neighbors]
 
-        return most_similar_users
+        return neighbourhood
 
 
     @abstractmethod

@@ -38,7 +38,7 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
         super(MultiCriteriaBaseRecommender, self).clear()
         self.user_cluster_dictionary = None
 
-    def get_most_similar_users(self, user_id):
+    def get_neighbourhood(self, user_id):
 
         cluster_name = self.user_dictionary[user_id].cluster
         cluster_users = list(self.user_cluster_dictionary[cluster_name])
@@ -56,7 +56,7 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
         intersection_set = set.intersection(set(ordered_similar_users), set(cluster_users))
         intersection_lst = [t for t in ordered_similar_users if t in intersection_set]
 
-        return intersection_lst[:self._num_neighbors]
+        return intersection_lst  # [:self._num_neighbors]
 
     @staticmethod
     def build_user_clusters(reviews, significant_criteria_ranges=None):

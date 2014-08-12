@@ -18,10 +18,11 @@ class OverallCFRecommender(MultiCriteriaBaseRecommender):
         if user_id not in self.user_ids:
             return None
 
-        other_users = self.get_most_similar_users(user_id)
+        other_users = self.get_neighbourhood(user_id)
 
         weighted_sum = 0.
         z_denominator = 0.
+        num_users = 0
 
         for other_user in other_users:
             similarity = self.user_similarity_matrix[other_user][user_id]
@@ -31,6 +32,10 @@ class OverallCFRecommender(MultiCriteriaBaseRecommender):
                     self.user_dictionary[other_user].item_ratings[item_id]
                 weighted_sum += similarity * other_user_item_rating
                 z_denominator += abs(similarity)
+                num_users += 1
+
+            if num_users == self._num_neighbors:
+                break
 
         if z_denominator == 0:
             return None

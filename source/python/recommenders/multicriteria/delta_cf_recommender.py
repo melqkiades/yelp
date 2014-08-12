@@ -24,10 +24,11 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
         if user_id not in self.user_ids:
             return None
 
-        other_users = self.get_most_similar_users(user_id)
+        other_users = self.get_neighbourhood(user_id)
 
         weighted_sum = 0.
         z_denominator = 0.
+        num_users = 0
 
         for other_user in other_users:
 
@@ -42,6 +43,10 @@ class DeltaCFRecommender(MultiCriteriaBaseRecommender):
                 weighted_sum += similarity * (
                     other_user_item_rating - other_user_average_rating)
                 z_denominator += abs(similarity)
+                num_users += 1
+
+            if num_users == self._num_neighbors:
+                break
 
         if z_denominator == 0:
             return None
