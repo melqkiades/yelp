@@ -9,6 +9,17 @@ import numpy as np
 
 class TestSimilarity(TestCase):
 
+    def test_chebyshev(self):
+
+        v1 = [4.5, 4]
+        v2 = [4.0, 2]
+        expected_value = 1./3
+        self.assertEqual(expected_value, similarity_calculator.chebyshev(v1, v2))
+
+        v1 = [5, 1, 2]
+        v2 = [5, 1, 2]
+        self.assertEqual(1, similarity_calculator.euclidean(v1, v2))
+
     def test_cosine(self):
 
         v1 = [4.5, 3]
@@ -39,3 +50,14 @@ class TestSimilarity(TestCase):
         v1 = [5, 1, 2]
         v2 = [5, 1, 2]
         self.assertEqual(1, similarity_calculator.euclidean(v1, v2))
+
+    def test_manhattan(self):
+
+        v1 = [4.5, 3]
+        v2 = [4.0, 2]
+        expected_value = 2./5
+        self.assertEqual(expected_value, similarity_calculator.manhattan(v1, v2))
+
+        v1 = [5, 1, 2]
+        v2 = [5, 1, 2]
+        self.assertEqual(1, similarity_calculator.manhattan(v1, v2))
