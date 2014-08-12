@@ -23,26 +23,29 @@ class DeltaRecommender(MultiCriteriaBaseRecommender):
         if user_id not in self.user_dictionary:
             return None
 
-        cluster_name = self.user_dictionary[user_id].cluster
-
-        # We remove the given user from the cluster in order to avoid bias
-        cluster_users = list(self.user_cluster_dictionary[cluster_name])
-        cluster_users.remove(user_id)
+        neighbourhood = self.get_neighbourhood(user_id)
         similarities_ratings_sum = 0.
         num_users = 0
 
-        for cluster_user in cluster_users:
-            cluster_user_overall_rating = self.user_dictionary[cluster_user].average_overall_rating
+        for neighbour in neighbourhood:
 
-            if item_id in self.user_dictionary[cluster_user].item_ratings:
-                cluster_user_item_rating = self.user_dictionary[cluster_user].item_ratings[item_id]
-                similarities_ratings_sum += (cluster_user_item_rating - cluster_user_overall_rating)
+            if item_id in self.user_dictionary[neighbour].item_ratings:
+                neighbour_item_rating = \
+                    self.user_dictionary[neighbour].item_ratings[item_id]
+                neighbour_overall_rating = \
+                    self.user_dictionary[neighbour].average_overall_rating
+                similarities_ratings_sum += \
+                    (neighbour_item_rating - neighbour_overall_rating)
                 num_users += 1
+
+            if num_users == self._num_neighbors:
+                break
 
         if num_users == 0:
             return None
 
-        user_average_rating = self.user_dictionary[user_id].average_overall_rating
+        user_average_rating = \
+            self.user_dictionary[user_id].average_overall_rating
         predicted_rating = \
             user_average_rating + similarities_ratings_sum / num_users
 
