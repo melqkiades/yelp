@@ -19,9 +19,9 @@ class SingleSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
             return None
 
         user1_ratings =\
-            extractor.extract_user_ratings(user_dictionary, user1, common_items)
+            extractor.get_user_ratings(user_dictionary, user1, common_items)
         user2_ratings =\
-            extractor.extract_user_ratings(user_dictionary, user2, common_items)
+            extractor.get_user_ratings(user_dictionary, user2, common_items)
 
         similarity_value = similarity_calculator.calculate_similarity(
             user1_ratings, user2_ratings, self._similarity_metric)

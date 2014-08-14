@@ -408,6 +408,9 @@ def get_user_item_ratings(reviews, user_id, apply_filter=False):
     else:
         user_reviews = reviews
 
+    if not user_reviews:
+        return {}
+
     data_frame = DataFrame(user_reviews)
     column = 'offering_id'
     counts = data_frame.groupby(column).mean()
@@ -495,7 +498,7 @@ def get_common_items(user_dictionary, user1, user2):
     return common_items
 
 
-def extract_user_ratings(user_dictionary, user, items):
+def get_user_ratings(user_dictionary, user, items):
 
     ratings = []
 
@@ -511,7 +514,7 @@ def get_rating(user_dictionary, user, item):
     return None
 
 
-def extract_user_multi_ratings(user_dictionary, user, items):
+def get_user_multi_ratings(user_dictionary, user, items):
 
     ratings = []
 
@@ -528,7 +531,7 @@ def get_multi_ratings(user_dictionary, user, item):
     return None
 
 
-def column(matrix, i):
+def get_matrix_column(matrix, i):
     return [row[i] for row in matrix]
 
 

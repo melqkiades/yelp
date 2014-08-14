@@ -20,21 +20,23 @@ class AverageSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
             return None
 
         user1_overall_ratings =\
-            extractor.extract_user_ratings(user_dictionary, user1, common_items)
+            extractor.get_user_ratings(user_dictionary, user1, common_items)
         user1_multi_ratings =\
-            extractor.extract_user_multi_ratings(user_dictionary, user1, common_items)
+            extractor.get_user_multi_ratings(user_dictionary, user1, common_items)
 
         user2_overall_ratings =\
-            extractor.extract_user_ratings(user_dictionary, user2, common_items)
+            extractor.get_user_ratings(user_dictionary, user2, common_items)
         user2_multi_ratings =\
-            extractor.extract_user_multi_ratings(user_dictionary, user2, common_items)
+            extractor.get_user_multi_ratings(user_dictionary, user2, common_items)
 
         num_criteria = len(user1_multi_ratings[0])
         total_similarity = 0.
 
         for i in xrange(0, num_criteria):
-            user1_criterion_item_ratings = extractor.column(user1_multi_ratings, i)
-            user2_criterion_item_ratings = extractor.column(user2_multi_ratings, i)
+            user1_criterion_item_ratings =\
+                extractor.get_matrix_column(user1_multi_ratings, i)
+            user2_criterion_item_ratings =\
+                extractor.get_matrix_column(user2_multi_ratings, i)
 
             total_similarity += similarity_calculator.calculate_similarity(
                 user1_criterion_item_ratings, user2_criterion_item_ratings,
