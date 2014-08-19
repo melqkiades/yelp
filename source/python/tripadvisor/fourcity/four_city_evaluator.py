@@ -1,6 +1,7 @@
 import time
 
 from etl import ETLUtils
+from evaluation import precision_in_top_n
 from evaluation.mean_absolute_error import MeanAbsoluteError
 from evaluation.root_mean_square_error import RootMeanSquareError
 from recommenders.adjusted_weighted_sum_recommender import \
@@ -13,10 +14,13 @@ from recommenders.multicriteria.overall_cf_recommender import \
 from recommenders.multicriteria.overall_recommender import OverallRecommender
 from recommenders.similarity.average_similarity_matrix_builder import \
     AverageSimilarityMatrixBuilder
+from recommenders.similarity.multi_similarity_matrix_builder import \
+    MultiSimilarityMatrixBuilder
 from recommenders.similarity.single_similarity_matrix_builder import \
     SingleSimilarityMatrixBuilder
 from recommenders.weighted_sum_recommender import WeightedSumRecommender
 from tripadvisor.fourcity import extractor
+from tripadvisor.fourcity import movielens_extractor
 from recommenders.dummy_recommender import DummyRecommender
 
 
@@ -38,6 +42,7 @@ def predict_rating_list(predictor, reviews):
     """
     predicted_ratings = []
     errors = []
+    num_unknown_ratings = 0.
 
     for review in reviews:
 
@@ -50,13 +55,15 @@ def predict_rating_list(predictor, reviews):
 
         error = None
 
-        if predicted_rating is not None and actual_rating is not None:
+        if predicted_rating is not None:
             error = abs(predicted_rating - actual_rating)
+        else:
+            num_unknown_ratings += 1
 
         predicted_ratings.append(predicted_rating)
         errors.append(error)
 
-    return predicted_ratings, errors
+    return predicted_ratings, errors, num_unknown_ratings
 
 
 def perform_cross_validation(reviews, recommender, num_folds):
@@ -65,34 +72,46 @@ def perform_cross_validation(reviews, recommender, num_folds):
     split = 1 - (1/float(num_folds))
     total_mean_absolute_error = 0.
     total_mean_square_error = 0.
+    total_coverage = 0.
     num_cycles = 0
-    total_errors = []
 
     for i in xrange(0, num_folds):
+        print('Num cycles:', i)
         start = float(i) / num_folds
         train, test = ETLUtils.split_train_test(reviews, split=split, shuffle_data=False, start=start)
         recommender.load(train)
-        _, errors = predict_rating_list(recommender, test)
+        _, errors, num_unknown_ratings = predict_rating_list(recommender, test)
         mean_absolute_error = MeanAbsoluteError.compute_list(errors)
         root_mean_square_error = RootMeanSquareError.compute_list(errors)
-        total_errors += errors
+        num_samples = len(test)
+        coverage = float((num_samples - num_unknown_ratings) / num_samples)
+        # print('Total length:', len(test))
+        # print('Unknown ratings:', num_unknown_ratings)
+        # print('Coverage:', coverage)
 
         if mean_absolute_error is not None:
             total_mean_absolute_error += mean_absolute_error
             total_mean_square_error += root_mean_square_error
+            total_coverage += coverage
             num_cycles += 1
+        else:
+            print('Mean absolute error is None!!!')
+
 
     final_mean_absolute_error = total_mean_absolute_error / num_cycles
     final_root_squared_error = total_mean_square_error / num_cycles
+    final_coverage = total_coverage / num_cycles
     execution_time = time.time() - start_time
 
     print('Final mean absolute error: %f' % final_mean_absolute_error)
     print('Final root mean square error: %f' % final_root_squared_error)
+    print('Final coverage: %f' % final_coverage)
     print("--- %s seconds ---" % execution_time)
 
     result = {
         'MAE': final_mean_absolute_error,
         'RMSE': final_root_squared_error,
+        'Coverage': final_coverage,
         'Execution time': execution_time
     }
 
@@ -110,11 +129,18 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         'Dataset',
         'MAE',
         'RMSE',
+        'Top N',
+        'Coverage',
         'Execution time',
         'Cross validation',
         'Machine'
     ]
-    similarity_metrics = ['euclidean', 'cosine']  # , 'pearson']
+    similarity_metrics = ['euclidean']  # , 'cosine', 'chebyshev', 'manhattan', 'pearson']
+    similarity_algorithms = [
+        SingleSimilarityMatrixBuilder('euclidean'),
+        # AverageSimilarityMatrixBuilder('euclidean'),
+        # MultiSimilarityMatrixBuilder('euclidean'),
+    ]
     ranges = [
         # [(-1.001, -0.999), (0.999, 1.001)],
         # [(-1.01, -0.99), (0.99, 1.01)],
@@ -127,32 +153,45 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
         # [(-1.9, -0.1), (0.1, 1.9)],
         None
     ]
-    num_neighbors_list = [5]  # , 1, 3, 5, 10, 15, 20, 30, 40, 50]
+    num_neighbors_list = [None, 1]  # , 1, 3, 5, 10, 20, 30, 40]
+    num_folds = 5
     results = []
 
-    for num_neighbors in num_neighbors_list:
+    for similarity_algorithm in similarity_algorithms:
 
-        for similarity_metric in similarity_metrics:
+        for num_neighbors in num_neighbors_list:
 
-            for cluster_range in ranges:
+            for similarity_metric in similarity_metrics:
 
-                recommender._similarity_matrix_builder._similarity_metric = similarity_metric
-                recommender._significant_criteria_ranges = cluster_range
-                recommender._num_neighbors = num_neighbors
-                num_folds = 5
-                result = perform_cross_validation(reviews, recommender, num_folds)
+                for cluster_range in ranges:
 
-                result['Algorithm'] = recommender.name
-                result['Multi-cluster'] = recommender._significant_criteria_ranges
-                result['Similarity algorithm'] = recommender._similarity_matrix_builder._name
-                result['Similarity metric'] = recommender._similarity_matrix_builder._similarity_metric
-                result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
-                result['Num neighbors'] = recommender._num_neighbors
-                result['Dataset'] = 'Four City'
-                result['Machine'] = 'Mac'
-                results.append(result)
+                    recommender._similarity_matrix_builder = similarity_algorithm
+                    recommender._similarity_matrix_builder._similarity_metric = similarity_metric
+                    recommender._significant_criteria_ranges = cluster_range
+                    recommender._num_neighbors = num_neighbors
 
-    file_name = '/Users/fpena/tmp/rs-test/test11-' + recommender.name + '.csv'
+                    print(
+                        recommender.name, recommender._significant_criteria_ranges,
+                        recommender._similarity_matrix_builder._name,
+                        recommender._similarity_matrix_builder._similarity_metric,
+                        recommender._num_neighbors
+                    )
+
+                    # result = perform_cross_validation(reviews, recommender, num_folds)
+                    result = precision_in_top_n.calculate_top_n_precision(reviews, recommender, 5, 4.0, 5)
+
+                    # result['Top N'] = recommender.top_n_result
+                    result['Algorithm'] = recommender.name
+                    result['Multi-cluster'] = recommender._significant_criteria_ranges
+                    result['Similarity algorithm'] = recommender._similarity_matrix_builder._name
+                    result['Similarity metric'] = recommender._similarity_matrix_builder._similarity_metric
+                    result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
+                    result['Num neighbors'] = recommender._num_neighbors
+                    result['Dataset'] = 'Four City'
+                    result['Machine'] = 'Mac'
+                    results.append(result)
+
+    file_name = '/Users/fpena/tmp/rs-test/test-ml100k-03-knn-delete' + recommender.name + '.csv'
     ETLUtils.save_csv_file(file_name, results, headers)
 
 
@@ -169,6 +208,7 @@ start_time = time.time()
 file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
 # reviews = extractor.load_json_file(file_path)
 # reviews = extractor.pre_process_reviews()
+reviews = movielens_extractor.get_ml_100K_dataset()
 # ETLUtils.save_json_file(file_path, reviews)
 # print(reviews[0])
 # print(reviews[1])
@@ -182,8 +222,10 @@ file_path = '/Users/fpena/tmp/filtered_reviews_multi.json'
 
 my_recommender_list = [
     # SingleCF(),
-    # AdjustedWeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean')),
-    WeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean')),
+    AdjustedWeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean')),
+    # AdjustedWeightedSumRecommender(MultiSimilarityMatrixBuilder('chebyshev')),
+    # WeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean')),
+    # WeightedSumRecommender(MultiSimilarityMatrixBuilder('cosine')),
     # DeltaRecommender(),
     # DeltaCFRecommender(),
     # OverallRecommender(),
@@ -194,7 +236,7 @@ my_recommender_list = [
 
 
 # my_reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-# evaluate_recommenders(reviews, my_recommender_list)
+evaluate_recommenders(reviews, my_recommender_list)
 # recommender = SingleCF('pearson')
 # evaluate_recommender_similarity_metrics(recommender)
 # recommender = OverallCFRecommender('euclidean')
@@ -202,6 +244,7 @@ my_recommender_list = [
 # perform_clu_cf_euc_top_n_validation()
 # perform_clu_overall_cross_validation()
 # perform_clu_overall_whole_dataset_evaluation()
+# precision_in_top_n.calculate_top_n_precision(reviews, my_recommender_list[0], 5, 4.0, 5)
 end_time = time.time() - start_time
 print("--- %s seconds ---" % end_time)
 

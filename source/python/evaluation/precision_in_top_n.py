@@ -14,6 +14,7 @@ def calculate_top_n_precision(reviews, recommender, n, min_score, num_folds):
     num_cycles = 0
 
     for i in xrange(0, num_folds):
+        print('Fold', i)
         start = float(i) / num_folds
         train, test = ETLUtils.split_train_test(reviews, split=split, shuffle_data=False, start=start)
         recommender.load(train)
@@ -32,7 +33,12 @@ def calculate_top_n_precision(reviews, recommender, n, min_score, num_folds):
     print('Final Top N Precision: %f' % final_precision)
     print("--- %s seconds ---" % execution_time)
 
-    return final_precision
+    result = {
+        'Top N': final_precision,
+        'Execution time': execution_time
+    }
+
+    return result
 
 
 def calculate_recommender_precision(test_data, user_id, recommender, n, min_score):
