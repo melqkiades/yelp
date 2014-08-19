@@ -2,6 +2,7 @@ import math
 from pandas import DataFrame
 import time
 from DataPlotter import DataPlotter
+from etl import ETLUtils
 from tripadvisor.fourcity import extractor
 import matplotlib.pyplot as plt
 
@@ -11,7 +12,7 @@ __author__ = 'fpena'
 def plot_overall_rating():
 
     # reviews = extractor.pre_process_reviews()
-    reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
+    reviews = ETLUtils.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
     data_frame = DataFrame(reviews)
 
     print(data_frame)
