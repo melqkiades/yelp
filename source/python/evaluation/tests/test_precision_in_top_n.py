@@ -92,45 +92,44 @@ class TestPrecisionInTopN(TestCase):
 
         expected_precision = 0.
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_1, predicted_ratings_1, 1)
+            known_ratings_1, predicted_ratings_1, 1, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
         expected_precision = 1./3
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_1, predicted_ratings_1, 3)
+            known_ratings_1, predicted_ratings_1, 3, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
         expected_precision = 3./5
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_1, predicted_ratings_1, 5)
+            known_ratings_1, predicted_ratings_1, 5, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
         expected_precision = 3./7
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_1, predicted_ratings_1, 7)
+            known_ratings_1, predicted_ratings_1, 7, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
         expected_precision = 0.
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_2, predicted_ratings_2, 1)
+            known_ratings_2, predicted_ratings_2, 1, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
         expected_precision = 2./3
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_2, predicted_ratings_2, 3)
+            known_ratings_2, predicted_ratings_2, 3, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
         expected_precision = 2./3
         actual_precision = precision_in_top_n.calculate_precision(
-            known_ratings_2, predicted_ratings_2, 5)
+            known_ratings_2, predicted_ratings_2, 5, 4.0)
         self.assertEqual(expected_precision, actual_precision)
 
     def test_calculate_precision_none(self):
 
         expected_precision = None
-        actual_precision = precision_in_top_n.calculate_precision([], [], 5)
+        actual_precision = precision_in_top_n.calculate_precision([], [], 5, 4.0)
         self.assertEqual(expected_precision, actual_precision)
-
 
     def test_calculate_recommender_precision(self):
 

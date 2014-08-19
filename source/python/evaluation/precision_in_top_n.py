@@ -14,7 +14,7 @@ def calculate_top_n_precision(reviews, recommender, n, min_score, num_folds):
     num_cycles = 0
 
     for i in xrange(0, num_folds):
-        print('Fold', i)
+        print('Fold', i )
         start = float(i) / num_folds
         train, test = ETLUtils.split_train_test(reviews, split=split, shuffle_data=False, start=start)
         recommender.load(train)
@@ -66,11 +66,7 @@ def calculate_precision(known_ratings, predicted_ratings, n, min_score):
     for item, predicted_rating in sorted_predicted_ratings:
         known_rating = known_ratings[item]
 
-        # print(item, known_rating)
-
         if known_rating >= min_score:
             num_hits += 1
-
-    # print(num_hits)
 
     return num_hits / min(n, len(known_ratings))
