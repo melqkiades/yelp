@@ -1,8 +1,7 @@
-import json
 import itertools
+import operator
 
 import numpy
-import operator
 from pandas import DataFrame
 
 from etl import ETLUtils
@@ -10,10 +9,6 @@ from tripadvisor.fourcity.user import User
 
 
 __author__ = 'fpena'
-
-
-def get_dictionary_subfield(dataDict, mapList):
-    return reduce(lambda d, k: d[k], mapList, dataDict)
 
 
 def remove_empty_user_reviews(reviews):
@@ -31,6 +26,20 @@ def remove_empty_user_reviews(reviews):
 
 
 def extract_fields(reviews):
+    """
+    Modifies the given list of reviews in order to extract the values contained
+    in the ratings field to top level fields. For instance, a review which is
+    in the form
+    {'user_id': 'U1', 'offering_id': :'I1',
+    'ratings': {'cleanliness': 4.0, 'location': 5.0}}
+    would become:
+
+    {'user_id': 'U1', 'offering_id': :'I1',
+    'ratings': {'cleanliness': 4.0, 'location': 5.0},
+    'cleanliness_rating': 4.0, 'location_rating': 5.0}
+
+    :param reviews: a list of reviews.
+    """
 
     ratings_criteria = [
         'cleanliness',
@@ -72,9 +81,8 @@ def remove_users_with_low_reviews(reviews, min_reviews):
     return ETLUtils.filter_records(reviews, 'user_id', users)
 
 
-def remove_single_review_hotels(reviews):
+def remove_items_with_low_reviews(reviews, min_reviews):
     """
-    TODO: Missing, this method is just a stub
     Returns a copy of the original reviews list without the reviews of hotels
     that just have been reviewed once
 
@@ -82,7 +90,7 @@ def remove_single_review_hotels(reviews):
     :return: a copy of the original reviews list without the reviews of hotels
     that just have been reviewed once
     """
-    items = get_item_list(reviews, 2)
+    items = get_item_list(reviews, min_reviews)
     return ETLUtils.filter_records(reviews, 'offering_id', items)
 
 
@@ -96,11 +104,11 @@ def remove_missing_ratings_reviews(reviews):
     missing ratings
     """
     filtered_reviews = [review for review in reviews if
-                        verify_rating_criteria2(review)]
+                        verify_rating_criteria(review)]
     return filtered_reviews
 
 
-def verify_rating_criteria2(review):
+def verify_rating_criteria(review):
     """
     Verifies if the given review contains all the ratings criteria required.
     Returns True in case the review contains all the necessary keys. Returns
@@ -133,8 +141,11 @@ def clean_reviews(reviews):
     print('Finished remove_missing_ratings_reviews')
     filtered_reviews = remove_users_with_low_reviews(filtered_reviews, 10)
     print('Finished remove_users_with_low_reviews')
-    filtered_reviews = remove_single_review_hotels(filtered_reviews)
+    filtered_reviews = remove_items_with_low_reviews(filtered_reviews, 20)
     print('Finished remove_single_review_hotels')
+    # filtered_reviews = remove_users_with_low_reviews(filtered_reviews, 10)
+    # print('Finished remove_users_with_low_reviews')
+    print('Number of reviews', len(filtered_reviews))
     return filtered_reviews
 
 
@@ -402,6 +413,19 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
 
 
 def get_user_item_ratings(reviews, user_id, apply_filter=False):
+    """
+    Returns a dictionary that contains the items that the given user has rated,
+    where the key of the dictionary is the ID of the item and the value is the
+    rating that user_id has given to that item
+
+    :param reviews: a list of reviews
+    :param user_id: the ID of the user
+    :param apply_filter: a boolean that indicates if the reviews have to be
+    filtered by user_id or not. In other word this boolean indicates if the list
+    contains reviews from several users or not. If it does contains reviews from
+    other users, those have to be removed
+    :return: a dictionary with the items that the given user has rated
+    """
 
     if apply_filter:
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
@@ -425,6 +449,20 @@ def get_user_item_ratings(reviews, user_id, apply_filter=False):
 
 
 def get_user_item_multi_ratings(reviews, user_id, apply_filter=False):
+    """
+    Returns a dictionary that contains the items that the given user has rated,
+    where the key of the dictionary is the ID of the item and the value is the
+    rating that user_id has given to that item. This function returns the
+    multi-criteria ratings the user has made.
+
+    :param reviews: a list of reviews
+    :param user_id: the ID of the user
+    :param apply_filter: a boolean that indicates if the reviews have to be
+    filtered by user_id or not. In other word this boolean indicates if the list
+    contains reviews from several users or not. If it does contains reviews from
+    other users, those have to be removed
+    :return: a dictionary with the items that the given user has rated
+    """
 
     if apply_filter:
         user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
@@ -472,21 +510,6 @@ def get_five_star_hotels_from_user(user_reviews, min_value):
 
     items = filtered_counts.index.get_level_values(1).tolist()
     return items
-
-
-def save_dictionary_list_to_file(records, file_name):
-    with open(file_name, 'wb') as out_file:
-        for record in records:
-            json.dump(record, out_file)
-            out_file.write('\n')
-
-
-def load_json_file(file_name):
-    data = []
-    with open(file_name) as f:
-        for line in f:
-            data.append(json.loads(line))
-    return data
 
 
 def get_common_items(user_dictionary, user1, user2):
@@ -538,7 +561,7 @@ def get_matrix_column(matrix, i):
 def main():
     # reviews = pre_process_reviews()
     # save_dictionary_list_to_file(reviews, '/Users/fpena/tmp/filtered_reviews.json')
-    reviews = load_json_file('/Users/fpena/tmp/filtered_reviews.json')
+    reviews = ETLUtils.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
     data_frame = DataFrame(reviews)
     column = 'offering_id'
     groupby = data_frame.groupby(column)
