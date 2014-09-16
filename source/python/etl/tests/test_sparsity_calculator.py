@@ -2,7 +2,7 @@ from tripadvisor.fourcity import movielens_extractor
 
 __author__ = 'fpena'
 
-from etl import sparsity_calculator
+from etl import sparsity_calculator, ETLUtils
 from tripadvisor.fourcity import extractor
 from unittest import TestCase
 
@@ -56,7 +56,14 @@ class TestSparsityCalculator(TestCase):
         self.assertRaises(ValueError, sparsity_calculator.get_sparsity, [])
 
 
-# movielens_reviews = movielens_extractor.get_ml_100K_dataset()
-# fourcity_reviews = extractor.load_json_file('/Users/fpena/tmp/filtered_reviews.json')
-# print('Movie Lens', sparsity_calculator.get_sparsity(movielens_reviews))
-# print('Four City', sparsity_calculator.get_sparsity(fourcity_reviews))
+# reviews = movielens_extractor.get_ml_100K_dataset()
+# reviews = ETLUtils.load_json_file('/Users/fpena/tmp/filtered_reviews_multi.json')
+reviews = ETLUtils.load_json_file('/Users/fpena/tmp/filtered_reviews_multi_new.json')
+# reviews = extractor.pre_process_reviews()
+# ETLUtils.save_json_file('/Users/fpena/tmp/filtered_reviews_multi_new.json', reviews)
+
+print('Movie Lens', sparsity_calculator.get_sparsity(reviews))
+# print('Four City', sparsity_calculator.get_sparsity(reviews))
+print('Number of reviews', len(reviews))
+print('Number of users', len(extractor.get_groupby_list(reviews, 'user_id')))
+print('Number of items', len(extractor.get_groupby_list(reviews, 'offering_id')))
