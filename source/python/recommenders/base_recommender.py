@@ -37,17 +37,22 @@ class BaseRecommender(object):
         self.user_dictionary = None
         self.user_similarity_matrix = None
 
-    def get_neighbourhood(self, user_id):
+    def get_neighbourhood(self, user_id, item_id):
 
-        if self._num_neighbors is None:
-            neighbourhood = list(self.user_ids)
-            neighbourhood.remove(user_id)
-            return neighbourhood
+        # if self._num_neighbors is None:
+        #     neighbourhood = list(self.user_ids)
+        #     neighbourhood.remove(user_id)
+        #     return neighbourhood
 
-        # Sort the users by similarity
         similarity_matrix = self.user_similarity_matrix[user_id].copy()
         similarity_matrix.pop(user_id, None)
 
+        # We remove the users who have not rated the given item
+        similarity_matrix = {
+            k: v for k, v in similarity_matrix.items()
+            if item_id in self.user_dictionary[k].item_ratings}
+
+        # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             similarity_matrix)  # [:self._num_neighbors]
 

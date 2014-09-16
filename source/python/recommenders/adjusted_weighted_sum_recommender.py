@@ -14,7 +14,7 @@ class AdjustedWeightedSumRecommender(BaseRecommender):
         if user_id not in self.user_ids:
             return None
 
-        neighbourhood = self.get_neighbourhood(user_id)
+        neighbourhood = self.get_neighbourhood(user_id, item_id)
 
         weighted_sum = 0.
         z_denominator = 0.
@@ -44,5 +44,7 @@ class AdjustedWeightedSumRecommender(BaseRecommender):
         user_average_rating = \
             self.user_dictionary[user_id].average_overall_rating
         predicted_rating = user_average_rating + weighted_sum / z_denominator
+
+        # print('AWSR Predicted rating', predicted_rating)
 
         return predicted_rating

@@ -38,6 +38,7 @@ class MultiCriteriaBaseRecommender(BaseRecommender):
         super(MultiCriteriaBaseRecommender, self).clear()
         self.user_cluster_dictionary = None
 
+    # TODO: Add the item_id as a parameter in order to optimize the method
     def get_neighbourhood(self, user_id):
 
         cluster_name = self.user_dictionary[user_id].cluster
