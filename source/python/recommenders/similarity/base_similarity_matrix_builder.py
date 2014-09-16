@@ -24,9 +24,10 @@ class BaseSimilarityMatrixBuilder:
         for user1 in user_ids:
             user_similarity_matrix[user1] = {}
             for user2 in user_ids:
-                user_similarity_matrix[user1][user2] =\
-                    self.calculate_users_similarity(
-                        user_dictionary, user1, user2)
+                similarity = self.calculate_users_similarity(
+                    user_dictionary, user1, user2)
+                if similarity is not None:
+                    user_similarity_matrix[user1][user2] = similarity
 
         return user_similarity_matrix
 
