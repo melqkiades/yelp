@@ -173,7 +173,7 @@ def pre_process_reviews():
     return reviews
 
 
-def create_ratings_matrix2(reviews):
+def create_ratings_matrix(reviews):
     """
     Returns (ratings_matrix, overall_ratings_list), where ratings_matrix is a
     list of lists containing the values for all the rating criteria (except
@@ -307,7 +307,7 @@ def get_criteria_weights(reviews, user_id, apply_filter=True):
     else:
         user_reviews = reviews
 
-    ratings_matrix, overall_ratings_list = create_ratings_matrix2(user_reviews)
+    ratings_matrix, overall_ratings_list = create_ratings_matrix(user_reviews)
 
     overall_ratings_matrix = numpy.vstack(
         [overall_ratings_list, numpy.ones(len(overall_ratings_list))]).T
