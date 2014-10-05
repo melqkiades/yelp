@@ -1,6 +1,9 @@
 import math
+from pandas import DataFrame
+import time
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
+from tripadvisor.fourcity import movielens_extractor
 
 __author__ = 'fpena'
 
@@ -47,6 +50,28 @@ class ReviewsDatasetAnalyzer:
             non_missing_reviews += len(set(item_ids).intersection(set(user_items)))
 
         return 1 - non_missing_reviews / total_expected_reviews
+
+    def calculate_sparsity_approx(self):
+        """
+        Returns the approximate percentage of missing ratings in the list of
+        reviews of this ReviewsDatasetAnalyzer. This method is an approximation
+        because it counts two reviews from the same user to the same item as
+        two, when the correct count should be one. This method was created to
+        calculate the sparsity in very big datasets where calculating the exact
+        sparsity can be a very slow process.
+
+        :return: the rate of approximate missing ratings
+        (i.e. number of missing ratings / (number of reviews))
+        :raise ValueError: in case an empty list is given
+        """
+        if not self.reviews:
+            raise ValueError('Can not determine the sparsity for an empty list')
+
+        user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
+        item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
+        total_expected_reviews = float(len(user_ids) * len(item_ids))
+
+        return 1 - float(len(self.reviews)) / total_expected_reviews
 
     def count_items_in_common(self):
         """
@@ -108,11 +133,39 @@ class ReviewsDatasetAnalyzer:
 
         return common_item_percentages
 
+    def count_reviews_by_user(self):
+        data_frame = DataFrame(self.reviews)
+        counts = data_frame.groupby('user_id').size()
+        return counts
+
+    def count_reviews_by_item(self):
+        data_frame = DataFrame(self.reviews)
+        counts = data_frame.groupby('offering_id').size()
+        return counts
+
     @staticmethod
     def nCr(n, r):
         f = math.factorial
         return f(n) / f(r) / f(n-r)
 
+
+# file_path = '/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json'
+# reviews = ETLUtils.load_json_file(file_path)
+# reviews = extractor.pre_process_reviews()
+# reviews = movielens_extractor.get_ml_100K_dataset()
+#
+# reviewsDatasetAnalyzer = ReviewsDatasetAnalyzer(reviews)
+# print(reviewsDatasetAnalyzer.count_reviews_by_user())
+# print(reviewsDatasetAnalyzer.count_reviews_by_item())
+# common_item_counts = reviewsDatasetAnalyzer.count_items_in_common()
+# print(common_item_counts)
+# print (time.strftime("%H:%M:%S"))
+# print('Sparsity', reviewsDatasetAnalyzer.calculate_sparsity())
+# print (time.strftime("%H:%M:%S"))
+# print('Sparsity Approx', reviewsDatasetAnalyzer.calculate_sparsity_approx())
+# print (time.strftime("%H:%M:%S"))
+# print(reviewsDatasetAnalyzer.analyze_common_items_count(common_item_counts))
+# print(reviewsDatasetAnalyzer.analyze_common_items_count(common_item_counts, True))
 
 # for i in range(10):
 #     for j in range(i+1, 10):

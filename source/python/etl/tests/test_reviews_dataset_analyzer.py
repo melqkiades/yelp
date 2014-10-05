@@ -1,5 +1,7 @@
 from unittest import TestCase
-from tripadvisor.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
+
+from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
+
 
 __author__ = 'fpena'
 
@@ -84,6 +86,33 @@ class TestReviewsDatasetAnalyzer(TestCase):
         expected_value = 1 - 3./9
         rda = ReviewsDatasetAnalyzer(reviews_matrix_3_2)
         actual_value = rda.calculate_sparsity()
+        self.assertEqual(expected_value, actual_value)
+
+        expected_value = 1 - 14./24
+        rda = ReviewsDatasetAnalyzer(reviews)
+        actual_value = rda.calculate_sparsity()
+        self.assertEqual(expected_value, actual_value)
+
+    def test_calculate_sparsity_approx(self):
+
+        expected_value = 0.
+        rda = ReviewsDatasetAnalyzer(reviews_matrix_3)
+        actual_value = rda.calculate_sparsity()
+        self.assertEqual(expected_value, actual_value)
+
+        expected_value = 1 - 6./9
+        rda = ReviewsDatasetAnalyzer(reviews_matrix_3_1)
+        actual_value = rda.calculate_sparsity()
+        self.assertEqual(expected_value, actual_value)
+
+        expected_value = 1 - 3./9
+        rda = ReviewsDatasetAnalyzer(reviews_matrix_3_2)
+        actual_value = rda.calculate_sparsity()
+        self.assertEqual(expected_value, actual_value)
+
+        expected_value = 1 - 15./24
+        rda = ReviewsDatasetAnalyzer(reviews)
+        actual_value = rda.calculate_sparsity_approx()
         self.assertEqual(expected_value, actual_value)
 
     def test_init_empty(self):
