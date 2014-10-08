@@ -86,6 +86,8 @@ class ReviewsDatasetAnalyzerReport:
         common_items_box_code =\
             'from pylab import boxplot\n' +\
             'my_data = [key for key, value in common_item_counts.iteritems() for i in xrange(value)]\n' +\
+            'mean_common_items = float(sum(my_data))/len(my_data)\n' +\
+            'print(\'Average number of common items between two users:\', mean_common_items)\n' +\
             'boxplot(my_data)'
         common_items_box_cell = nbf.new_code_cell(common_items_box_code)
 
@@ -109,18 +111,18 @@ class ReviewsDatasetAnalyzerReport:
     @staticmethod
     def generate_report_ml100k():
         reviews = movielens_extractor.get_ml_100K_dataset()
-        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/test_ml100k.ipynb'
+        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/dataset_analysis_report_ml100k.ipynb'
         load_reviews_code =\
             'from tripadvisor.fourcity import movielens_extractor\n' +\
             'reviews = movielens_extractor.get_ml_100K_dataset()'
-        dataset_name = 'Sorina Likes the New Asian Guy\'s Butt 100k'
+        dataset_name = 'MovieLens 100k'
         ReviewsDatasetAnalyzerReport.generate_report(
             reviews, dataset_name, file_name, load_reviews_code)
 
     @staticmethod
     def generate_report_fourcity_filtered():
         file_path = '/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json'
-        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/test_fourcity.ipynb'
+        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/dataset_analysis_report_fourcity.ipynb'
         reviews = ETLUtils.load_json_file(file_path)
         load_reviews_code =\
             'file_path = \'/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json\'\n' +\
@@ -130,7 +132,7 @@ class ReviewsDatasetAnalyzerReport:
     @staticmethod
     def generate_report_ruihai():
         file_path = '/Users/fpena/UCC/Thesis/datasets/TripHotelReviewXml/cleaned_reviews.json'
-        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/test_ruihai.ipynb'
+        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/dataset_analysis_report_ruihai.ipynb'
         reviews = ETLUtils.load_json_file(file_path)
         load_reviews_code =\
             'file_path = \'/Users/fpena/UCC/Thesis/datasets/TripHotelReviewXml/cleaned_reviews.json\'\n' +\
