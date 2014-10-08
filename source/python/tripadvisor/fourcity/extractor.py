@@ -21,7 +21,7 @@ def remove_empty_user_reviews(reviews):
     users who have an empty ID
     """
     filtered_reviews = [review for review in reviews if
-                        review['user_id'] != '']
+                        review['user_id'] != '' and review['user_id'] != 'null']
     return filtered_reviews
 
 
@@ -157,7 +157,7 @@ def pre_process_reviews():
 
     :return: a list of preprocessed reviews
     """
-    data_folder = '../../../../../../datasets/TripAdvisor/Four-City/'
+    data_folder = '/Users/fpena/UCC/Thesis/datasets/TripAdvisor/Four-City/'
     review_file_path = data_folder + 'review.txt'
     # review_file_path = data_folder + 'review-short.json'
     reviews = ETLUtils.load_json_file(review_file_path)
