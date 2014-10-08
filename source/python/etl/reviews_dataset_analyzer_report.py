@@ -114,7 +114,7 @@ class ReviewsDatasetAnalyzerReport:
             'from tripadvisor.fourcity import movielens_extractor\n' +\
             'reviews = movielens_extractor.get_ml_100K_dataset()'
         dataset_name = 'Sorina Likes the New Asian Guy\'s Butt 100k'
-        ReviewsDatasetAnalyzer.generate_report(
+        ReviewsDatasetAnalyzerReport.generate_report(
             reviews, dataset_name, file_name, load_reviews_code)
 
     @staticmethod
@@ -125,18 +125,18 @@ class ReviewsDatasetAnalyzerReport:
         load_reviews_code =\
             'file_path = \'/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json\'\n' +\
             'reviews = ETLUtils.load_json_file(file_path)\n'
-        ReviewsDatasetAnalyzer.generate_report(reviews, 'Fourcity TripAdvisor', file_name, load_reviews_code)
+        ReviewsDatasetAnalyzerReport.generate_report(reviews, 'Fourcity TripAdvisor', file_name, load_reviews_code)
 
     @staticmethod
     def generate_report_ruihai():
         file_path = '/Users/fpena/UCC/Thesis/datasets/TripHotelReviewXml/cleaned_reviews.json'
-        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/test_ruihaiy.ipynb'
+        file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/test_ruihai.ipynb'
         reviews = ETLUtils.load_json_file(file_path)
         load_reviews_code =\
             'file_path = \'/Users/fpena/UCC/Thesis/datasets/TripHotelReviewXml/cleaned_reviews.json\'\n' +\
             'reviews = ETLUtils.load_json_file(file_path)\n'
-        ReviewsDatasetAnalyzer.generate_report(reviews, 'Fourcity TripAdvisor', file_name, load_reviews_code)
+        ReviewsDatasetAnalyzerReport.generate_report(reviews, 'Ruihai TripAdvisor', file_name, load_reviews_code)
 
-ReviewsDatasetAnalyzer.generate_report_fourcity_filtered()
-ReviewsDatasetAnalyzer.generate_report_ml100k()
-ReviewsDatasetAnalyzer.generate_report_ruihai()
+ReviewsDatasetAnalyzerReport.generate_report_fourcity_filtered()
+ReviewsDatasetAnalyzerReport.generate_report_ml100k()
+ReviewsDatasetAnalyzerReport.generate_report_ruihai()
