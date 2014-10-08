@@ -1,9 +1,7 @@
 import math
 from pandas import DataFrame
-import time
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
-from tripadvisor.fourcity import movielens_extractor
 
 __author__ = 'fpena'
 
@@ -23,7 +21,13 @@ class ReviewsDatasetAnalyzer:
 
         self.reviews = reviews
         self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
+        self.item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
+        self.num_reviews = len(self.reviews)
         self.num_users = len(self.user_ids)
+        self.num_items = len(self.item_ids)
+        self.data_frame = DataFrame(self.reviews)
+        self.users_count = self.data_frame.groupby('user_id').size()
+        self.items_count = self.data_frame.groupby('offering_id').size()
 
     def calculate_sparsity(self):
         """
@@ -133,15 +137,15 @@ class ReviewsDatasetAnalyzer:
 
         return common_item_percentages
 
-    def count_reviews_by_user(self):
-        data_frame = DataFrame(self.reviews)
-        counts = data_frame.groupby('user_id').size()
-        return counts
+    def summarize_reviews_by_field(self, field):
 
-    def count_reviews_by_item(self):
-        data_frame = DataFrame(self.reviews)
-        counts = data_frame.groupby('offering_id').size()
-        return counts
+        counts = self.data_frame.groupby(field).size()
+
+        values = counts.values
+        values_data_frame = DataFrame(values, columns=['frequency'])
+        values_count = values_data_frame.groupby('frequency').size()
+
+        return values_count
 
     @staticmethod
     def nCr(n, r):
@@ -149,15 +153,24 @@ class ReviewsDatasetAnalyzer:
         return f(n) / f(r) / f(n-r)
 
 
-# file_path = '/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json'
-# reviews = ETLUtils.load_json_file(file_path)
-# reviews = extractor.pre_process_reviews()
-# reviews = movielens_extractor.get_ml_100K_dataset()
+file_path = '/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json'
+my_reviews = ETLUtils.load_json_file(file_path)
+# my_reviews = extractor.pre_process_reviews()
+# my_reviews = movielens_extractor.get_ml_100K_dataset()
 #
-# reviewsDatasetAnalyzer = ReviewsDatasetAnalyzer(reviews)
-# print(reviewsDatasetAnalyzer.count_reviews_by_user())
+reviewsDatasetAnalyzer = ReviewsDatasetAnalyzer(my_reviews)
+# my_counts = reviewsDatasetAnalyzer.summarize_reviews_by_field('user_id')
+# file_name = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/test.ipynb'
+# my_load_reviews_code =\
+#     'file_path = \'/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json\'\n' +\
+#     'reviews = ETLUtils.load_json_file(file_path)\n'
+# my_load_reviews_code =\
+#     'from tripadvisor.fourcity import movielens_extractor\n' +\
+#     'reviews = movielens_extractor.get_ml_100K_dataset()'
+# ReviewsDatasetAnalyzer.generate_report(my_reviews, 'Fourcity TripAdvisor', file_name, my_load_reviews_code)
+# print(my_counts)
 # print(reviewsDatasetAnalyzer.count_reviews_by_item())
-# common_item_counts = reviewsDatasetAnalyzer.count_items_in_common()
+common_item_counts = reviewsDatasetAnalyzer.count_items_in_common()
 # print(common_item_counts)
 # print (time.strftime("%H:%M:%S"))
 # print('Sparsity', reviewsDatasetAnalyzer.calculate_sparsity())
@@ -167,6 +180,3 @@ class ReviewsDatasetAnalyzer:
 # print(reviewsDatasetAnalyzer.analyze_common_items_count(common_item_counts))
 # print(reviewsDatasetAnalyzer.analyze_common_items_count(common_item_counts, True))
 
-# for i in range(10):
-#     for j in range(i+1, 10):
-#         print(i, j)
