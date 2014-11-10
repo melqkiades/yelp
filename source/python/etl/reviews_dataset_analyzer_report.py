@@ -139,6 +139,17 @@ class ReviewsDatasetAnalyzerReport:
             'reviews = ETLUtils.load_json_file(file_path)\n'
         ReviewsDatasetAnalyzerReport.generate_report(reviews, 'Ruihai TripAdvisor', file_name, load_reviews_code)
 
-ReviewsDatasetAnalyzerReport.generate_report_fourcity_filtered()
-ReviewsDatasetAnalyzerReport.generate_report_ml100k()
-ReviewsDatasetAnalyzerReport.generate_report_ruihai()
+    @staticmethod
+    def generate_report_yelp_phoenix():
+        reviews_file = '/Users/fpena/UCC/Thesis/datasets/yelp_phoenix_academic_dataset/filtered_reviews.json'
+        report_file = '/Users/fpena/UCC/Thesis/projects/yelp/notebooks/dataset_analysis_yelp_phoenix.ipynb'
+        reviews = ETLUtils.load_json_file(reviews_file)
+        load_reviews_code =\
+            'file_path = \'' + reviews_file + '\'\n' +\
+            'reviews = ETLUtils.load_json_file(file_path)\n'
+        ReviewsDatasetAnalyzerReport.generate_report(reviews, 'Yelp Phoenix', report_file, load_reviews_code)
+
+# ReviewsDatasetAnalyzerReport.generate_report_fourcity_filtered()
+# ReviewsDatasetAnalyzerReport.generate_report_ml100k()
+# ReviewsDatasetAnalyzerReport.generate_report_ruihai()
+ReviewsDatasetAnalyzerReport.generate_report_yelp_phoenix()

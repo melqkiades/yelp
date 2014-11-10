@@ -153,7 +153,8 @@ class ReviewsDatasetAnalyzer:
         return f(n) / f(r) / f(n-r)
 
 
-file_path = '/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json'
+file_path = '/Users/fpena/UCC/Thesis/datasets/yelp_phoenix_academic_dataset/filtered_reviews.json'
+# file_path = '/Users/fpena/tmp/filtered_reviews_multi_non_sparse_shuffled.json'
 my_reviews = ETLUtils.load_json_file(file_path)
 # my_reviews = extractor.pre_process_reviews()
 # my_reviews = movielens_extractor.get_ml_100K_dataset()
@@ -170,7 +171,7 @@ reviewsDatasetAnalyzer = ReviewsDatasetAnalyzer(my_reviews)
 # ReviewsDatasetAnalyzer.generate_report(my_reviews, 'Fourcity TripAdvisor', file_name, my_load_reviews_code)
 # print(my_counts)
 # print(reviewsDatasetAnalyzer.count_reviews_by_item())
-common_item_counts = reviewsDatasetAnalyzer.count_items_in_common()
+# common_item_counts = reviewsDatasetAnalyzer.count_items_in_common()
 # print(common_item_counts)
 # print (time.strftime("%H:%M:%S"))
 # print('Sparsity', reviewsDatasetAnalyzer.calculate_sparsity())
@@ -180,3 +181,4 @@ common_item_counts = reviewsDatasetAnalyzer.count_items_in_common()
 # print(reviewsDatasetAnalyzer.analyze_common_items_count(common_item_counts))
 # print(reviewsDatasetAnalyzer.analyze_common_items_count(common_item_counts, True))
 
+# print(reviewsDatasetAnalyzer.summarize_reviews_by_field('user_id'))
