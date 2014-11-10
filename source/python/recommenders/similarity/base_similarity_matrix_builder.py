@@ -11,6 +11,7 @@ class BaseSimilarityMatrixBuilder:
         self._name = name
         self._similarity_metric = similarity_metric
         self._is_multi_criteria = is_multi_criteria
+        self._min_common_items = None
 
     def build_similarity_matrix(self, user_dictionary, user_ids):
         """

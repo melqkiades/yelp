@@ -19,6 +19,10 @@ class MultiSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
         if not common_items:
             return None
 
+        if self._min_common_items is not None and len(
+                common_items) < self._min_common_items:
+            return None
+
         user1_overall_ratings = user_dictionary[user1].item_ratings
         user1_multi_ratings = user_dictionary[user1].item_multi_ratings
 

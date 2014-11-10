@@ -7,7 +7,6 @@ __author__ = 'fpena'
 
 
 class SingleSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
-
     def __init__(self, similarity_metric):
         super(SingleSimilarityMatrixBuilder, self).__init__(
             'SingleSimilarity', similarity_metric, False)
@@ -16,6 +15,10 @@ class SingleSimilarityMatrixBuilder(BaseSimilarityMatrixBuilder):
         common_items = extractor.get_common_items(user_dictionary, user1, user2)
 
         if not common_items:
+            return None
+
+        if self._min_common_items is not None and len(
+                common_items) < self._min_common_items:
             return None
 
         user1_ratings =\
