@@ -22,95 +22,108 @@ if restart==1
   momentum=0.8; 
 
   epoch=1; 
-  maxepoch=50; 
+  maxepoch=5; 
 
   load moviedata % Triplets: {user_id, movie_id, rating} 
   mean_rating = mean(train_vec(:,3)); 
  
-  pairs_tr = length(train_vec); % training data 
-  pairs_pr = length(probe_vec); % validation data 
+  num_training_records = length(train_vec); % training data 
+  num_validation_records = length(probe_vec); % validation data 
 
-  numbatches= 9; % Number of batches  
-  num_m = 3952;  % Number of movies 
-  num_p = 6040;  % Number of users 
-  num_feat = 10; % Rank 10 decomposition 
+  num_batches= 9; % Number of batches  
+  num_items = 3952;  % Number of items 
+  num_users = 6040;  % Number of users 
+  num_features = 10; % Rank 10 decomposition 
+  batch_size = num_training_records/num_batches; % number training triplets per batch 
+  alpha = epsilon/batch_size
 
-  w1_M1     = 0.1*randn(num_m, num_feat); % Movie feature vectors
-  w1_P1     = 0.1*randn(num_p, num_feat); % User feature vecators
-  w1_M1_inc = zeros(num_m, num_feat);
-  w1_P1_inc = zeros(num_p, num_feat);
+  item_features     = 0.1*randn(num_items, num_features); % Item feature vectors
+  user_features     = 0.1*randn(num_users, num_features); % User feature vectors
+  item_features_inc = zeros(num_items, num_features);
+  user_features_inc = zeros(num_users, num_features);
+
 
 end
 
 
 for epoch = epoch:maxepoch
-  rr = randperm(pairs_tr);
-  train_vec = train_vec(rr,:);
-  clear rr 
 
-  for batch = 1:numbatches
+  % In each cycle the training vector is shuffled
+  training_indexes = randperm(num_training_records);
+  train_vec = train_vec(training_indexes,:);
+  clear training_indexes 
+
+  for batch = 1:num_batches
     fprintf(1,'epoch %d batch %d \r',epoch,batch);
-    N=100000; % number training triplets per batch 
 
-    aa_p   = double(train_vec((batch-1)*N+1:batch*N,1));
-    aa_m   = double(train_vec((batch-1)*N+1:batch*N,2));
-    rating = double(train_vec((batch-1)*N+1:batch*N,3));
+    users   = double(train_vec((batch-1)*batch_size+1:batch*batch_size,1));
+    items   = double(train_vec((batch-1)*batch_size+1:batch*batch_size,2));
+    ratings = double(train_vec((batch-1)*batch_size+1:batch*batch_size,3));
 
-    rating = rating-mean_rating; % Default prediction is the mean rating. 
+    ratings = ratings-mean_rating; % Default prediction is the mean rating. 
 
     %%%%%%%%%%%%%% Compute Predictions %%%%%%%%%%%%%%%%%
-    pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2);
-    f = sum( (pred_out - rating).^2 + ...
-        0.5*lambda*( sum( (w1_M1(aa_m,:).^2 + w1_P1(aa_p,:).^2),2)));
+    predicted_rating = sum(item_features(items,:).*user_features(users,:),2);
+    %f = sum( (predicted_rating - ratings).^2 + ...
+    %    0.5*lambda*( sum( (item_features(items,:).^2 + user_features(users,:).^2),2)));
+    % Note that in the above cost function the cost is calculated using (predicted_rating - ratings).^2
+    % That means that the derivate is 2 * (predicted_rating - ratings)
+    % Normally the error is divided by 2 (multiplied by 0.5) in the cost function
 
     %%%%%%%%%%%%%% Compute Gradients %%%%%%%%%%%%%%%%%%%
-    IO = repmat(2*(pred_out - rating),1,num_feat);
-    Ix_m=IO.*w1_P1(aa_p,:) + lambda*w1_M1(aa_m,:);
-    Ix_p=IO.*w1_M1(aa_m,:) + lambda*w1_P1(aa_p,:);
+    error_matrix = repmat(2*(predicted_rating - ratings),1,num_features);
+    item_gradient=error_matrix.*user_features(users,:) + lambda*item_features(items,:);
+    user_gradient=error_matrix.*item_features(items,:) + lambda*user_features(users,:);
+    % In the above line the gradient is calculated for every rating, but it has to be
+    % grouped (by summing it) for each user and item features
 
-    dw1_M1 = zeros(num_m,num_feat);
-    dw1_P1 = zeros(num_p,num_feat);
+    d_item_features = zeros(num_items,num_features);
+    d_user_features = zeros(num_users,num_features);
 
-    for ii=1:N
-      dw1_M1(aa_m(ii),:) =  dw1_M1(aa_m(ii),:) +  Ix_m(ii,:);
-      dw1_P1(aa_p(ii),:) =  dw1_P1(aa_p(ii),:) +  Ix_p(ii,:);
+    % Here is where the error is grouped for each user and item
+    for ii=1:batch_size
+      d_item_features(items(ii),:) =  d_item_features(items(ii),:) +  item_gradient(ii,:);
+      d_user_features(users(ii),:) =  d_user_features(users(ii),:) +  user_gradient(ii,:);
     end
 
-    %%%% Update movie and user features %%%%%%%%%%%
+    %%%% Update item and user features %%%%%%%%%%%
+    % The update is done using the momentum technique of gradient descent
 
-    w1_M1_inc = momentum*w1_M1_inc + epsilon*dw1_M1/N;
-    w1_M1 =  w1_M1 - w1_M1_inc;
+    item_features_inc = momentum*item_features_inc + alpha*d_item_features;
+    item_features =  item_features - item_features_inc;
 
-    w1_P1_inc = momentum*w1_P1_inc + epsilon*dw1_P1/N;
-    w1_P1 =  w1_P1 - w1_P1_inc;
+    user_features_inc = momentum*user_features_inc + alpha*d_user_features;
+    user_features =  user_features - user_features_inc;
   end 
 
   %%%%%%%%%%%%%% Compute Predictions after Paramete Updates %%%%%%%%%%%%%%%%%
-  pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2);
-  f_s = sum( (pred_out - rating).^2 + ...
-        0.5*lambda*( sum( (w1_M1(aa_m,:).^2 + w1_P1(aa_p,:).^2),2)));
-  err_train(epoch) = sqrt(f_s/N);
+  predicted_rating = sum(item_features(items,:).*user_features(users,:),2);
+  f_s = sum( (predicted_rating - ratings).^2 + ...
+        0.5*lambda*( sum( (item_features(items,:).^2 + user_features(users,:).^2),2)));
+  err_train(epoch) = sqrt(f_s/batch_size);
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%% Compute predictions on the validation set %%%%%%%%%%%%%%%%%%%%%% 
-  NN=pairs_pr;
+  % NN=num_validation_records;
 
-  aa_p = double(probe_vec(:,1));
-  aa_m = double(probe_vec(:,2));
-  rating = double(probe_vec(:,3));
+  users = double(probe_vec(:,1));
+  items = double(probe_vec(:,2));
+  ratings = double(probe_vec(:,3));
 
-  pred_out = sum(w1_M1(aa_m,:).*w1_P1(aa_p,:),2) + mean_rating;
-  ff = find(pred_out>5); pred_out(ff)=5; % Clip predictions 
-  ff = find(pred_out<1); pred_out(ff)=1;
+  predicted_rating = sum(item_features(items,:).*user_features(users,:),2) + mean_rating;
+  ff = find(predicted_rating>5); predicted_rating(ff)=5; % Clip predictions 
+  ff = find(predicted_rating<1); predicted_rating(ff)=1;
 
-  err_valid(epoch) = sqrt(sum((pred_out- rating).^2)/NN);
+  err_valid(epoch) = sqrt(sum((predicted_rating- ratings).^2)/num_validation_records);
   fprintf(1, 'epoch %4i batch %4i Training RMSE %6.4f  Test RMSE %6.4f  \n', ...
               epoch, batch, err_train(epoch), err_valid(epoch));
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  if (rem(epoch,10))==0
-     save pmf_weight w1_M1 w1_P1
-  end
+  %if (rem(epoch,10))==0
+     %save pmf_weight item_features user_features
+  %end
+
+save pmf_weight item_features user_features
 
 end 
 
