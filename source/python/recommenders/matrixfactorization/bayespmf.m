@@ -23,8 +23,6 @@ if restart==1
   maxepoch=50; 
 
   iter=0; 
-  num_items = 3952;
-  num_users = 6040;
   num_features = 10;
 
   % Initialize hierarchical priors 
@@ -61,9 +59,21 @@ if restart==1
   user_features_l = user_features; 
   item_features_l = item_features; 
   clear user_features item_features;
+
+  num_items = size(item_features_l,1);
+  num_users = size(user_features_l,1);
+  disp('num_items');
+  disp(num_items);
+  disp('num_users');
+  disp(num_users);
+
+  df_mpost_item = df_m+num_items;  % This is a constant (num_items + num_features) 
+  df_mpost_user = df_u+num_users; % This is a constant (num_users + num_features)
   
   item_features_l = 0.1*randn(num_items, num_features); % Item feature vectors
   user_features_l = 0.1*randn(num_users, num_features); % User feature vectors
+
+  
 
 
   % Initialization using MAP solution found by PMF. 
@@ -86,51 +96,26 @@ for epoch = epoch:maxepoch
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%% Sample from movie hyperparams (see paper for details)  
-  % num_items = size(item_features_l,1);
-  % disp(item_features_l);
   x_bar = mean(item_features_l)'; 
-  % disp('x_bar')
-  % disp(size(x_bar))
   S_bar = cov(item_features_l); 
-  % disp(S_bar)
-  % disp(size(S_bar))
 
-  WI_post = inv(inv(WI_m) + num_items/1*S_bar + ...
-            num_items*b0_m*(mu0_m - x_bar)*(mu0_m - x_bar)'/(1*(b0_m+num_items)));
-  % disp('WI_post')
-  % disp(size(WI_post))
+  WI_post = inv(inv(WI_m) + num_items*S_bar + ...
+            num_items*b0_m*(mu0_m - x_bar)*(mu0_m - x_bar)'/(b0_m+num_items));
   WI_post = (WI_post + WI_post')/2;
-
-  df_mpost = df_m+num_items;  % This is a constant (num_items + num_features)
-  %alpha_m = wishrnd(WI_post,df_mpost);   
-  alpha_m = wishrnd(WI_post,df_mpost,[]);
-  % disp('alpha_m');
-  % disp(alpha_m);
+  alpha_m = wishrnd(WI_post,df_mpost_item,[]);
   mu_temp = (b0_m*mu0_m + num_items*x_bar)/(b0_m+num_items);
-  % disp('b0_m');
-  % disp(b0_m);
-  % disp('num_items');
-  % disp(num_items);
-  % disp('mu0_m');
-  % disp(mu0_m);
-  % disp('x_bar');
-  % disp(x_bar);
-  % disp('mu_temp');
-  % disp(mu_temp);
   lam = chol( inv((b0_m+num_items)*alpha_m) ); lam=lam';
   mu_m = lam*randn(num_features,1)+mu_temp;
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%% Sample from user hyperparams
-  % num_users = size(user_features_l,1);
   x_bar = mean(user_features_l)';
   S_bar = cov(user_features_l);
 
-  WI_post = inv(inv(WI_u) + num_users/1*S_bar + ...
-            num_users*b0_u*(mu0_u - x_bar)*(mu0_u - x_bar)'/(1*(b0_u+num_users)));
+  WI_post = inv(inv(WI_u) + num_users*S_bar + ...
+            num_users*b0_u*(mu0_u - x_bar)*(mu0_u - x_bar)'/(b0_u+num_users));
   WI_post = (WI_post + WI_post')/2;
-  df_mpost = df_u+num_users; % This is a constant (num_users + num_features)
-  alpha_u = wishrnd(WI_post,df_mpost,[]);
+  alpha_u = wishrnd(WI_post,df_mpost_user,[]);
   mu_temp = (b0_u*mu0_u + num_users*x_bar)/(b0_u+num_users);
   lam = chol( inv((b0_u+num_users)*alpha_u) ); lam=lam';
   mu_u = lam*randn(num_features,1)+mu_temp;
@@ -149,13 +134,10 @@ for epoch = epoch:maxepoch
        users = find(count(:,item)>0);  % finds the position of the user that have rated the item
        features = user_features_l(users,:); % obtains the features of the users who have rated the item
        ratings = count(users,item)-mean_rating;  % obtains the ratings given by users for the item minus the mean rating
-       % disp(size(rr));
        covar = inv((alpha_m+beta*features'*features));  % equation 12 (without the inverse (-1)).
        mean_m = covar * (beta*features'*ratings+alpha_m*mu_m);  % equation 13, but here M (which is supposed to be V_j) is being transposed
        lam = chol(covar); lam=lam'; 
        item_features_l(item,:) = lam*randn(num_features,1)+mean_m;  % equation 11
-       % disp('item_features_l');
-       % disp(size(item_features_l));
        % Note that what here is called beta in the paper is called alpha.
        % And what here is called alpha_m in the paper is called alpha_m in the paper is called Lambda_m
      end
@@ -167,7 +149,6 @@ for epoch = epoch:maxepoch
        items = find(count(:,user)>0);
        features = item_features_l(items,:);
        ratings = count(items,user)-mean_rating;
-       % disp(size(rr));
        covar = inv((alpha_u+beta*features'*features));
        mean_u = covar * (beta*features'*ratings+alpha_u*mu_u);
        lam = chol(covar); lam=lam'; 
