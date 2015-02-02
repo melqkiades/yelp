@@ -47,6 +47,38 @@ if restart==1
   mean_rating = mean(train_vec(:,3));
   ratings_test = double(probe_vec(:,3));
 
+  disp(probe_vec(3,:));
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  movielens_data = dlmread('/Users/fpena/UCC/Thesis/datasets/uncompressed/ml-100k/u.data');
+  disp(size(movielens_data,1));
+  num_records = size(movielens_data,1);
+  
+  % We shuffle the data
+  % indexes = randperm(num_records);
+  % movielens_data = movielens_data(indexes,:);
+
+  train_pct = 0.9;
+  train_size = train_pct * size(movielens_data,1);
+  train_vec = movielens_data(1:train_size,1:3);
+  probe_vec = movielens_data(train_size+1:end,1:3);
+  mean_rating = mean(train_vec(:,3));
+  ratings_test = double(probe_vec(:,3));
+
+  disp('Train');
+  disp(size(train_vec));
+  disp(train_vec(1,:));
+  disp(train_vec(2,:));
+  disp(train_vec(3,:));
+
+  disp('Test');
+  disp(size(probe_vec));
+  disp(probe_vec(1,:));
+  disp(probe_vec(2,:));
+  disp(probe_vec(3,:));
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   pairs_tr = length(train_vec);
   pairs_pr = length(probe_vec);
 
@@ -134,7 +166,7 @@ for epoch = epoch:maxepoch
        users = find(count(:,item)>0);  % finds the position of the user that have rated the item
        features = user_features_l(users,:); % obtains the features of the users who have rated the item
        ratings = count(users,item)-mean_rating;  % obtains the ratings given by users for the item minus the mean rating
-       covar = inv((alpha_m+beta*features'*features));  % equation 12 (without the inverse (-1)).
+       covar = inv(alpha_m+beta*features'*features);  % equation 12 (without the inverse (-1)).
        mean_m = covar * (beta*features'*ratings+alpha_m*mu_m);  % equation 13, but here M (which is supposed to be V_j) is being transposed
        lam = chol(covar); lam=lam'; 
        item_features_l(item,:) = lam*randn(num_features,1)+mean_m;  % equation 11
@@ -149,7 +181,7 @@ for epoch = epoch:maxepoch
        items = find(count(:,user)>0);
        features = item_features_l(items,:);
        ratings = count(items,user)-mean_rating;
-       covar = inv((alpha_u+beta*features'*features));
+       covar = inv(alpha_u+beta*features'*features);
        mean_u = covar * (beta*features'*ratings+alpha_u*mu_u);
        lam = chol(covar); lam=lam'; 
        user_features_l(user,:) = lam*randn(num_features,1)+mean_u;
