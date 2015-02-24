@@ -1,3 +1,3 @@
 __author__ = 'franpena'
 
-from etl_utils import ETLUtils
+from etl.etl_utils import ETLUtils

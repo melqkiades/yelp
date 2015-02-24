@@ -1,7 +1,7 @@
 import csv
 import json
 import nltk
-from numpy.random import shuffle
+import numpy as np
 
 __author__ = 'franpena'
 
@@ -183,7 +183,7 @@ class ETLUtils:
         :returns: a tuple <Data, Data>
         """
         if shuffle_data:
-            shuffle(records)
+            np.random.shuffle(records)
         length = len(records)
         split_start = split + start
 
