@@ -1,3 +1,5 @@
+// Authors: Julian McAuley and Jure Leskovec
+
 #pragma once
 
 #include "stdio.h"
@@ -16,6 +18,8 @@
 #include "lbfgs.h"
 #include "sstream"
 #include "gzstream.h"
+// #include "mtrand.h"
+// #include <cstdio>
 
 /// Safely open a file
 FILE* fopen_(const char* p, const char* m)
@@ -79,12 +83,20 @@ public:
     in.open(voteFile.c_str());
     std::string line;
     std::string sWord;
+
+    // printf("***************************\n");
+    // printf("***************************\n");
+    // printf("***************************\n");
+    // printf("***************************\n");
     
     // Read the input file. The first time the file is read it is only to compute word counts, in order to select the top "maxWords" words to include in the dictionary
     while (std::getline(in, line))
     {
       std::stringstream ss(line);
       ss >> uName >> bName >> value >> voteTime >> nw;
+
+      // printf("\nuser = %s \titem = %s \trating = %.1f \ttime = %d \twords = %d", uName.c_str(), bName.c_str(), (float) value, (int) voteTime, (int) nw);
+
       if (value > 5 or value < 0)
       { // Ratings should be in the range [0,5]
         printf("Got bad value of %f\nOther fields were %s %s %d\n", value, uName.c_str(), bName.c_str(), voteTime);
@@ -157,6 +169,11 @@ public:
       idWord[w] = whichWords[w].first;
     }
 
+    printf("***************************\n");
+    printf("***************************\n");
+    printf("***************************\n");
+    printf("***************************\n");
+
     // Re-read the entire file, this time building structures from those words in the dictionary
     igzstream in2;
     in2.open(voteFile.c_str());
@@ -199,6 +216,9 @@ public:
 
       v->value = value;
       v->voteTime = voteTime;
+      // printf("\n***** voteUser = %s, voteItem = %d, voteRating = %f, numWords = %d", uName.c_str(), bName.c_str(), (float) value, (int) v->words.size());
+      // printf("\nvoteUser = %d\t voteItem = %d\t voteRating = %f\t numWords = %d", (int) v->user, (int) v->item, (float) v->value, (int) v->words.size());
+      // printf("\nvoteUser = %d \tvoteItem = %d \tvoteRating = %.1f \tnumWords = %d ****** \tactualUser = %s \tactualItem = %s \tactualWords = %d", (int) v->user, (int) v->item, (float) v->value, (int) v->words.size(), uName.c_str(), bName.c_str(), (int) nw);
 
       V->push_back(v);
       v = new vote();
@@ -215,9 +235,12 @@ public:
     }
 
     printf("\n");
+
     delete v;
 
     in2.close();
+
+
   }
 
   ~corpus()

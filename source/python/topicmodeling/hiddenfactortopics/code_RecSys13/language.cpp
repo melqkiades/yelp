@@ -1,3 +1,5 @@
+// Authors: Julian McAuley and Jure Leskovec
+
 #include "common.hpp"
 #include "vector"
 #include "map"
@@ -5,8 +7,12 @@
 #include "omp.h"
 #include "lbfgs.h"
 #include "sys/time.h"
+#include "mtrand.h"
 
 #include "language.hpp"
+
+#include <cstdio>
+
 using namespace std;
 
 inline double square(double x)
@@ -105,10 +111,23 @@ static lbfgsfloatval_t evaluate(void *instance,
   for (int i = 0; i < ec->NW; i++)
     ec->W[i] = x[i];
 
+  // printf("\nEvaluate Weight 1 = %f", ec->W[0]);
+  // printf("\nEvaluate X 1 = %f", x[0]);
+
   double* grad = new double[ec->NW];
   ec->dl(grad);
+
+  // printf("\nEvaluate Weight 2 = %f", ec->W[0]);
+  // printf("\nEvaluate X 2 = %f", x[0]);
+
   for (int i = 0; i < ec->NW; i++)
     g[i] = grad[i];
+
+  // printf("\nEvaluate g = %f", g[0]);
+  // printf("\nEvaluate Weight 3 = %f", ec->W[0]);
+  // printf("\nEvaluate X 3 = %f", x[0]);
+  // printf("\nEvaluate alpha = %f", ec->alpha);
+
   delete[] grad;
 
   lbfgsfloatval_t fx = ec->lsq();
@@ -137,6 +156,7 @@ static int progress(void *instance,
 /// Predict a particular rating given the current parameter values
 double topicCorpus::prediction(vote* vi)
 {
+  // printf("%s\n", "topicCorpus::Prediction");
   int user = vi->user;
   int beer = vi->item;
   double res = *alpha + beta_user[user] + beta_beer[beer];
@@ -148,14 +168,19 @@ double topicCorpus::prediction(vote* vi)
 /// Compute normalization constant for a particular item
 void topicCorpus::topicZ(int beer, double& res)
 {
+  // printf("%s\n", "topicCorpus::topicZ");
   res = 0;
-  for (int k = 0; k < K; k++)
+  // printf("kappa = %f\n", *kappa);
+  for (int k = 0; k < K; k++) {
+    // printf("gamma_beer = %f\n", gamma_beer[beer][k]);
     res += exp(*kappa * gamma_beer[beer][k]);
+  }
 }
 
 /// Compute normalization constants for all K topics
 void topicCorpus::wordZ(double* res)
 {
+  // printf("%s\n", "topicCorpus::wordZ");
   for (int k = 0; k < K; k++)
   {
     res[k] = 0;
@@ -167,6 +192,7 @@ void topicCorpus::wordZ(double* res)
 /// Update topic assignments for each word. If sample==true, this is done by sampling, otherwise it's done by maximum likelihood (which doesn't work very well)
 void topicCorpus::updateTopics(bool sample)
 {
+  // printf("%s\n", "topicCorpus::updateTopics");
   double updateStart = clock_();
 
   for (int x = 0; x < (int) trainVotes.size(); x++)
@@ -188,6 +214,7 @@ void topicCorpus::updateTopics(bool sample)
       double topicTotal = 0;
       for (int k = 0; k < K; k++)
       {
+        // printf("\nKappa = %f", *kappa);
         topicScores[k] = exp(*kappa * gamma_beer[beer][k] + backgroundWords[wi] + topicWords[wi][k]);
         topicTotal += topicScores[k];
       }
@@ -198,7 +225,8 @@ void topicCorpus::updateTopics(bool sample)
       int newTopic = 0;
       if (sample)
       {
-        double x = rand() * 1.0 / (1.0 + RAND_MAX);
+        // double x = rand() * 1.0 / (1.0 + RAND_MAX);
+        double x = randomMT();
         while (true)
         {
           x -= topicScores[newTopic];
@@ -240,6 +268,7 @@ void topicCorpus::updateTopics(bool sample)
 /// Derivative of the energy function
 void topicCorpus::dl(double* grad)
 {
+  // printf("%s\n", "topicCorpus::dl");
   double dlStart = clock_();
 
   for (int w = 0; w < NW; w ++)
@@ -256,7 +285,7 @@ void topicCorpus::dl(double* grad)
   getG(grad, &(dalpha), &(dkappa), &(dbeta_user), &(dbeta_beer), &(dgamma_user), &(dgamma_beer), &(dtopicWords), true);
 
   double da = 0;
-#pragma omp parallel for reduction(+:da)
+// #pragma omp parallel for reduction(+:da)
   for (int u = 0; u < nUsers; u ++)
   {
     for (vector<vote*>::iterator it = trainVotesPerUser[u].begin(); it != trainVotesPerUser[u].end(); it ++)
@@ -273,7 +302,7 @@ void topicCorpus::dl(double* grad)
   }
   (*dalpha) = da;
 
-#pragma omp parallel for
+// #pragma omp parallel for
   for (int b = 0; b < nBeers; b ++)
   {
     for (vector<vote*>::iterator it = trainVotesPerBeer[b].begin(); it != trainVotesPerBeer[b].end(); it ++)
@@ -289,7 +318,7 @@ void topicCorpus::dl(double* grad)
   }
 
   double dk = 0;
-#pragma omp parallel for reduction(+:dk)
+// #pragma omp parallel for reduction(+:dk)
   for (int b = 0; b < nBeers; b++)
   {
     double tZ;
@@ -297,7 +326,13 @@ void topicCorpus::dl(double* grad)
 
     for (int k = 0; k < K; k++)
     {
+      double kk = *kappa;
+      // printf("lambda = %f\n", lambda);
+      // printf("item_topic_counts[%d][%d] = %d\n", b, k, beerTopicCounts[b][k]);
+      // printf("%f\t%d\t%d\t%f\t%f\t%f\n", lambda, beerTopicCounts[b][k], beerWords[b], kk, gamma_beer[b][k], tZ);
+      // printf("%f\n", );
       double q = -lambda * (beerTopicCounts[b][k] - beerWords[b] * exp(*kappa * gamma_beer[b][k]) / tZ);
+      printf("q = %f\n", q);
       dgamma_beer[b][k] += *kappa * q;
       dk += gamma_beer[b][k] * q;
     }
@@ -318,7 +353,7 @@ void topicCorpus::dl(double* grad)
   double* wZ = new double[K];
   wordZ(wZ);
 
-#pragma omp parallel for
+// #pragma omp parallel for
   for (int w = 0; w < nWords; w++)
     for (int k = 0; k < K; k++)
     {
@@ -327,6 +362,20 @@ void topicCorpus::dl(double* grad)
       dtopicWords[w][k] += -lambda * (twC - topicCounts[k] * ex / wZ[k]);
     }
 
+  // for (int w = 0; w < NW; w ++)
+  // printf("\nGradient = %f", grad[0]);
+  printf("d_alpha = %f\n", *dalpha);
+  printf("d_kappa = %f\n", *dkappa);
+
+  for (int b = 0; b < nBeers; b++)
+  {
+    for (int k = 0; k < K; k++)
+    {
+      printf("item_topic_counts[%d][%d]\t = %d\n", b, k, beerTopicCounts[b][k]);
+      printf("item_topic_counts[%d][%d]\t = %f\n", b, k, beerTopicCounts[b][k]);
+    }
+  }
+
   delete[] wZ;
   clearG(&(dalpha), &(dkappa), &(dbeta_user), &(dbeta_beer), &(dgamma_user), &(dgamma_beer), &(dtopicWords));
 }
@@ -334,10 +383,11 @@ void topicCorpus::dl(double* grad)
 /// Compute the energy according to the least-squares criterion
 double topicCorpus::lsq()
 {
+  // printf("%s\n", "topicCorpus::lsq");
   double lsqStart = clock_();
   double res = 0;
 
-#pragma omp parallel for reduction(+:res)
+// #pragma omp parallel for reduction(+:res)
   for (int x = 0; x < (int) trainVotes.size(); x++)
   {
     vote* vi = trainVotes[x];
@@ -383,6 +433,7 @@ double topicCorpus::lsq()
 /// Compute the average and the variance
 void averageVar(vector<double>& values, double& av, double& var)
 {
+  // printf("%s\n", "topicCorpus::averageVar");
   double sq = 0;
   av = 0;
   for (vector<double>::iterator it = values.begin(); it != values.end(); it++)
@@ -398,6 +449,7 @@ void averageVar(vector<double>& values, double& av, double& var)
 /// Compute the validation and test error (and testing standard error)
 void topicCorpus::validTestError(double& train, double& valid, double& test, double& testSte)
 {
+  // printf("%s\n", "topicCorpus::validTestError");
   train = 0;
   valid = 0;
   test = 0;
@@ -406,8 +458,10 @@ void topicCorpus::validTestError(double& train, double& valid, double& test, dou
   map<int, vector<double> > errorVsTrainingUser;
   map<int, vector<double> > errorVsTrainingBeer;
 
-  for (vector<vote*>::iterator it = trainVotes.begin(); it != trainVotes.end(); it++)
+  for (vector<vote*>::iterator it = trainVotes.begin(); it != trainVotes.end(); it++) {
     train += square(prediction(*it) - (*it)->value);
+    // printVote( (*it));
+  }
   for (vector<vote*>::iterator it = validVotes.begin(); it != validVotes.end(); it++)
     valid += square(prediction(*it) - (*it)->value);
   for (set<vote*>::iterator it = testVotes.begin(); it != testVotes.end(); it++)
@@ -468,6 +522,7 @@ void topicCorpus::topWords()
 /// Subtract averages from word weights so that each word has average weight zero across all topics (the remaining weight is stored in "backgroundWords")
 void topicCorpus::normalizeWordWeights(void)
 {
+  // printf("%s\n", "topicCorpus::normalizeWordWeights");
   for (int w = 0; w < nWords; w++)
   {
     double av = 0;
@@ -483,6 +538,7 @@ void topicCorpus::normalizeWordWeights(void)
 /// Save a model and predictions to two files
 void topicCorpus::save(char* modelPath, char* predictionPath)
 {
+  // printf("%s\n", "topicCorpus::save");
   if (modelPath)
   {
     FILE* f = fopen_(modelPath, "w");
@@ -522,22 +578,36 @@ void topicCorpus::save(char* modelPath, char* predictionPath)
 /// Train a model for "emIterations" with "gradIterations" of gradient descent at each step
 void topicCorpus::train(int emIterations, int gradIterations)
 {
+  // printf("%s\n", "topicCorpus::train");
   double bestValid = numeric_limits<double>::max();
   for (int emi = 0; emi < emIterations; emi++)
   {
-    lbfgsfloatval_t fx = 0;
-    lbfgsfloatval_t* x = lbfgs_malloc(NW);
-    for (int i = 0; i < NW; i++)
-      x[i] = W[i];
+    // lbfgsfloatval_t fx = 0;
+    // lbfgsfloatval_t* x = lbfgs_malloc(NW);
+    // for (int i = 0; i < NW; i++)
+    //   x[i] = W[i];
 
-    lbfgs_parameter_t param;
-    lbfgs_parameter_init(&param);
-    param.max_iterations = gradIterations;
-    param.epsilon = 1e-2;
-    param.delta = 1e-2;
-    lbfgs(NW, x, &fx, evaluate, progress, (void*) this, &param);
-    printf("\nenergy after gradient step = %f\n", fx);
-    lbfgs_free(x);
+    // lbfgs_parameter_t param;
+    // lbfgs_parameter_init(&param);
+    // param.max_iterations = gradIterations;
+    // param.epsilon = 1e-2;
+    // param.delta = 1e-2;
+    // lbfgs(NW, x, &fx, evaluate, progress, (void*) this, &param);
+    // printf("\nenergy after gradient step = %f\n", fx);
+    // lbfgs_free(x);
+
+    double* myGrad = new double[NW];
+
+    for (int gi = 0; gi < gradIterations; gi++) {
+      dl(myGrad);
+      for (int i = 0; i < NW; i++) {
+        W[i] -= 0.00001 * myGrad[i];
+      }
+    }
+
+    printf("\nenergy after gradient step = %f\n", lsq());
+
+    printf("\nWeight = %f", W[0]);
 
     if (lambda > 0)
     {
@@ -558,6 +628,30 @@ void topicCorpus::train(int emIterations, int gradIterations)
     }
   }
 }
+
+
+void topicCorpus::printVote(vote *vote) {
+  printf("Vote: user = %d\titem = %d\t rating = %f\n",
+          vote->user, vote->item, vote->value);
+
+  // printf("\t");
+
+  // for (int wp = 0; wp < (int) vote->words.size(); wp++) {
+  //     // For each word position
+  //     int wi = vote->words[wp]; // The word
+  //     printf("%d, ", wi);
+  // }
+  // printf("\n");
+}
+
+
+double topicCorpus::randomMT() {
+  double randNumber = mtrand();
+  mtrand();
+
+  return randNumber;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -593,8 +687,14 @@ int main(int argc, char** argv)
   topicCorpus ec(&corp, K, // K
                  latentReg, // latent topic regularizer
                  lambda); // lambda
-  ec.train(50, 50);
+  ec.train(2, 50);
   //ec.save(modelPath, predictionPath);
+
+  // std::printf("\n10 random numbers in [0, 1):\n");
+  // for (int i = 0; i < 10; ++i) {
+  //   std::printf("%10.8f\n", ec.randomMT());
+  // }
+  
 
   return 0;
 }

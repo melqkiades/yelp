@@ -1,3 +1,5 @@
+// Authors: Julian McAuley and Jure Leskovec
+
 #include "common.hpp"
 
 class topicCorpus
@@ -9,7 +11,9 @@ public:
               double lambda) : // Word regularizer used by HFT
     corp(corp), K(K), latentReg(latentReg), lambda(lambda)
   {
+    printf("%s\n", "Method: Constructor");
     srand(0);
+    mtrand.seed(0);
 
     nUsers = corp->nUsers;
     nBeers = corp->nBeers;
@@ -40,9 +44,12 @@ public:
       testFraction = (1.0 - trainFraction)/2;
     }
 
+    double voteCount = corp->V->size() - 1;
+
     for (std::vector<vote*>::iterator it = corp->V->begin(); it != corp->V->end(); it ++)
     {
-      double r = rand() * 1.0 / RAND_MAX;
+      // double r = rand() * 1.0 / RAND_MAX;
+      double r = voteCount / corp->V->size();
       if (r < testFraction)
       {
         testVotes.insert(*it);
@@ -61,6 +68,8 @@ public:
         nTrainingPerUser[(*it)->user] ++;
         nTrainingPerBeer[(*it)->item] ++;
       }
+
+      voteCount--;
     }
 
     std::vector<vote*> remove;
@@ -92,6 +101,8 @@ public:
     }
     *alpha /= trainVotes.size();
 
+    printf("Init alpha = %f\n", *alpha);
+
     double train, valid, test, testSte;
     validTestError(train, valid, test, testSte);
     printf("Error w/ offset term only (train/valid/test) = %f/%f/%f (%f)\n", train, valid, test, testSte);
@@ -103,10 +114,13 @@ public:
       beta_user[v->user] += v->value - *alpha;
       beta_beer[v->item] += v->value - *alpha;
     }
-    for (int u = 0; u < nUsers; u++)
+    for (int u = 0; u < nUsers; u++) {
       beta_user[u] /= votesPerUser[u].size();
-    for (int b = 0; b < nBeers; b++)
+    }
+    for (int b = 0; b < nBeers; b++) {
       beta_beer[b] /= votesPerBeer[b].size();
+    }
+
     validTestError(train, valid, test, testSte);
     printf("Error w/ offset and bias (train/valid/test) = %f/%f/%f (%f)\n", train, valid, test, testSte);
 
@@ -148,15 +162,30 @@ public:
       wordTopics[v] = new int[v->words.size()];
       beerWords[(*vi)->item] += v->words.size();
 
+
+      printVote(v);
+      // printf("item_words[%d]\t = %d\n", (*vi)->item, beerWords[(*vi)->item]);
+
       for (int wp = 0; wp < (int) v->words.size(); wp++)
       {
         int wi = v->words[wp];
-        int t = rand() % K;
+        // int t = rand() % K;
+        int t = randomMT() * K;
+
+        // printf("wi = %d\tt = %d\n", wi, t);
 
         wordTopics[v][wp] = t;
         beerTopicCounts[(*vi)->item][t]++;
         wordTopicCounts[wi][t]++;
         topicCounts[t]++;
+      }
+    }
+
+    for (int item = 0; item < nBeers; item++)
+    {
+      for (int k = 0; k < K; k++)
+      {
+        printf("item_topic_counts[%d][%d]\t = %d\n", item, k, beerTopicCounts[item][k]);
       }
     }
 
@@ -173,8 +202,12 @@ public:
         backgroundWords[*it]++;
       }
     }
-    for (int w = 0; w < nWords; w++)
+    for (int w = 0; w < nWords; w++) {
       backgroundWords[w] /= totalWords;
+      // printf("background_words[%d]\t= %f\n", w, backgroundWords[w]);
+    }
+
+    // printf("total words = %d\n", totalWords);
 
     if (lambda == 0)
     {
@@ -182,13 +215,15 @@ public:
       {
         if (nTrainingPerUser.find(u) == nTrainingPerUser.end()) continue;
         for (int k = 0; k < K; k++)
-          gamma_user[u][k] = rand() * 1.0 / RAND_MAX;
+          // gamma_user[u][k] = rand() * 1.0 / RAND_MAX;
+          gamma_user[u][k] = randomMT();
       }
       for (int b = 0; b < nBeers; b++)
       {
         if (nTrainingPerBeer.find(b) == nTrainingPerBeer.end()) continue;
         for (int k = 0; k < K; k++)
-          gamma_beer[b][k] = rand() * 1.0 / RAND_MAX;
+          // gamma_beer[b][k] = rand() * 1.0 / RAND_MAX;
+          gamma_beer[b][k] = randomMT();
       }
     }
     else
@@ -203,6 +238,7 @@ public:
       updateTopics(true);
 
     *kappa = 1.0;
+    printf("%s\n", "Method end: Constructor");
   }
 
   ~topicCorpus()
@@ -278,6 +314,10 @@ public:
   void updateTopics(bool sample);
   void topWords();
 
+  // franpena methods, just for debugging
+  void printVote(vote *vote);
+  double randomMT();
+
   // Model parameters
   double* alpha; // Offset parameter
   double* kappa; // "peakiness" parameter
@@ -312,4 +352,7 @@ public:
   int nUsers; // Number of users
   int nBeers; // Number of items
   int nWords; // Number of words
+
+  unsigned long init[4] = {0x123, 0x234, 0x345, 0x456}, length = 4;
+  MTRand mtrand; // double in [0, 1) generator, already init
 };

@@ -1,4 +1,4 @@
-CC = g++
+CC = g++ -g
 CFLAGS = -Wall -O3 -fopenmp -Iliblbfgs-1.10/include -Igzstream
 LDFLAGS = -llbfgs -lgomp -lgzstream -lz -lstdc++ -Lliblbfgs-1.10/lib/.libs -Lgzstream
 
@@ -12,8 +12,8 @@ gzstream/gzstream.o:
 	tar xzvvf gzstream.tgz
 	cd gzstream && make
 
-train: language.cpp language.hpp common.hpp liblbfgs-1.10/lib/.libs/liblbfgs.so gzstream/gzstream.o
-	$(CC) $(CFLAGS) -o train language.cpp gzstream/gzstream.o $(LDFLAGS)
+train: language.cpp language.hpp common.hpp mtrand.cpp liblbfgs-1.10/lib/.libs/liblbfgs.so gzstream/gzstream.o
+	$(CC) $(CFLAGS) -o train language.cpp mtrand.cpp gzstream/gzstream.o $(LDFLAGS)
 
 clean:
 	rm train
