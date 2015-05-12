@@ -86,10 +86,10 @@ class Corpus:
     # is going to appear from a set of words that have the same frequency
     def build_votes(self, file_name, max_lines):
 
-        print("***************************")
-        print("***************************")
-        print("***************************")
-        print("***************************\n")
+        # print("***************************")
+        # print("***************************")
+        # print("***************************")
+        # print("***************************\n")
 
         self._num_users = 0
         self._num_items = 0
@@ -146,14 +146,14 @@ class Corpus:
                 #       "\tvoteItem = ", vote.item,
                 #       "\tvoteRating = ", vote.rating,
                 #       "\tnumWords = ", len(vote.word_list))
-                print("voteUser =", vote.user,
-                      "\tvoteItem =", vote.item,
-                      "\tvoteRating =", vote.rating,
-                      "\tnumWords =", len(vote.word_list),
-                      "******",
-                      "\tactualUser =", user_name,
-                      "\tactualItem =", item_name,
-                      "\tactualWords =", num_words)
+                # print("voteUser =", vote.user,
+                #       "\tvoteItem =", vote.item,
+                #       "\tvoteRating =", vote.rating,
+                #       "\tnumWords =", len(vote.word_list),
+                #       "******",
+                #       "\tactualUser =", user_name,
+                #       "\tactualItem =", item_name,
+                #       "\tactualWords =", num_words)
 
 
                 num_lines_read += 1

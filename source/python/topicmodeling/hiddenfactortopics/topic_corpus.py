@@ -1,7 +1,10 @@
 import math
-from sklearn.cross_validation import KFold
+import sys
 from etl import ETLUtils
 from topicmodeling.hiddenfactortopics.corpus import Corpus
+# import sys; print('Python %s on %s' % (sys.version, sys.platform))
+# sys.path.extend('/Users/fpena/UCC/Thesis/projects/yelp/source/python/topicmodeling/hiddenfactortopics')
+
 
 __author__ = 'fpena'
 
@@ -24,6 +27,7 @@ class TopicCorpus:
         :type lambda_param: float
         :param lambda_param:
         """
+        np.random.seed(0)
         self.corpus = corpus
 
         # Votes from the training, validation, and test sets
@@ -31,7 +35,7 @@ class TopicCorpus:
         self.valid_votes = None
         self.test_votes = None
 
-        self.best_valid_predictions = None
+        self.best_valid_predictions = {}
 
         self.votes_per_item = []  # Vector of votes for each item
         self.votes_per_user = []  # Vector of votes for each user
@@ -78,16 +82,31 @@ class TopicCorpus:
         self.user_list = None
         self.item_list = None
 
+        self.d_alpha = None
+        self.d_kappa = None
+        self.d_beta_user = None
+        self.d_beta_item = None
+        self.d_gamma_user = None
+        self.d_gamma_item = None
+        self.d_topic_words = None
+
         self._initialize()
 
     def _initialize(self):
         self.n_users = self.corpus.num_users
         self.n_items = self.corpus.num_items
         self.n_words = self.corpus.num_words
+
+        print('n_users', self.n_users)
+        print('n_items', self.n_items)
+        print('n_words', self.n_words)
+
         self.beta_user = np.zeros(self.n_users)
         self.beta_item = np.zeros(self.n_items)
         self.votes_per_user = [[] for _ in range(self.n_users)]
         self.votes_per_item = [[] for _ in range(self.n_items)]
+        self.train_votes_per_user = [[] for _ in range(self.n_users)]
+        self.train_votes_per_item = [[] for _ in range(self.n_items)]
         self.gamma_user = np.zeros((self.n_users, self.num_topics))
         self.gamma_item = np.zeros((self.n_items, self.num_topics))
 
@@ -96,6 +115,8 @@ class TopicCorpus:
 
         for user in range(self.n_users):
             for vote in self.votes_per_user[user]:
+                # print_vote(vote)
+                # print('item', vote.item)
                 self.votes_per_item[vote.item].append(vote)
 
         self.split_data()
@@ -107,13 +128,15 @@ class TopicCorpus:
 
         self.alpha = self._calculate_average_rating(self.train_votes)
 
+        print('init alpha', self.alpha)
+
         train, valid, test, test_ste = self.valid_test_error()
-        print("Error w/ offset term only (train/valid/test) = %f/%f/%f (%f)\n" %
+        print("Error w/ offset term only (train/valid/test) = %f/%f/%f (%f)" %
               (train, valid, test, test_ste))
 
         self._calculate_user_item_offsets()
         train, valid, test, test_ste = self.valid_test_error()
-        print("Error w/ offset and bias (train/valid/test) = %f/%f/%f (%f)\n" %
+        print("Error w/ offset and bias (train/valid/test) = %f/%f/%f (%f)" %
               (train, valid, test, test_ste))
 
         # Actually the model works better if we initialize none of these terms
@@ -154,6 +177,8 @@ class TopicCorpus:
                 self.n_training_per_item[item] = 0
             self.n_training_per_user[user] += 1
             self.n_training_per_item[item] += 1
+            self.train_votes_per_user[user].append(vote)
+            self.train_votes_per_item[item].append(vote)
 
     def init_gamma_matrices(self):
         if self.lambda_param == 0:
@@ -182,6 +207,12 @@ class TopicCorpus:
 
         self.background_words /= self.total_words
 
+        # for word in range(self.n_words):
+        #     print("background_words[%d]\t= %f" % (word, self.background_words[word]))
+
+        # print("total words = %d" % self.total_words)
+        # print("background words = %d" % self.background_words)
+
     def generate_random_topic_assignments(self):
         # Generate random topic assignments
         self.topic_counts = np.zeros(self.num_topics)
@@ -190,16 +221,26 @@ class TopicCorpus:
 
         for vote in self.train_votes:
             self.word_topics[vote] = np.zeros(self.n_words)
-            self.item_words[vote.item] = len(vote.word_list)
+            self.item_words[vote.item] += len(vote.word_list)
+
+            print_vote(vote)
+
+            # print("item_words[%d]\t = %d" % (vote.item, self.item_words[vote.item]))
 
             for wp in range(len(vote.word_list)):
                 wi = vote.word_list[wp]
                 t = np.random.random() * self.num_topics
 
+                # print("wi = %d\tt = %d" % (wi, t))
+
                 self.word_topics[vote][wp] = t
                 self.item_topic_counts[vote.item][t] += 1
                 self.word_topic_counts[wi][t] += 1
                 self.topic_counts[t] += 1
+
+        for item in range(self.n_items):
+            for k in range(self.num_topics):
+                print("item_topic_counts[%d][%d]\t = %d" % (item, k, self.item_topic_counts[item][k]))
 
     def _split_data_set(self):
         pass
@@ -209,6 +250,7 @@ class TopicCorpus:
 
         average_rating = 0
         for vote in vote_list:
+            # print_vote(vote)
             average_rating += vote.rating
         return average_rating / len(vote_list)
 
@@ -217,9 +259,12 @@ class TopicCorpus:
             self.beta_user[vote.user] += vote.rating - self.alpha
             self.beta_item[vote.item] += vote.rating - self.alpha
         for user in range(self.n_users):
-            self.beta_user[user] / len(self.votes_per_user[user])
+            self.beta_user[user] /= len(self.votes_per_user[user])
+            # print('user', user)
+            # print('beta user %d = %f' % (user, self.beta_user[user]))
         for item in range(self.n_items):
-            self.beta_item[item] / len(self.votes_per_item[item])
+            self.beta_item[item] /= len(self.votes_per_item[item])
+            # print('beta item %d = %f\tsize = %d' % (item, self.beta_item[item], len(self.votes_per_item[item])))
 
     def prediction(self, vote):
         """
@@ -242,74 +287,95 @@ class TopicCorpus:
         Derivative of the energy function
 
         """
-        grad = np.zeros(self.nw)
-        da = 0
 
-        gradient_user = np.zeros((self.n_users, self.num_topics))
+        self.d_alpha = 0
+        self.d_kappa = 0
+        self.d_beta_user = np.zeros(self.n_users)
+        self.d_beta_item = np.zeros(self.n_items)
+        self.d_gamma_user = np.zeros((self.n_users, self.num_topics))
+        self.d_gamma_item = np.zeros((self.n_items, self.num_topics))
+        self.d_topic_words = np.zeros((self.n_words, self.num_topics))
 
         for user in range(self.n_users):
-            for vote in self.n_training_per_user[user]:
+            for vote in self.train_votes_per_user[user]:
                 p = self.prediction(vote)
                 pred_error = 2 * (p - vote.rating)
 
-                # da += dl
-                # dbeta_user[user] += dl
+                self.d_alpha += pred_error
+                self.d_beta_user[user] += pred_error
 
                 for k in range(self.num_topics):
-                    gradient_user[user][k] +=\
-                        pred_error * self.gamma_item[vote.item][k] +\
-                        self.latent_reg * 2 * (self.gamma_user[user][k])
-        # dalpha = da
-
-        gradient_item = np.zeros((self.n_items, self.num_topics))
+                    self.d_gamma_user[user][k] -=\
+                        pred_error * self.gamma_item[vote.item][k]
 
         for item in range(self.n_items):
             for vote in self.train_votes_per_item[item]:
                 p = self.prediction(vote)
                 pred_error = 2 * (p - vote.rating)
 
-                # dbeta_item[item] += dl
+                self.d_beta_item[item] += pred_error
 
                 for k in range(self.num_topics):
-                    gradient_item[item][k] +=\
-                        pred_error * self.gamma_user[vote.user][k] +\
-                        self.latent_reg * 2 * (self.gamma_item[item][k])
+                    self.d_gamma_item[item][k] +=\
+                        pred_error * self.gamma_user[vote.user][k]
 
         # dk = 0
-        # for item in range(self.n_items):
-        #     tZ = self.topic_z(item)
-        #
-        #     for k in range(self.num_topics):
-        #         q = - self.lambda_param * \
-        #             (self.item_topic_counts[item][k] - self.item_words) * \
-        #             math.exp(self.kappa * self.gamma_item[item][k] / tZ)
-        #         self.gamma_item[item][k] += self.kappa * q
-        #         dk += self.gamma_item[item][k] * q
-        #
-        # dkappa = dk
-        #
-        # # Add the derivative of the regularizer
-        # if self.latent_reg > 0:
-        #     for user in range(self.n_users):
-        #         for k in range(self.num_topics):
-        #             self.gamma_user[user][k] += \
-        #                 self.latent_reg * 2 * (self.gamma_user[user][k])
-        #     for item in self.n_items:
-        #         for k in range(self.num_topics):
-        #             self.gamma_item[item][k] += \
-        #                 self.latent_reg * 2 * (self.gamma_item[item][k])
-        #
-        # wZ = self.word_z()
-        #
-        # for word in range(self.n_words):
-        #     for k in range(self.num_topics):
-        #         twC = self.word_topic_counts[word][k]
-        #         ex = math.exp(self.background_words[word] +
-        #                       self.topic_words[word][k])
-        #         self.topic_words[word][k] += \
-        #             -self.lambda_param * (twC - self.topic_counts[k] * ex / wZ[k])
+        for item in range(self.n_items):
+            tZ = self.topic_z(item)
 
+            for k in range(self.num_topics):
+                # print("lambda = %f" % self.lambda_param)
+                # print("item_topic_counts[%d][%d] = %d" % (item, k, self.item_topic_counts[item][k]))
+                # print('%f\t%d\t%d\t%f\t%f\t%f' %
+                #       (self.lambda_param, self.item_topic_counts[item][k],
+                #        self.item_words[item], self.kappa,
+                #        self.gamma_item[item][k], tZ))
+                q = - self.lambda_param * (self.item_topic_counts[item][k] - self.item_words[item] * math.exp(self.kappa * self.gamma_item[item][k]) / tZ)
+                print('q = %f' % q)
+                # print('kappa', self.kappa)
+                self.d_gamma_item[item][k] += self.kappa * q
+                self.d_kappa += self.gamma_item[item][k] * q
 
+        # Add the derivative of the regularizer
+        if self.latent_reg > 0:
+            for user in range(self.n_users):
+                for k in range(self.num_topics):
+                    self.d_gamma_user[user][k] +=\
+                        self.latent_reg * 2 * self.d_gamma_user[user][k]
+            for item in range(self.n_items):
+                for k in range(self.num_topics):
+                    self.d_gamma_item[item][k] +=\
+                        self.latent_reg * 2 * self.d_gamma_item[item][k]
+
+        wZ = self.word_z()
+
+        for word in range(self.n_words):
+            for k in range(self.num_topics):
+                twC = self.word_topic_counts[word][k]
+                ex = math.exp(self.background_words[word] +
+                              self.topic_words[word][k])
+                self.d_topic_words[word][k] +=\
+                    -self.lambda_param *\
+                    (twC - self.topic_counts[k] * ex / wZ[k])
+
+        print("d_alpha = %f" % self.d_alpha)
+        print("d_kappa = %f" % self.d_kappa)
+
+        for item in range(self.n_items):
+            for k in range(self.num_topics):
+                print("item_topic_counts[%d][%d]\t = %d" % (item, k, self.item_topic_counts[item][k]))
+
+    def update_gradient(self):
+
+        learning_rate = 0.00001
+
+        self.alpha -= learning_rate * self.d_alpha
+        self.kappa -= learning_rate * self.d_kappa
+        self.beta_user -= learning_rate * self.d_beta_user
+        self.beta_item -= learning_rate * self.d_beta_item
+        self.gamma_user -= learning_rate * self.d_gamma_user
+        self.gamma_item -= learning_rate * self.d_gamma_item
+        self.topic_words -= learning_rate * self.d_topic_words
 
     def train(self, em_iterations, grad_iterations):
         """
@@ -320,10 +386,14 @@ class TopicCorpus:
         best_valid = float("inf")
 
         for emi in range(em_iterations):
-            # evaluate
-            self.dl()
+
+            for gi in range(grad_iterations):
+                # evaluate
+                self.dl()
+                self.update_gradient()
 
             if self.lambda_param > 0:
+                # print(self.gamma_user)
                 self.update_topics()
                 self.normalize_word_weights()
                 self.top_words()
@@ -513,7 +583,9 @@ class TopicCorpus:
         :type res: float
         """
         res = 0
+        # print('kappa', self.kappa)
         for k in range(self.num_topics):
+            # print('gamma_item', self.gamma_item[item][k])
             res += math.exp(self.kappa * self.gamma_item[item][k])
 
         return res
@@ -579,11 +651,36 @@ class TopicCorpus:
         latent_reg = 0
         lambda_param = 0.1
         num_topics = 5
-        file_name = '/Users/fpena/tmp/SharedFolder/code_RecSys13/Arts-short.votes'
+        # file_name = '/Users/fpena/tmp/SharedFolder/code_RecSys13/Arts-short.votes'
+        file_name = '/Users/fpena/tmp/SharedFolder/code_RecSys13/Arts-shuffled.votes'
+        # file_name = '/Users/fpena/tmp/SharedFolder/code_RecSys13/Arts-short-shuffled.votes'
         corpus = Corpus()
         corpus.load_data(file_name, 0)
         topic_corpus = TopicCorpus(corpus, num_topics, latent_reg, lambda_param)
-        topic_corpus.train(50, 50)
+        topic_corpus.train(2, 50)
+
+
+def print_vote(vote):
+    """
+
+    :type vote: Vote
+    :param vote:
+    """
+    print("Vote: user = %d\titem = %d\t rating = %f" %
+          (vote.user, vote.item, vote.rating))
+
+    # for word in vote.word_list:
+    #     print(word)
 
 TopicCorpus.main()
 
+# np.random.seed(0)
+# random.seed(0)
+# print(random.random())
+# print(np.random.rand())
+# print(np.random.rand())
+# print(np.random.rand())
+# print(np.random.rand())
+# print(np.random.rand())
+# print(np.random.rand())
+# print(np.random.rand())
