@@ -1,11 +1,9 @@
 import time
-import nltk
+import operator
+from gensim import corpora
+from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
 from topicmodeling.context.review import Review
-from nltk.corpus import stopwords
-from nltk.tokenize import RegexpTokenizer
-from gensim import corpora
-from gensim.models import ldamodel
 
 
 __author__ = 'fpena'
@@ -22,6 +20,9 @@ class LdaBasedContext:
         self.all_nouns = None
         self.all_senses = None
         self.sense_groups = None
+        self.review_topics_list = None
+        self.num_topics = 50
+        self.topics = range(self.num_topics)
 
     def init_reviews(self):
 
@@ -42,62 +43,89 @@ class LdaBasedContext:
         for text_review in text_generic_reviews:
             self.generic_reviews.append(Review(text_review))
 
-        self.all_nouns = context_utils.get_all_nouns(self.reviews)
+        # self.all_nouns = context_utils.get_all_nouns(self.reviews)
 
-def discover_topics(reviews):
+    def filter_topics(self):
 
-    tokenizer = RegexpTokenizer(r'\w+')
-    cachedStopWords = set(stopwords.words("english"))
-    body = []
-    processed = []
+        specific_reviews_text =\
+            context_utils.get_text_from_reviews(self.specific_reviews)
+        generic_reviews_text =\
+            context_utils.get_text_from_reviews(self.generic_reviews)
+        topic_model = lda_context_utils.discover_topics(specific_reviews_text, self.num_topics)
 
-    # remove common words and tokenize
-    # texts = [[word for word in document.lower().split() if word not in stopwords.words('english')]
-    #          for document in reviews]
+        specific_bag_of_words =\
+            lda_context_utils.create_bag_of_words(specific_reviews_text)
+        generic_bag_of_words =\
+            lda_context_utils.create_bag_of_words(generic_reviews_text)
 
-    for i in range(0, len(reviews)):
-        body.append(reviews[i].lower())
+        dictionary = corpora.Dictionary(specific_bag_of_words)
+        dictionary.filter_extremes(2, 0.6)
+        specific_corpus = [dictionary.doc2bow(text) for text in specific_bag_of_words]
 
-    for entry in body:
-        row = tokenizer.tokenize(entry)
-        processed.append([word for word in row if word not in cachedStopWords])
+        dictionary = corpora.Dictionary(generic_bag_of_words)
+        dictionary.filter_extremes(2, 0.6)
+        generic_corpus = [dictionary.doc2bow(text) for text in generic_bag_of_words]
 
-    dictionary = corpora.Dictionary(processed)
-    dictionary.filter_extremes(2, 0.6)
+        specific_topics = topic_model[specific_corpus]
+        generic_topics = topic_model[generic_corpus]
 
-    # dictionary = corpora.Dictionary(texts)
-    corpus = [dictionary.doc2bow(text) for text in processed]
+        lda_context_utils.update_reviews_with_topics(
+            specific_topics, self.specific_reviews)
+        lda_context_utils.update_reviews_with_topics(
+            generic_topics, self.generic_reviews)
 
-    # I can print out the documents and which is the most probable topics for each doc.
-    lda = ldamodel.LdaModel(corpus, id2word=dictionary, num_topics=50)
-    corpus_lda = lda[corpus]
-    #
-    # for l, t in izip(corpus_lda, corpus):
-    #   print l, "#", t
-    for l in corpus_lda:
-        print(l)
-    for topic in lda.show_topics(num_topics=50):
-        print(topic)
+        topic_ratio_map = {}
 
-    return corpus_lda, lda
+        for topic in range(self.num_topics):
+            specific_weighted_frq = \
+                lda_context_utils.calculate_topic_weighted_frequency(
+                    topic, self.specific_reviews)
+            generic_weighted_frq = \
+                lda_context_utils.calculate_topic_weighted_frequency(
+                    topic, self.generic_reviews)
+
+            if generic_weighted_frq < self.alpha or specific_weighted_frq < self.alpha:
+                self.topics.remove(topic)
+                continue
+
+            ratio = specific_weighted_frq / generic_weighted_frq
+
+            # if ratio < self.beta:
+            #     self.topics.remove(topic)
+            #     continue
+
+            topic_ratio_map[topic] = ratio
+
+        sorted_topics = sorted(
+            topic_ratio_map.items(), key=operator.itemgetter(1), reverse=True)
+
+        # for topic in topic_model.show_topics(num_topics=self.num_topics):
+        #     print(topic)
+        for i in range(topic_model.num_topics):
+            print('topic', i, topic_model.print_topic(i, topn=50))
+
+        return sorted_topics
 
 
-documents = ["Human machine interface for lab abc computer applications",
-              "A survey of user opinion of computer system response time",
-              "The EPS user interface management system",
-              "System and human system engineering testing of EPS",
-              "Relation of user perceived response time to error measurement",
-              "The generation of random binary unordered trees",
-              "The intersection graph of paths in trees",
-              "Graph minors IV Widths of trees and well quasi ordering",
-              "Graph minors A survey"]
+
+
+
+
+
+
+
+
 
 def main():
-    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-mid.json"
-    my_reviews = context_utils.load_reviews(reviews_file)
+    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
+    my_reviews = context_utils.load_reviews(reviews_file)[:5000]
     print("reviews:", len(my_reviews))
 
-    discover_topics(my_reviews)
+    # lda_context_utils.discover_topics(my_reviews, 50)
+    lda_based_context = LdaBasedContext(my_reviews)
+    lda_based_context.init_reviews()
+    my_topics = lda_based_context.filter_topics()
+    print(my_topics)
 
 start = time.time()
 main()

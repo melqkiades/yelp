@@ -11,4 +11,5 @@ class Review:
         self.tagged_words = context_utils.tag_words(self.text)
         self.nouns = context_utils.get_nouns(self.tagged_words)
         self.senses = None
+        self.topics = None
 

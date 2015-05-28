@@ -29,6 +29,7 @@ def log_words(text):
 def tag_words(text):
     # tokens = nltk.word_tokenize(text.lower())
     tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+')
+    text = text.encode('utf-8')
     tokens = tokenizer.tokenize(text.lower())
     nltk_text = nltk.Text(tokens)
     tagged_words = nltk.pos_tag(nltk_text)
@@ -178,23 +179,23 @@ def generate_all_senses(reviews):
 
 
 def calculate_word_weighted_frequency(word, reviews):
-        """
+    """
 
-        :param self:
-        :type word: str
-        :param word:
-        :type reviews: list[Review]
-        :param reviews:
-        :rtype: float
-        :return:
-        """
-        num_reviews = 0.0
+    :param self:
+    :type word: str
+    :param word:
+    :type reviews: list[Review]
+    :param reviews:
+    :rtype: float
+    :return:
+    """
+    num_reviews = 0.0
 
-        for review in reviews:
-            if word in review.nouns:
-                num_reviews += 1
+    for review in reviews:
+        if word in review.nouns:
+            num_reviews += 1
 
-        return num_reviews / len(reviews)
+    return num_reviews / len(reviews)
 
 
 def build_groups(nouns):
@@ -279,14 +280,29 @@ def is_group_in_review(group, review):
     return False
 
 
+def get_text_from_reviews(reviews):
+    """
+    Receives a list[Review] and extracts the text contained in each review.
+    Returns a list[str].
+
+    :type reviews: list[Review]
+    :param reviews:
+    """
+    text_reviews = []
+    for review in reviews:
+        text_reviews.append(review.text)
+
+    return text_reviews
+
+
 def calculate_group_weighted_frequency(group, reviews):
-        num_reviews = 0.0
+    num_reviews = 0.0
 
-        for review in reviews:
-            if frozenset(review.senses).isdisjoint(frozenset(group.senses)):
-                num_reviews += 1
+    for review in reviews:
+        if frozenset(review.senses).isdisjoint(frozenset(group.senses)):
+            num_reviews += 1
 
-        return num_reviews / len(reviews)
+    return num_reviews / len(reviews)
 
 
 def main():

@@ -56,6 +56,7 @@ class WordBasedContext:
 
             if generic_weighted_frq < self.alpha or specific_weighted_frq < self.alpha:
                 self.all_nouns.remove(noun)
+                unwanted_nouns.add(noun)
                 continue
 
             ratio = specific_weighted_frq / generic_weighted_frq
@@ -112,8 +113,8 @@ class WordBasedContext:
 
 def main():
     # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-short.json"
-    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-mid.json"
-    reviews = context_utils.load_reviews(reviews_file)
+    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
+    reviews = context_utils.load_reviews(reviews_file)[:5000]
     print("reviews:", len(reviews))
     # specific, generic = context_utils.cluster_reviews(reviews)
 
