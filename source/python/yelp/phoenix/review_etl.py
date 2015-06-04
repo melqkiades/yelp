@@ -1,7 +1,9 @@
 import json
+from operator import itemgetter
+import time
 
 from etl import ETLUtils
-
+from yelp.phoenix.business_etl import BusinessETL
 
 __author__ = 'franpena'
 
@@ -109,6 +111,71 @@ class ReviewETL:
         ETLUtils.drop_fields(unwanted_fields, dictionary_list)
 
 
+    # @staticmethod
+    # def filter_reviews_by_business(reviews, business_ids, field=None):
+    #     # if not field:
+    #     #     return [review for review in reviews
+    #     #             if review['business_id'] in business_ids]
+    #     # return [review[field] for review in reviews
+    #     #         if review['business_id'] in business_ids]
+    #
+    #     reviews.sort(key=itemgetter('business_id'), reverse=False)
+    #     business_ids.sort(reverse=False)
+    #
+    #     num_reviews = len(business_ids)
+    #     filtered_reviews = []
+    #     flag = False
+    #     business_index = 0
+    #
+    #     for review in reviews:
+    #         if business_index >= num_reviews:
+    #             break
+    #         if review['business_id'] == business_ids[business_index]:
+    #             filtered_reviews.append(review)
+    #             flag = True
+    #         elif flag:
+    #             flag = False
+    #             business_index += 1
+    #
+    #     return filtered_reviews
+
+    @staticmethod
+    def filter_reviews_by_business_slow(reviews, business_ids, field=None):
+        # if not field:
+        #     return [review for review in reviews
+        #             if review['business_id'] in business_ids]
+        # return [review[field] for review in reviews
+        #         if review['business_id'] in business_ids]
+        filtered_reviews = []
+
+        for review in reviews:
+            if review['business_id'] in business_ids:
+                filtered_reviews.append(review)
+
+        return filtered_reviews
+
+    @staticmethod
+    def sort_records(records, field, reverse=False):
+        return sorted(records, key=itemgetter(field), reverse=reverse)
 
 
-review = ReviewETL()
+
+start = time.time()
+
+review_etl = ReviewETL()
+my_business_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_business.json"
+my_reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review.json"
+my_business_ids = BusinessETL.get_business_ids(my_business_file, 'Hotels')
+my_reviews = ETLUtils.load_json_file(my_reviews_file)
+# print(len(ReviewETL.filter_reviews_by_business(my_reviews, my_business_ids, 'text')))
+my_restaurant_reviews = ReviewETL.filter_reviews_by_business_slow(my_reviews, my_business_ids)
+my_restaurants_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
+ETLUtils.save_json_file(my_restaurants_file, my_restaurant_reviews)
+# my_sorted_reviews = ReviewETL.sort_records(my_reviews, 'business_id')
+# print(len(my_sorted_reviews))
+
+
+# main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)

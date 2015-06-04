@@ -2,7 +2,7 @@ from collections import Counter
 import math
 import numpy
 import numpy.testing as nptest
-from topicmodeling.context import context_utils
+from topicmodeling.context import review_utils
 from topicmodeling.context.review import Review
 
 __author__ = 'fpena'
@@ -108,147 +108,23 @@ review_text8 = "Scary things to me:\nParis Hilton has a career. \nSarah Palin." 
                "off. BTW. Adios for now mi yelpitas!"
 review_text9 = "Beef gyros are always good here."
 
-class TestContextUtils(TestCase):
-
-    def test_log_sentences(self):
-
-        expected_value = math.log(2)
-        actual_value = context_utils.log_sentences(empty_paragraph)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(3)
-        actual_value = context_utils.log_sentences(paragraph1)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(4)
-        actual_value = context_utils.log_sentences(review_text1)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(8)
-        actual_value = context_utils.log_sentences(review_text3)
-        self.assertEqual(actual_value, expected_value)
-
-    def test_log_words(self):
-
-        expected_value = math.log(1)
-        actual_value = context_utils.log_words(empty_paragraph)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(15)
-        actual_value = context_utils.log_words(paragraph1)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(18)
-        actual_value = context_utils.log_words(review_text1)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(88)
-        actual_value = context_utils.log_words(review_text3)
-        self.assertEqual(actual_value, expected_value)
-
-    def test_vbd_sum(self):
-
-        expected_value = math.log(1)
-        tagged_words = context_utils.tag_words(empty_paragraph)
-        counts = Counter(tag for word, tag in tagged_words)
-        actual_value = context_utils.vbd_sum(counts)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(1)
-        tagged_words = context_utils.tag_words(paragraph1)
-        counts = Counter(tag for word, tag in tagged_words)
-        actual_value = context_utils.vbd_sum(counts)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(3)
-        tagged_words = context_utils.tag_words(review_text1)
-        counts = Counter(tag for word, tag in tagged_words)
-        actual_value = context_utils.vbd_sum(counts)
-        self.assertEqual(actual_value, expected_value)
-
-    def test_verb_sum(self):
-
-        expected_value = math.log(1)
-        tagged_words = context_utils.tag_words(empty_paragraph)
-        counts = Counter(tag for word, tag in tagged_words)
-        actual_value = context_utils.verb_sum(counts)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(3)
-        tagged_words = context_utils.tag_words(paragraph1)
-        counts = Counter(tag for word, tag in tagged_words)
-        actual_value = context_utils.verb_sum(counts)
-        self.assertEqual(actual_value, expected_value)
-
-        expected_value = math.log(4)
-        tagged_words = context_utils.tag_words(review_text1)
-        counts = Counter(tag for word, tag in tagged_words)
-        actual_value = context_utils.verb_sum(counts)
-        self.assertEqual(actual_value, expected_value)
-
-    def test_process_review(self):
-
-        expected_value = numpy.array([math.log(2), 0, 0, 0, 1])
-        actual_value = context_utils.process_review(Review(empty_paragraph))
-        nptest.assert_allclose(actual_value, expected_value)
+class TestReviewUtils(TestCase):
 
     def test_get_nouns(self):
 
-        # tagged_words = context_utils.tag_words(empty_paragraph)
-        actual_value = context_utils.get_nouns(Review(empty_paragraph))
+        tagged_words = review_utils.tag_words(empty_paragraph)
+        actual_value = review_utils.get_nouns(tagged_words)
         expected_value = []
         self.assertItemsEqual(actual_value, expected_value)
-        tagged_words = context_utils.tag_words(paragraph1)
-        actual_value = context_utils.get_nouns(Review(paragraph1))
-        expected_value = ['morning', 'dr', 'adams', 'patient', 'room', 'number']
+        tagged_words = review_utils.tag_words(paragraph1)
+        actual_value = review_utils.get_nouns(tagged_words)
+        expected_value = ['morning', 'Dr.', 'Adams', 'patient', 'room', 'number']
         self.assertItemsEqual(actual_value, expected_value)
-        # tagged_words = context_utils.tag_words(review_text1)
-        actual_value = context_utils.get_nouns(Review(review_text1))
+        tagged_words = review_utils.tag_words(review_text1)
+        actual_value = review_utils.get_nouns(tagged_words)
         expected_value = ['dinner', 'night', 'food', 'restaurant', 'town']
         self.assertItemsEqual(actual_value, expected_value)
-
-    def test_get_all_nouns(self):
-        reviews = [
-            Review(empty_paragraph),
-            Review(paragraph1),
-            Review(review_text1),
-            Review(review_text2)
-        ]
-        actual_value = context_utils.get_all_nouns(reviews)
-        expected_value = set([
-            'morning', 'dr', 'adams', 'patient', 'room', 'number', 'dinner',
-            'night', 'food', 'restaurant', 'town', 'bar', 'music', 'beer'
-        ])
-        self.assertEqual(actual_value, expected_value)
-
-    def test_remove_nouns_from_reviews(self):
-
-        nouns = ['bar', 'night', 'food', 'wine']
-        actual_review1 = Review(review_text1)
-        actual_review2 = Review(review_text2)
-        actual_reviews = [actual_review1, actual_review2]
-
-        expected_review1 = Review(review_text1)
-        expected_review2 = Review(review_text2)
-        expected_review1.nouns.remove('night')
-        expected_review1.nouns.remove('food')
-        expected_review2.nouns.remove('bar')
-        expected_review2.nouns.remove('food')
-
-        context_utils.remove_nouns_from_reviews(actual_reviews, nouns)
-        self.assertItemsEqual(actual_review1.nouns, expected_review1.nouns)
-        self.assertItemsEqual(actual_review2.nouns, expected_review2.nouns)
-
-    def test_split_list_by_labels(self):
-
-        lst = ['a', 'b', 'c', 'd', 'e', 'f']
-        labels = [2, 0, 0, 1, 1, 0]
-        expected_matrix = [
-            ['b', 'c', 'f'],
-            ['d', 'e'],
-            ['a']
-        ]
-        actual_matrix = context_utils.split_list_by_labels(lst, labels)
-
-        self.assertItemsEqual(actual_matrix, expected_matrix)
-
+        tagged_words = review_utils.tag_words(review_text3)
+        actual_value = review_utils.get_nouns(tagged_words)
+        expected_value = ['hotel', 'Central', 'Phoenix', 'restaurant', 'town']
+        self.assertItemsEqual(actual_value, expected_value)

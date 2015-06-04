@@ -1,4 +1,5 @@
 import time
+import cPickle as pickle
 from topicmodeling.context import context_utils
 from topicmodeling.context.review import Review
 
@@ -26,18 +27,43 @@ class WordBasedContext:
         self.specific_reviews = []
         self.generic_reviews = []
 
-        for text_review in self.text_reviews:
-            self.reviews.append(Review(text_review))
+        # for text_review in self.text_reviews:
+        #     self.reviews.append(Review(text_review))
 
-        text_specific_reviews, text_generic_reviews =\
-            context_utils.cluster_reviews(self.text_reviews)
+        my_file = '/Users/fpena/tmp/reviews_spa.pkl'
+        # with open(my_file, 'wb') as write_file:
+        #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
-        for text_review in text_specific_reviews:
-            self.specific_reviews.append(Review(text_review))
-        for text_review in text_generic_reviews:
-            self.generic_reviews.append(Review(text_review))
+        with open(my_file, 'rb') as read_file:
+            self.reviews = pickle.load(read_file)
+
+        self.reviews = self.reviews
+        # for review in self.reviews:
+        #     print(review)
+
+        cluster_labels = context_utils.cluster_reviews(self.reviews)
+        review_clusters =\
+            context_utils.split_list_by_labels(self.reviews, cluster_labels)
+        # print(cluster_labels)
+
+        self.specific_reviews = review_clusters[0]
+        self.generic_reviews = review_clusters[1]
 
         self.all_nouns = context_utils.get_all_nouns(self.reviews)
+
+        context_utils.generate_stats(self.specific_reviews, self.generic_reviews)
+
+
+
+        # text_specific_reviews, text_generic_reviews =\
+        #     context_utils.cluster_reviews(self.text_reviews)
+        #
+        # for text_review in text_specific_reviews:
+        #     self.specific_reviews.append(Review(text_review))
+        # for text_review in text_generic_reviews:
+        #     self.generic_reviews.append(Review(text_review))
+        #
+        # self.all_nouns = context_utils.get_all_nouns(self.reviews)
 
     def filter_nouns(self):
         print('filter_nouns', time.strftime("%H:%M:%S"))
@@ -105,7 +131,7 @@ class WordBasedContext:
         print('\nSenses groups', time.strftime("%H:%M:%S"))
 
         for sense_group in self.sense_groups:
-            print(sense_group.senses, sense_group.ratio)
+            print(sense_group.ratio, sense_group.senses, sense_group.nouns)
 
 
 
@@ -113,8 +139,11 @@ class WordBasedContext:
 
 def main():
     # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-short.json"
-    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
-    reviews = context_utils.load_reviews(reviews_file)[:5000]
+    # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
+    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_spas.json"
+    # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
+    # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_restaurants.json"
+    reviews = context_utils.load_reviews(reviews_file)
     print("reviews:", len(reviews))
     # specific, generic = context_utils.cluster_reviews(reviews)
 

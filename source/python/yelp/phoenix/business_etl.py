@@ -81,7 +81,25 @@ class BusinessETL:
 
         ETLUtils.drop_fields(unwanted_fields, dictionary_list)
 
+    @staticmethod
+    def get_business_ids(file_path, business_type=None):
+        records = ETLUtils.load_json_file(file_path)
 
-data_folder = '../../../../../../datasets/yelp_phoenix_academic_dataset/'
-business_file_path = data_folder + 'yelp_academic_dataset_business.json'
-my_records = BusinessETL.create_category_sets(business_file_path)
+        if not business_type:
+            return [record['business_id'] for record in records]
+
+        return [record['business_id'] for record in records
+                if business_type in record['categories']]
+
+
+# data_folder = '../../../../../../datasets/yelp_phoenix_academic_dataset/'
+# business_file_path = data_folder + 'yelp_academic_dataset_business.json'
+# my_records = BusinessETL.create_category_sets(business_file_path)
+
+my_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_business.json"
+restaurants = BusinessETL.get_business_ids(my_file, 'Restaurants')
+hotels = BusinessETL.get_business_ids(my_file, 'Hotels')
+spas = BusinessETL.get_business_ids(my_file, 'Beauty & Spas')
+print(len(restaurants))
+print(len(hotels))
+print(len(spas))

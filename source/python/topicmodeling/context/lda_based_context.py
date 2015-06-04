@@ -1,6 +1,7 @@
 import time
 import operator
 from gensim import corpora
+import cPickle as pickle
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
 from topicmodeling.context.review import Review
@@ -21,27 +22,54 @@ class LdaBasedContext:
         self.all_senses = None
         self.sense_groups = None
         self.review_topics_list = None
-        self.num_topics = 50
+        self.num_topics = 150
         self.topics = range(self.num_topics)
 
     def init_reviews(self):
 
         print('init_reviews', time.strftime("%H:%M:%S"))
 
+        # self.reviews = []
+        # self.specific_reviews = []
+        # self.generic_reviews = []
+        #
+        # for text_review in self.text_reviews:
+        #     self.reviews.append(Review(text_review))
+        #
+        # text_specific_reviews, text_generic_reviews =\
+        #     context_utils.cluster_reviews(self.text_reviews)
+        #
+        # for text_review in text_specific_reviews:
+        #     self.specific_reviews.append(Review(text_review))
+        # for text_review in text_generic_reviews:
+        #     self.generic_reviews.append(Review(text_review))
+
+
         self.reviews = []
         self.specific_reviews = []
         self.generic_reviews = []
 
-        for text_review in self.text_reviews:
-            self.reviews.append(Review(text_review))
+        # for text_review in self.text_reviews:
+        #     self.reviews.append(Review(text_review))
 
-        text_specific_reviews, text_generic_reviews =\
-            context_utils.cluster_reviews(self.text_reviews)
+        my_file = '/Users/fpena/tmp/reviews_spa.pkl'
+        # with open(my_file, 'wb') as write_file:
+        #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
-        for text_review in text_specific_reviews:
-            self.specific_reviews.append(Review(text_review))
-        for text_review in text_generic_reviews:
-            self.generic_reviews.append(Review(text_review))
+        with open(my_file, 'rb') as read_file:
+            self.reviews = pickle.load(read_file)
+
+        self.reviews = self.reviews
+        # for review in self.reviews:
+        #     print(review)
+
+        cluster_labels = context_utils.cluster_reviews(self.reviews)
+        review_clusters =\
+            context_utils.split_list_by_labels(self.reviews, cluster_labels)
+        # print(cluster_labels)
+
+        self.specific_reviews = review_clusters[0]
+        self.generic_reviews = review_clusters[1]
 
         # self.all_nouns = context_utils.get_all_nouns(self.reviews)
 
@@ -117,8 +145,8 @@ class LdaBasedContext:
 
 
 def main():
-    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
-    my_reviews = context_utils.load_reviews(reviews_file)[:5000]
+    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_spas.json"
+    my_reviews = context_utils.load_reviews(reviews_file)
     print("reviews:", len(my_reviews))
 
     # lda_context_utils.discover_topics(my_reviews, 50)
@@ -132,3 +160,11 @@ main()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)
+
+
+# review_text1 = "We had dinner there last night. The food was delicious. " \
+#           "Definitely, is the best restaurant in town."
+# my_review = Review(review_text1)
+# context_utils.generate_senses(my_review)
+# print(my_review.senses)
+# print(context_utils.build_sense_similarity_matrix(my_review.senses))
