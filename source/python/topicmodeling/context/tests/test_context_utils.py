@@ -2,6 +2,7 @@ from collections import Counter
 import math
 import numpy
 import numpy.testing as nptest
+from topicmodeling.context import review_utils
 from topicmodeling.context import context_utils
 from topicmodeling.context.review import Review
 
@@ -110,58 +111,58 @@ review_text9 = "Beef gyros are always good here."
 
 class TestContextUtils(TestCase):
 
-    def test_log_sentences(self):
+    def test_count_sentences(self):
 
-        expected_value = math.log(2)
-        actual_value = context_utils.log_sentences(empty_paragraph)
+        expected_value = 1
+        actual_value = context_utils.count_sentences(empty_paragraph)
         self.assertEqual(actual_value, expected_value)
 
-        expected_value = math.log(3)
-        actual_value = context_utils.log_sentences(paragraph1)
+        expected_value = 2
+        actual_value = context_utils.count_sentences(paragraph1)
         self.assertEqual(actual_value, expected_value)
 
-        expected_value = math.log(4)
-        actual_value = context_utils.log_sentences(review_text1)
+        expected_value = 3
+        actual_value = context_utils.count_sentences(review_text1)
         self.assertEqual(actual_value, expected_value)
 
-        expected_value = math.log(8)
-        actual_value = context_utils.log_sentences(review_text3)
+        expected_value = 7
+        actual_value = context_utils.count_sentences(review_text3)
         self.assertEqual(actual_value, expected_value)
 
-    def test_log_words(self):
+    def test_count_words(self):
 
-        expected_value = math.log(1)
-        actual_value = context_utils.log_words(empty_paragraph)
+        expected_value = 0
+        actual_value = context_utils.count_words(empty_paragraph)
         self.assertEqual(actual_value, expected_value)
 
-        expected_value = math.log(15)
-        actual_value = context_utils.log_words(paragraph1)
+        expected_value = 14
+        actual_value = context_utils.count_words(paragraph1)
         self.assertEqual(actual_value, expected_value)
 
-        expected_value = math.log(18)
-        actual_value = context_utils.log_words(review_text1)
+        expected_value = 17
+        actual_value = context_utils.count_words(review_text1)
         self.assertEqual(actual_value, expected_value)
 
-        expected_value = math.log(88)
-        actual_value = context_utils.log_words(review_text3)
+        expected_value = 87
+        actual_value = context_utils.count_words(review_text3)
         self.assertEqual(actual_value, expected_value)
 
     def test_vbd_sum(self):
 
         expected_value = math.log(1)
-        tagged_words = context_utils.tag_words(empty_paragraph)
+        tagged_words = review_utils.tag_words(empty_paragraph)
         counts = Counter(tag for word, tag in tagged_words)
         actual_value = context_utils.vbd_sum(counts)
         self.assertEqual(actual_value, expected_value)
 
         expected_value = math.log(1)
-        tagged_words = context_utils.tag_words(paragraph1)
+        tagged_words = review_utils.tag_words(paragraph1)
         counts = Counter(tag for word, tag in tagged_words)
         actual_value = context_utils.vbd_sum(counts)
         self.assertEqual(actual_value, expected_value)
 
         expected_value = math.log(3)
-        tagged_words = context_utils.tag_words(review_text1)
+        tagged_words = review_utils.tag_words(review_text1)
         counts = Counter(tag for word, tag in tagged_words)
         actual_value = context_utils.vbd_sum(counts)
         self.assertEqual(actual_value, expected_value)
@@ -169,19 +170,19 @@ class TestContextUtils(TestCase):
     def test_verb_sum(self):
 
         expected_value = math.log(1)
-        tagged_words = context_utils.tag_words(empty_paragraph)
+        tagged_words = review_utils.tag_words(empty_paragraph)
         counts = Counter(tag for word, tag in tagged_words)
         actual_value = context_utils.verb_sum(counts)
         self.assertEqual(actual_value, expected_value)
 
         expected_value = math.log(3)
-        tagged_words = context_utils.tag_words(paragraph1)
+        tagged_words = review_utils.tag_words(paragraph1)
         counts = Counter(tag for word, tag in tagged_words)
         actual_value = context_utils.verb_sum(counts)
         self.assertEqual(actual_value, expected_value)
 
         expected_value = math.log(4)
-        tagged_words = context_utils.tag_words(review_text1)
+        tagged_words = review_utils.tag_words(review_text1)
         counts = Counter(tag for word, tag in tagged_words)
         actual_value = context_utils.verb_sum(counts)
         self.assertEqual(actual_value, expected_value)
@@ -194,16 +195,16 @@ class TestContextUtils(TestCase):
 
     def test_get_nouns(self):
 
-        # tagged_words = context_utils.tag_words(empty_paragraph)
-        actual_value = context_utils.get_nouns(Review(empty_paragraph))
+        tagged_words = review_utils.tag_words(empty_paragraph)
+        actual_value = review_utils.get_nouns(tagged_words)
         expected_value = []
         self.assertItemsEqual(actual_value, expected_value)
-        tagged_words = context_utils.tag_words(paragraph1)
-        actual_value = context_utils.get_nouns(Review(paragraph1))
-        expected_value = ['morning', 'dr', 'adams', 'patient', 'room', 'number']
+        tagged_words = review_utils.tag_words(paragraph1)
+        actual_value = review_utils.get_nouns(tagged_words)
+        expected_value = ['morning', 'Dr.', 'Adams', 'patient', 'room', 'number']
         self.assertItemsEqual(actual_value, expected_value)
-        # tagged_words = context_utils.tag_words(review_text1)
-        actual_value = context_utils.get_nouns(Review(review_text1))
+        tagged_words = review_utils.tag_words(review_text1)
+        actual_value = review_utils.get_nouns(tagged_words)
         expected_value = ['dinner', 'night', 'food', 'restaurant', 'town']
         self.assertItemsEqual(actual_value, expected_value)
 
@@ -216,7 +217,7 @@ class TestContextUtils(TestCase):
         ]
         actual_value = context_utils.get_all_nouns(reviews)
         expected_value = set([
-            'morning', 'dr', 'adams', 'patient', 'room', 'number', 'dinner',
+            'morning', 'Dr.', 'Adams', 'patient', 'room', 'number', 'dinner',
             'night', 'food', 'restaurant', 'town', 'bar', 'music', 'beer'
         ])
         self.assertEqual(actual_value, expected_value)
