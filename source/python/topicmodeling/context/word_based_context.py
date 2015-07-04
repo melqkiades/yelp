@@ -30,14 +30,16 @@ class WordBasedContext:
         # for text_review in self.text_reviews:
         #     self.reviews.append(Review(text_review))
 
-        my_file = '/Users/fpena/tmp/reviews_spa.pkl'
+        my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
+        # my_file = '/Users/fpena/tmp/reviews_restaurant.pkl'
+        # my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
         # with open(my_file, 'wb') as write_file:
         #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
         with open(my_file, 'rb') as read_file:
             self.reviews = pickle.load(read_file)
 
-        self.reviews = self.reviews
+        # self.reviews = self.reviews
         # for review in self.reviews:
         #     print(review)
 
@@ -52,18 +54,6 @@ class WordBasedContext:
         self.all_nouns = context_utils.get_all_nouns(self.reviews)
 
         context_utils.generate_stats(self.specific_reviews, self.generic_reviews)
-
-
-
-        # text_specific_reviews, text_generic_reviews =\
-        #     context_utils.cluster_reviews(self.text_reviews)
-        #
-        # for text_review in text_specific_reviews:
-        #     self.specific_reviews.append(Review(text_review))
-        # for text_review in text_generic_reviews:
-        #     self.generic_reviews.append(Review(text_review))
-        #
-        # self.all_nouns = context_utils.get_all_nouns(self.reviews)
 
     def filter_nouns(self):
         print('filter_nouns', time.strftime("%H:%M:%S"))
@@ -140,16 +130,23 @@ class WordBasedContext:
 def main():
     # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-short.json"
     # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
-    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_spas.json"
-    # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
+    # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_spas.json"
+    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
     # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_restaurants.json"
     reviews = context_utils.load_reviews(reviews_file)
+
+    # If we want to use the sentences instead of the reviews to cluster then
+    # we have to uncomment the following block
+    # sentences = []
+    # for review in context_utils.load_reviews(reviews_file):
+    #     for sentence in tokenize.sent_tokenize(review):
+    #         sentences.append(sentence)
+    # reviews = [review for review in context_utils.load_reviews(reviews_file)]
+    # print("sentences:", len(sentences))
+
     print("reviews:", len(reviews))
-    # specific, generic = context_utils.cluster_reviews(reviews)
 
-    # print(specific)
-    # print(generic)
-
+    # word_context = WordBasedContext(sentences)
     word_context = WordBasedContext(reviews)
     word_context.calculate_sense_group_ratios()
 

@@ -20,13 +20,27 @@ __author__ = 'fpena'
 from nltk import tokenize
 
 
-def log_sentences(text):
-    return math.log(len(tokenize.sent_tokenize(text)) + 1)
+def count_sentences(text):
+    """
+    Returns the number of sentences there are in the given text
+
+    :type text: str
+    :param text: just a text
+    :rtype: int
+    :return: the number of sentences there are in the given text
+    """
+    return len(tokenize.sent_tokenize(text))
 
 
-def log_words(text):
-    # tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+')
-    # tokens = tokenizer.tokenize(text)
+def count_words(text):
+    """
+    Returns the number of words there are in the given text
+
+    :type text: str
+    :param text: just a text. It must be in english.
+    :rtype: int
+    :return: the number of words there are in the given text
+    """
     sentence_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     sentences = sentence_tokenizer.tokenize(text)
 
@@ -35,23 +49,6 @@ def log_words(text):
     for sentence in sentences:
         words.extend([word.strip(string.punctuation) for word in sentence.split()])
     return math.log(len(words) + 1)
-
-
-# def tag_words(text):
-#     # tokens = nltk.word_tokenize(text.lower())
-#     tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+')
-#     text = text.encode('utf-8')
-#     tokens = tokenizer.tokenize(text.lower())
-#     nltk_text = nltk.Text(tokens)
-#     tagged_words = nltk.pos_tag(nltk_text)
-#     # sentences = nltk.sent_tokenize(text)
-#     # sentences = [nltk.word_tokenize(sent) for sent in sentences]
-#     # tagged_words = []
-#     # for sent in sentences:
-#     #     tagged_words.extend(nltk.pos_tag(sent))
-#     # sentences = [nltk.pos_tag(sent) for sent in sentences]
-#     # print(tagged_words)
-#     return tagged_words
 
 
 def vbd_sum(tags_count):
@@ -75,8 +72,8 @@ def process_review(review):
     :param review:
     :return:
     """
-    log_sentence = log_sentences(review.text)
-    log_word = log_words(review.text)
+    log_sentence = math.log(count_sentences(review.text) + 1)
+    log_word = math.log(count_words(review.text) + 1)
     tagged_words = review.tagged_words
     # print(tagged_words)
     counts = Counter(tag for word, tag in tagged_words)
@@ -509,15 +506,22 @@ def stat_reviews(reviews):
 
 
 my_text1 = "BUT if you do stay here, it's awesome."
-my_text2 = "great hotel in Central Phoenix for a staycation, but not necessarily a place to stay out of town and without a car. Not much around the area, and unless you're familiar with downtown, I would rather have a guest stay in Old Town Scottsdale, etc. BUT if you do stay here, it's awesome. Great boutique rooms. Awesome pool that's happening in the summer. A GREAT rooftop patio bar, and a very very busy lobby with Gallo Blanco attached. A great place to stay, but have a car!"
+my_text2 = "great hotel in Central Phoenix for a staycation, but not " \
+           "necessarily a place to stay out of town and without a car. " \
+           "Not much around the area, and unless you're familiar with " \
+           "downtown, I would rather have a guest stay in " \
+           "Old Town Scottsdale, etc. BUT if you do stay here, it's awesome." \
+           " Great boutique rooms. Awesome pool that's happening in the " \
+           "summer. A GREAT rooftop patio bar, and a very very busy lobby " \
+           "with Gallo Blanco attached. A great place to stay, but have a car!"
 my_tokens1 = nltk.word_tokenize(my_text1)
 my_tokens2 = nltk.word_tokenize(my_text2)
 my_tags1 = nltk.pos_tag(my_tokens1)
 my_tags2 = nltk.pos_tag(my_tokens2)
-print(my_tags1)
-print(my_tags2)
-
-from nltk.tag.stanford import POSTagger
-st = POSTagger("/Users/fpena/tmp/stanford-postagger-full-2015-04-20/models/english-left3words-distsim.tagger",
-               "/Users/fpena/tmp/stanford-postagger-full-2015-04-20/stanford-postagger.jar")
-print(st.tag(my_tokens2))
+# print(my_tags1)
+# print(my_tags2)
+#
+# from nltk.tag.stanford import POSTagger
+# st = POSTagger("/Users/fpena/tmp/stanford-postagger-full-2015-04-20/models/english-left3words-distsim.tagger",
+#                "/Users/fpena/tmp/stanford-postagger-full-2015-04-20/stanford-postagger.jar")
+# print(st.tag(my_tokens2))

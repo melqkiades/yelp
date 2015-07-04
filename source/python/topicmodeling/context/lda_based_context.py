@@ -52,7 +52,8 @@ class LdaBasedContext:
         # for text_review in self.text_reviews:
         #     self.reviews.append(Review(text_review))
 
-        my_file = '/Users/fpena/tmp/reviews_spa.pkl'
+        my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
+        my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
         # with open(my_file, 'wb') as write_file:
         #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
@@ -129,8 +130,14 @@ class LdaBasedContext:
 
         # for topic in topic_model.show_topics(num_topics=self.num_topics):
         #     print(topic)
-        for i in range(topic_model.num_topics):
-            print('topic', i, topic_model.print_topic(i, topn=50))
+        print('num_topics', len(self.topics))
+
+        for topic in sorted_topics:
+        # for i in range(topic_model.num_topics):
+            # print('topic', i, topic_model.print_topic(i, topn=50))
+            topic_index = topic[0]
+            ratio = topic[1]
+            print('topic', ratio, topic_index, topic_model.print_topic(topic_index, topn=50))
 
         return sorted_topics
 
@@ -145,15 +152,15 @@ class LdaBasedContext:
 
 
 def main():
-    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_spas.json"
+    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
     my_reviews = context_utils.load_reviews(reviews_file)
     print("reviews:", len(my_reviews))
 
-    # lda_context_utils.discover_topics(my_reviews, 50)
-    lda_based_context = LdaBasedContext(my_reviews)
-    lda_based_context.init_reviews()
-    my_topics = lda_based_context.filter_topics()
-    print(my_topics)
+    lda_context_utils.discover_topics(my_reviews, 150)
+    # lda_based_context = LdaBasedContext(my_reviews)
+    # lda_based_context.init_reviews()
+    # my_topics = lda_based_context.filter_topics()
+    # print(my_topics)
 
 start = time.time()
 main()
