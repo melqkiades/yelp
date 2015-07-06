@@ -570,7 +570,7 @@ class TopicCorpus:
 
         for k in range(self.num_topics):
             for w in range(self.n_words):
-                res[k] = math.exp(self.background_words[w] + self.topic_words[w][k])
+                res[k] += math.exp(self.background_words[w] + self.topic_words[w][k])
 
         return res
 
