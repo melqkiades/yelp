@@ -24,6 +24,7 @@ class LdaBasedContext:
         self.review_topics_list = None
         self.num_topics = 150
         self.topics = range(self.num_topics)
+        self.topic_model = None
 
     def init_reviews(self):
 
@@ -80,7 +81,8 @@ class LdaBasedContext:
             context_utils.get_text_from_reviews(self.specific_reviews)
         generic_reviews_text =\
             context_utils.get_text_from_reviews(self.generic_reviews)
-        topic_model = lda_context_utils.discover_topics(specific_reviews_text, self.num_topics)
+        self.topic_model = lda_context_utils.discover_topics(
+            specific_reviews_text, self.num_topics)
 
         specific_bag_of_words =\
             lda_context_utils.create_bag_of_words(specific_reviews_text)
@@ -95,8 +97,8 @@ class LdaBasedContext:
         dictionary.filter_extremes(2, 0.6)
         generic_corpus = [dictionary.doc2bow(text) for text in generic_bag_of_words]
 
-        specific_topics = topic_model[specific_corpus]
-        generic_topics = topic_model[generic_corpus]
+        specific_topics = self.topic_model[specific_corpus]
+        generic_topics = self.topic_model[generic_corpus]
 
         lda_context_utils.update_reviews_with_topics(
             specific_topics, self.specific_reviews)
@@ -137,7 +139,7 @@ class LdaBasedContext:
             # print('topic', i, topic_model.print_topic(i, topn=50))
             topic_index = topic[0]
             ratio = topic[1]
-            print('topic', ratio, topic_index, topic_model.print_topic(topic_index, topn=50))
+            print('topic', ratio, topic_index, self.topic_model.print_topic(topic_index, topn=50))
 
         return sorted_topics
 
@@ -156,17 +158,17 @@ def main():
     my_reviews = context_utils.load_reviews(reviews_file)
     print("reviews:", len(my_reviews))
 
-    lda_context_utils.discover_topics(my_reviews, 150)
-    # lda_based_context = LdaBasedContext(my_reviews)
-    # lda_based_context.init_reviews()
-    # my_topics = lda_based_context.filter_topics()
-    # print(my_topics)
+    # lda_context_utils.discover_topics(my_reviews, 150)
+    lda_based_context = LdaBasedContext(my_reviews)
+    lda_based_context.init_reviews()
+    my_topics = lda_based_context.filter_topics()
+    print(my_topics)
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
 
 
 # review_text1 = "We had dinner there last night. The food was delicious. " \

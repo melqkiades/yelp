@@ -1,6 +1,7 @@
 import math
 import itertools
 from random import shuffle
+import scipy
 from utils import dictionary_utils
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
@@ -46,6 +47,8 @@ class BasicKNN:
             user1_average = self.user_dictionary[user1].average_overall_rating
             user2_average = self.user_dictionary[user2].average_overall_rating
 
+            # print('user average', user1_average)
+
             numerator +=\
                 (user1_rating - user1_average) * (user2_rating - user2_average)
             denominator1 += (user1_rating - user1_average) ** 2
@@ -53,7 +56,31 @@ class BasicKNN:
 
         denominator = math.sqrt(denominator1 * denominator2)
 
+        if denominator == 0:
+            return 0
+
         return numerator / denominator
+
+    def calculate_pearson_similarity2(self, user1, user2):
+
+        common_items = self.get_common_rated_items(user1, user2)
+
+        if not common_items:
+            return 0
+
+        user1_ratings = []
+        user2_ratings = []
+
+        for item in common_items:
+            user1_ratings.append(self.get_rating(user1, item))
+            user2_ratings.append(self.get_rating(user2, item))
+
+        similarity = scipy.stats.pearsonr(user1_ratings, user2_ratings)[0]
+        if math.isnan(similarity):
+            return 0
+        # if similarity < 0:
+        #     return -similarity
+        return similarity
 
     def calculate_cosine_similarity(self, user1, user2):
 
@@ -76,13 +103,15 @@ class BasicKNN:
 
         denominator = math.sqrt(denominator1) * math.sqrt(denominator2)
 
-        if denominator == 0:
-            pass
+        # if denominator == 0:
+        #     pass
 
         return numerator / denominator
 
     def calculate_similarity(self, user1, user2):
-        return self.calculate_cosine_similarity(user1, user2)
+        return self.calculate_pearson_similarity(user1, user2)
+        # return self.calculate_pearson_similarity2(user1, user2)
+        # return self.calculate_cosine_similarity(user1, user2)
 
     def create_similarity_matrix(self):
 
@@ -95,6 +124,7 @@ class BasicKNN:
             similarity = self.calculate_similarity(user1, user2)
             similarity_matrix[user1][user2] = similarity
             similarity_matrix[user2][user1] = similarity
+            # print('similarity', similarity)
 
         return similarity_matrix
 
@@ -120,12 +150,21 @@ class BasicKNN:
             k: v for k, v in sim_users_matrix.items()
             if item in self.ratings_matrix[k]}
 
+        # We remove neighbours that don't have a similarity with user
+        sim_users_matrix = {
+            k: v for k, v in sim_users_matrix.items()
+            if v}
+
+        # print(sim_users_matrix)
+
         # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             sim_users_matrix)  # [:self.num_neighbors]
 
         if user in neighbourhood:
             print('Help!!!')
+
+        # print('neighbourhood size:', len(neighbourhood))
 
         return neighbourhood
 
@@ -138,10 +177,17 @@ class BasicKNN:
         similarities_sum = 0
         num_users = 0
         neighbourhood = self.get_user_neighbours(user, item)
+        # print(neighbourhood)
+
+        if not neighbourhood:
+            return None
+
+        # print(neighbourhood)
 
         for neighbour in neighbourhood:
 
             similarity = self.calculate_similarity(user, neighbour)
+            print('similarity', similarity)
 
             if item in self.user_dictionary[neighbour].item_ratings and similarity is not None:
 
@@ -149,7 +195,7 @@ class BasicKNN:
                 neighbor_average = \
                     self.user_dictionary[neighbour].average_overall_rating
                 ratings_sum += similarity * (neighbor_rating - neighbor_average)
-                similarities_sum += similarity
+                similarities_sum += abs(similarity)
                 num_users += 1
 
             if num_users == self.num_neighbors:
@@ -246,7 +292,7 @@ def main():
     basic_knn = BasicKNN(None)
     basic_knn.load(my_train_data)
     # basic_knn.load(my_records)
-    recommender_evaluator.perform_cross_validation(my_records, basic_knn, 5)
+    recommender_evaluator.perform_cross_validation(my_records, basic_knn, 3)
 
     # num_items = 0.0
     # for my_user in basic_knn.user_dictionary.values():
@@ -260,4 +306,4 @@ def main():
     #     my_prediction = basic_knn.predict_rating(record['user_id'], record['offering_id'])
     #     print(my_prediction)
 
-main()
+# main()

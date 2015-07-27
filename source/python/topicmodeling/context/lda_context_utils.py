@@ -54,8 +54,8 @@ def discover_topics(text_reviews, num_topics):
     #   print l, "#", t
     # for l in corpus_lda:
     #     print(l)
-    for topic in lda_model.show_topics(num_topics=num_topics, num_words=50):
-        print(topic)
+    # for topic in lda_model.show_topics(num_topics=num_topics, num_words=50):
+    #     print(topic)
 
     return lda_model
 
