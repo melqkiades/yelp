@@ -294,6 +294,32 @@ def get_user_average_overall_rating(reviews, user_id, apply_filter=True):
     return average_rating
 
 
+def get_item_average_overall_rating(reviews, item_id, apply_filter=True):
+    """
+    Returns the average of the overall ratings that this user has given to
+    every item he/she has reviewed
+
+    :param reviews: a list of reviews
+    :param item_id: the ID of the user
+    :return: the average (or mean) of all the overall ratings that this has
+    given to all the items he/she has reviewed
+    """
+    if apply_filter:
+        user_reviews = ETLUtils.filter_records(reviews, 'offering_id', [item_id])
+    else:
+        user_reviews = reviews
+
+    ratings_sum = 0.
+    ratings_count = len(user_reviews)
+
+    for review in user_reviews:
+        ratings_sum += float(review['overall_rating'])
+
+    average_rating = float(ratings_sum) / float(ratings_count)
+
+    return average_rating
+
+
 def get_criteria_weights(reviews, user_id, apply_filter=True):
     """
     Obtains the weights for each of the criterion of the given user
