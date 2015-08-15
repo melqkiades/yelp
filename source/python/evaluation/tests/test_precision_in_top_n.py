@@ -1,5 +1,6 @@
 from unittest import TestCase
 from evaluation import precision_in_top_n
+from recommenders.item_average_recommender import ItemAverageRecommender
 from recommenders.similarity.single_similarity_matrix_builder import \
     SingleSimilarityMatrixBuilder
 from recommenders.weighted_sum_recommender import WeightedSumRecommender
@@ -135,6 +136,49 @@ class TestPrecisionInTopN(TestCase):
 
         recommender = WeightedSumRecommender(SingleSimilarityMatrixBuilder('euclidean'))
         recommender.load(reviews_matrix_5)
-        print(precision_in_top_n.calculate_recommender_precision(reviews_matrix_5, 'U1', recommender, 3, 8.0))
-        print(precision_in_top_n.calculate_recommender_precision(reviews_matrix_5, 'U2', recommender, 5, 8.0))
-        print(precision_in_top_n.calculate_recommender_precision(reviews_matrix_5, 'U3', recommender, 7, 8.0))
+        # print(precision_in_top_n.calculate_recommender_precision(
+        #     reviews_matrix_5, 'U1', recommender, 3, 8.0))
+        # print(precision_in_top_n.calculate_recommender_precision(
+        #     reviews_matrix_5, 'U2', recommender, 5, 8.0))
+        # print(precision_in_top_n.calculate_recommender_precision(
+        #     reviews_matrix_5, 'U3', recommender, 7, 8.0))
+
+    def test_calculate_recall_in_top_n(self):
+        recommender = ItemAverageRecommender()
+        recommender.load(reviews_matrix_5)
+
+        actual_value = precision_in_top_n.calculate_recall_in_top_n(
+            reviews_matrix_5, recommender, 2, 2, 4.0)
+        expected_value = 0.875
+        self.assertEqual(expected_value, actual_value)
+
+    def test_is_a_hit(self):
+
+        actual_value = precision_in_top_n.is_a_hit('I2', predicted_ratings_2, 1)
+        expected_value = True
+        self.assertEqual(expected_value, actual_value)
+
+        actual_value = precision_in_top_n.is_a_hit('I2', predicted_ratings_2, 3)
+        expected_value = True
+        self.assertEqual(expected_value, actual_value)
+
+        actual_value = precision_in_top_n.is_a_hit('I2', predicted_ratings_2, 10)
+        expected_value = True
+        self.assertEqual(expected_value, actual_value)
+
+        actual_value = precision_in_top_n.is_a_hit('I1', predicted_ratings_2, 1)
+        expected_value = False
+        self.assertEqual(expected_value, actual_value)
+
+        actual_value = precision_in_top_n.is_a_hit('I1', predicted_ratings_2, 3)
+        expected_value = True
+        self.assertEqual(expected_value, actual_value)
+
+        actual_value = precision_in_top_n.is_a_hit('I3', predicted_ratings_2, 2)
+        expected_value = True
+        self.assertEqual(expected_value, actual_value)
+
+        actual_value = precision_in_top_n.is_a_hit('I3', predicted_ratings_2, 2)
+        expected_value = True
+        self.assertEqual(expected_value, actual_value)
+
