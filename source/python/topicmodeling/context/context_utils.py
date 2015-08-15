@@ -105,12 +105,11 @@ def cluster_reviews(reviews):
     for index in range(len(reviews)):
         records[index] = process_review(reviews[index])
 
-    print('processed records', time.strftime("%H:%M:%S"))
+    # print('processed records', time.strftime("%H:%M:%S"))
 
     k_means = KMeans(n_clusters=2)
     k_means.fit(records)
     labels = k_means.labels_
-    print('clustered reviews', time.strftime("%H:%M:%S"))
 
     record_clusters = split_list_by_labels(records, labels)
     cluster0_sum = reduce(lambda x, y: x + sum(y), record_clusters[0], 0)
@@ -119,6 +118,8 @@ def cluster_reviews(reviews):
     if cluster0_sum < cluster1_sum:
         # If the cluster 0 contains the generic review we invert the tags
         labels = [1 if element == 0 else 0 for element in labels]
+
+    print('clustered reviews', time.strftime("%H:%M:%S"))
 
     return labels
 
@@ -199,7 +200,6 @@ def generate_all_senses(reviews):
 def calculate_word_weighted_frequency(word, reviews):
     """
 
-    :param self:
     :type word: str
     :param word:
     :type reviews: list[Review]
@@ -280,14 +280,6 @@ def build_sense_similarity_matrix(senses):
 
 
 def get_synset_neighbours(synset, similarity_matrix):
-    """
-
-    :rtype : object
-    :type synset: Synset
-    :param synset:
-    :param potential_neighbours:
-    :return:
-    """
     neighbours = []
 
     # for element in potential_neighbours:
@@ -374,6 +366,15 @@ def calculate_group_weighted_frequency(group, reviews):
             num_reviews += 1
 
     return num_reviews / len(reviews)
+
+
+def get_context_similarity(context1, context2, topic_indices):
+
+    # We filter the topic model, selecting only the topics that contain context
+    filtered_context1 = np.array([context1[i[0]] for i in topic_indices])
+    filtered_context2 = np.array([context2[i[0]] for i in topic_indices])
+
+    return 1 / (1 + np.linalg.norm(filtered_context1-filtered_context2))
 
 
 def main():

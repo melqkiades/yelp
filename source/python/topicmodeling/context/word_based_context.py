@@ -1,7 +1,7 @@
 import time
 import cPickle as pickle
 from topicmodeling.context import context_utils
-from topicmodeling.context.review import Review
+from topicmodeling.context import reviews_clusterer
 
 __author__ = 'fpena'
 
@@ -43,9 +43,9 @@ class WordBasedContext:
         # for review in self.reviews:
         #     print(review)
 
-        cluster_labels = context_utils.cluster_reviews(self.reviews)
+        cluster_labels = reviews_clusterer.cluster_reviews(self.reviews)
         review_clusters =\
-            context_utils.split_list_by_labels(self.reviews, cluster_labels)
+            reviews_clusterer.split_list_by_labels(self.reviews, cluster_labels)
         # print(cluster_labels)
 
         self.specific_reviews = review_clusters[0]

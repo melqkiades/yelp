@@ -1,21 +1,23 @@
 import time
 import operator
 from gensim import corpora
-import cPickle as pickle
+from gensim.models import ldamodel
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
+from topicmodeling.context import reviews_clusterer
 from topicmodeling.context.review import Review
 
 
 __author__ = 'fpena'
 
+
 class LdaBasedContext:
 
-    def __init__(self, text_reviews):
+    def __init__(self, reviews=None, text_reviews=None):
         self.text_reviews = text_reviews
         self.alpha = 0.005
         self.beta = 1.0
-        self.reviews = None
+        self.reviews = reviews
         self.specific_reviews = None
         self.generic_reviews = None
         self.all_nouns = None
@@ -27,16 +29,24 @@ class LdaBasedContext:
         self.topic_model = None
 
     def init_reviews(self):
+        if not self.reviews:
+            self.init_from_text(self.text_reviews)
+        self.cluster()
+
+    def init_from_text(self, text_reviews):
+        self.text_reviews = text_reviews
+
+        index = 0
+        print('num_reviews', len(self.text_reviews))
+        for text_review in self.text_reviews:
+            self.reviews.append(Review(text_review))
+            print('index', index)
+            index += 1
+
+    def cluster(self):
 
         print('init_reviews', time.strftime("%H:%M:%S"))
 
-        # self.reviews = []
-        # self.specific_reviews = []
-        # self.generic_reviews = []
-        #
-        # for text_review in self.text_reviews:
-        #     self.reviews.append(Review(text_review))
-        #
         # text_specific_reviews, text_generic_reviews =\
         #     context_utils.cluster_reviews(self.text_reviews)
         #
@@ -45,33 +55,34 @@ class LdaBasedContext:
         # for text_review in text_generic_reviews:
         #     self.generic_reviews.append(Review(text_review))
 
-
-        self.reviews = []
-        self.specific_reviews = []
-        self.generic_reviews = []
+        # self.reviews = []
+        # self.specific_reviews = []
+        # self.generic_reviews = []
 
         # for text_review in self.text_reviews:
         #     self.reviews.append(Review(text_review))
 
-        my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
-        my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
+        # my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
+        # my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
         # with open(my_file, 'wb') as write_file:
         #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
-        with open(my_file, 'rb') as read_file:
-            self.reviews = pickle.load(read_file)
+        # with open(my_file, 'rb') as read_file:
+        #     self.reviews = pickle.load(read_file)
 
-        self.reviews = self.reviews
+        # self.reviews = self.reviews
         # for review in self.reviews:
         #     print(review)
 
-        cluster_labels = context_utils.cluster_reviews(self.reviews)
+        cluster_labels = reviews_clusterer.cluster_reviews(self.reviews)
         review_clusters =\
-            context_utils.split_list_by_labels(self.reviews, cluster_labels)
+            reviews_clusterer.split_list_by_labels(self.reviews, cluster_labels)
         # print(cluster_labels)
 
         self.specific_reviews = review_clusters[0]
         self.generic_reviews = review_clusters[1]
+
+        print('finish init_reviews', time.strftime("%H:%M:%S"))
 
         # self.all_nouns = context_utils.get_all_nouns(self.reviews)
 
@@ -81,8 +92,8 @@ class LdaBasedContext:
             context_utils.get_text_from_reviews(self.specific_reviews)
         generic_reviews_text =\
             context_utils.get_text_from_reviews(self.generic_reviews)
-        self.topic_model = lda_context_utils.discover_topics(
-            specific_reviews_text, self.num_topics)
+        # self.topic_model = lda_context_utils.discover_topics(
+        #     specific_reviews_text, self.num_topics)
 
         specific_bag_of_words =\
             lda_context_utils.create_bag_of_words(specific_reviews_text)
@@ -91,19 +102,27 @@ class LdaBasedContext:
 
         dictionary = corpora.Dictionary(specific_bag_of_words)
         dictionary.filter_extremes(2, 0.6)
-        specific_corpus = [dictionary.doc2bow(text) for text in specific_bag_of_words]
 
-        dictionary = corpora.Dictionary(generic_bag_of_words)
-        dictionary.filter_extremes(2, 0.6)
-        generic_corpus = [dictionary.doc2bow(text) for text in generic_bag_of_words]
+        # dictionary = corpora.Dictionary(texts)
+        corpus = [dictionary.doc2bow(text) for text in specific_bag_of_words]
+        self.topic_model = ldamodel.LdaModel(
+            corpus, id2word=dictionary, num_topics=self.num_topics)
 
-        specific_topics = self.topic_model[specific_corpus]
-        generic_topics = self.topic_model[generic_corpus]
+        print('created topic model', time.strftime("%H:%M:%S"))
+
+        specific_corpora =\
+            [dictionary.doc2bow(text) for text in specific_bag_of_words]
+        generic_corpora =\
+            [dictionary.doc2bow(text) for text in generic_bag_of_words]
+
+        print('created bag of words', time.strftime("%H:%M:%S"))
 
         lda_context_utils.update_reviews_with_topics(
-            specific_topics, self.specific_reviews)
+            self.topic_model, specific_corpora, self.specific_reviews)
         lda_context_utils.update_reviews_with_topics(
-            generic_topics, self.generic_reviews)
+            self.topic_model, generic_corpora, self.generic_reviews)
+
+        print('updated reviews with topics', time.strftime("%H:%M:%S"))
 
         topic_ratio_map = {}
 
@@ -115,7 +134,8 @@ class LdaBasedContext:
                 lda_context_utils.calculate_topic_weighted_frequency(
                     topic, self.generic_reviews)
 
-            if generic_weighted_frq < self.alpha or specific_weighted_frq < self.alpha:
+            if (generic_weighted_frq < self.alpha or
+                    specific_weighted_frq < self.alpha):
                 self.topics.remove(topic)
                 continue
 
@@ -132,14 +152,14 @@ class LdaBasedContext:
 
         # for topic in topic_model.show_topics(num_topics=self.num_topics):
         #     print(topic)
-        print('num_topics', len(self.topics))
+        print('num_topics', len(self.topics), time.strftime("%H:%M:%S"))
 
-        for topic in sorted_topics:
+        # for topic in sorted_topics:
         # for i in range(topic_model.num_topics):
             # print('topic', i, topic_model.print_topic(i, topn=50))
-            topic_index = topic[0]
-            ratio = topic[1]
-            print('topic', ratio, topic_index, self.topic_model.print_topic(topic_index, topn=50))
+            # topic_index = topic[0]
+            # ratio = topic[1]
+            # print('topic', ratio, topic_index, self.topic_model.print_topic(topic_index, topn=50))
 
         return sorted_topics
 
@@ -159,8 +179,8 @@ def main():
     print("reviews:", len(my_reviews))
 
     # lda_context_utils.discover_topics(my_reviews, 150)
-    lda_based_context = LdaBasedContext(my_reviews)
-    lda_based_context.init_reviews()
+    lda_based_context = LdaBasedContext()
+    lda_based_context.init_from_text(my_reviews)
     my_topics = lda_based_context.filter_topics()
     print(my_topics)
 
@@ -177,3 +197,9 @@ def main():
 # context_utils.generate_senses(my_review)
 # print(my_review.senses)
 # print(context_utils.build_sense_similarity_matrix(my_review.senses))
+
+# my_list1 = [1, 2, 3, 4, 5]
+# my_list2 = ['a', 'b', 'c', 'd', 'e']
+#
+# for n, l in zip(my_list1, my_list2):
+#     print(n, l)

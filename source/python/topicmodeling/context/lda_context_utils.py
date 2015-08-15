@@ -6,15 +6,18 @@ from nltk.corpus import stopwords
 __author__ = 'fpena'
 
 
-def update_reviews_with_topics(topics, reviews):
+def update_reviews_with_topics(topic_model, corpora, reviews):
+    """
 
-    if len(topics) != len(reviews):
-        raise ValueError("The topics and reviews lists must have the same length")
+    :type topic_model: LdaModel
+    :param topic_model:
+    :type reviews: list[Review]
+    :param reviews:
+    """
+    print('reviews length', len(reviews))
 
-    index = 0
-    for topic in topics:
-        reviews[index].topics = topic
-        index += 1
+    for review, corpus in zip(reviews, corpora):
+        review.topics = topic_model[corpus]
 
 
 def calculate_topic_weighted_frequency(topic, reviews):
@@ -48,7 +51,7 @@ def discover_topics(text_reviews, num_topics):
 
     # I can print out the documents and which is the most probable topics for each doc.
     lda_model = ldamodel.LdaModel(corpus, id2word=dictionary, num_topics=num_topics)
-    corpus_lda = lda_model[corpus]
+    # corpus_lda = lda_model[corpus]
     #
     # for l, t in izip(corpus_lda, corpus):
     #   print l, "#", t
@@ -103,11 +106,11 @@ my_documents = [
 
 # print(create_bag_of_words(my_documents))
 
-my_bag_of_words = create_bag_of_words(my_documents)
-my_topic_model = discover_topics(my_documents, 3)
-my_dictionary = corpora.Dictionary(my_bag_of_words)
-my_dictionary.filter_extremes(2, 0.6)
-my_corpus = [my_dictionary.doc2bow(text) for text in my_bag_of_words]
+# my_bag_of_words = create_bag_of_words(my_documents)
+# my_topic_model = discover_topics(my_documents, 3)
+# my_dictionary = corpora.Dictionary(my_bag_of_words)
+# my_dictionary.filter_extremes(2, 0.6)
+# my_corpus = [my_dictionary.doc2bow(text) for text in my_bag_of_words]
 # print(my_topic_model[my_corpus])
 # for t in my_topic_model[my_corpus]:
 #     print(t)

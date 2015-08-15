@@ -2,6 +2,7 @@ import math
 import itertools
 from random import shuffle
 import scipy
+from evaluation import precision_in_top_n
 from utils import dictionary_utils
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
@@ -109,9 +110,9 @@ class BasicKNN:
         return numerator / denominator
 
     def calculate_similarity(self, user1, user2):
-        return self.calculate_pearson_similarity(user1, user2)
+        # return self.calculate_pearson_similarity(user1, user2)
         # return self.calculate_pearson_similarity2(user1, user2)
-        # return self.calculate_cosine_similarity(user1, user2)
+        return self.calculate_cosine_similarity(user1, user2)
 
     def create_similarity_matrix(self):
 
@@ -124,7 +125,6 @@ class BasicKNN:
             similarity = self.calculate_similarity(user1, user2)
             similarity_matrix[user1][user2] = similarity
             similarity_matrix[user2][user1] = similarity
-            # print('similarity', similarity)
 
         return similarity_matrix
 
@@ -161,12 +161,39 @@ class BasicKNN:
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             sim_users_matrix)  # [:self.num_neighbors]
 
-        if user in neighbourhood:
-            print('Help!!!')
-
+        # print('neighbourhood', neighbourhood)
         # print('neighbourhood size:', len(neighbourhood))
 
         return neighbourhood
+
+    # def get_user_neighbours2(self, user, item):
+    #
+    #     neighbour_reviews =\
+    #         ETLUtils.filter_records(self.reviews, 'offering_id', [item])
+    #     neighbour_reviews =\
+    #         ETLUtils.filter_out_records(neighbour_reviews, 'user_id', [user])
+    #
+    #     if not neighbour_reviews:
+    #         return None
+    #
+    #     neighbour_ids = extractor.get_groupby_list(neighbour_reviews, 'user_id')
+    #     sim_users_matrix = {}
+    #
+    #     for neighbour in neighbour_ids:
+    #         similarity = self.calculate_similarity(user, neighbour)
+    #         if similarity:
+    #             sim_users_matrix[neighbour] = similarity
+    #
+    #     # Sort the users by similarity
+    #     neighbourhood = dictionary_utils.sort_dictionary_keys(
+    #         sim_users_matrix)  # [:self.num_neighbors]
+    #
+    #     if user in neighbourhood:
+    #         print('Help!!!')
+    #
+    #     # print('neighbourhood size:', len(neighbourhood))
+    #
+    #     return neighbourhood
 
     def predict_rating(self, user, item):
 
@@ -182,14 +209,17 @@ class BasicKNN:
         if not neighbourhood:
             return None
 
-        # print(neighbourhood)
+        # print('neighbourhood', len(neighbourhood))
+        num_neighbours = 0
 
         for neighbour in neighbourhood:
 
             similarity = self.calculate_similarity(user, neighbour)
-            print('similarity', similarity)
+            # print('similarity', similarity)
 
             if item in self.user_dictionary[neighbour].item_ratings and similarity is not None:
+
+                num_neighbours += 1
 
                 neighbor_rating = self.get_rating(neighbour, item)
                 neighbor_average = \
@@ -292,7 +322,9 @@ def main():
     basic_knn = BasicKNN(None)
     basic_knn.load(my_train_data)
     # basic_knn.load(my_records)
-    recommender_evaluator.perform_cross_validation(my_records, basic_knn, 3)
+    # recommender_evaluator.perform_cross_validation(my_records, basic_knn, 3)
+    # precision_in_top_n.calculate_top_n_precision(my_records, basic_knn, 10000, 5.0, 5)
+    precision_in_top_n.calculate_recall_in_top_n(my_records, basic_knn, 10, 5)
 
     # num_items = 0.0
     # for my_user in basic_knn.user_dictionary.values():

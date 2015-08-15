@@ -44,7 +44,7 @@ def predict_rating_list(predictor, reviews, has_context=False):
 
         error = None
 
-        # print('Predicted rating', predicted_rating)
+        # print('actual rating', actual_rating, 'Predicted rating', predicted_rating)
 
         if predicted_rating is not None:
             error = abs(predicted_rating - actual_rating)
