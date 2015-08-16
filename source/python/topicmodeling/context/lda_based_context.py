@@ -45,34 +45,7 @@ class LdaBasedContext:
 
     def cluster(self):
 
-        print('init_reviews', time.strftime("%H:%M:%S"))
-
-        # text_specific_reviews, text_generic_reviews =\
-        #     context_utils.cluster_reviews(self.text_reviews)
-        #
-        # for text_review in text_specific_reviews:
-        #     self.specific_reviews.append(Review(text_review))
-        # for text_review in text_generic_reviews:
-        #     self.generic_reviews.append(Review(text_review))
-
-        # self.reviews = []
-        # self.specific_reviews = []
-        # self.generic_reviews = []
-
-        # for text_review in self.text_reviews:
-        #     self.reviews.append(Review(text_review))
-
-        # my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
-        # my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
-        # with open(my_file, 'wb') as write_file:
-        #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
-
-        # with open(my_file, 'rb') as read_file:
-        #     self.reviews = pickle.load(read_file)
-
-        # self.reviews = self.reviews
-        # for review in self.reviews:
-        #     print(review)
+        print('cluster reviews', time.strftime("%H:%M:%S"))
 
         cluster_labels = reviews_clusterer.cluster_reviews(self.reviews)
         review_clusters =\
@@ -82,9 +55,7 @@ class LdaBasedContext:
         self.specific_reviews = review_clusters[0]
         self.generic_reviews = review_clusters[1]
 
-        print('finish init_reviews', time.strftime("%H:%M:%S"))
-
-        # self.all_nouns = context_utils.get_all_nouns(self.reviews)
+        print('cluster reviews', time.strftime("%H:%M:%S"))
 
     def filter_topics(self):
 
@@ -92,8 +63,6 @@ class LdaBasedContext:
             context_utils.get_text_from_reviews(self.specific_reviews)
         generic_reviews_text =\
             context_utils.get_text_from_reviews(self.generic_reviews)
-        # self.topic_model = lda_context_utils.discover_topics(
-        #     specific_reviews_text, self.num_topics)
 
         specific_bag_of_words =\
             lda_context_utils.create_bag_of_words(specific_reviews_text)
@@ -164,15 +133,6 @@ class LdaBasedContext:
         return sorted_topics
 
 
-
-
-
-
-
-
-
-
-
 def main():
     reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
     my_reviews = context_utils.load_reviews(reviews_file)
@@ -189,17 +149,3 @@ def main():
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
-
-
-# review_text1 = "We had dinner there last night. The food was delicious. " \
-#           "Definitely, is the best restaurant in town."
-# my_review = Review(review_text1)
-# context_utils.generate_senses(my_review)
-# print(my_review.senses)
-# print(context_utils.build_sense_similarity_matrix(my_review.senses))
-
-# my_list1 = [1, 2, 3, 4, 5]
-# my_list2 = ['a', 'b', 'c', 'd', 'e']
-#
-# for n, l in zip(my_list1, my_list2):
-#     print(n, l)

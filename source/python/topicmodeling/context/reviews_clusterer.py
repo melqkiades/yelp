@@ -90,7 +90,7 @@ def get_review_metrics(review):
     tagged_words = review.tagged_words
     counts = Counter(tag for word, tag in tagged_words)
     log_past_verbs = math.log(counts['VBD'] + 1)
-    log_verbs = count_verbs(counts)
+    log_verbs = math.log(count_verbs(counts) + 1)
 
     # This ensures that when log_verbs = 0 the program won't crash
     if log_past_verbs == log_verbs:
@@ -130,8 +130,9 @@ def count_words(text):
     words = []
 
     for sentence in sentences:
-        words.extend([word.strip(string.punctuation) for word in sentence.split()])
-    return math.log(len(words) + 1)
+        words.extend(
+            [word.strip(string.punctuation) for word in sentence.split()])
+    return len(words)
 
 
 def count_verbs(tags_count):
@@ -150,4 +151,4 @@ def count_verbs(tags_count):
         tags_count['VB'] + tags_count['VBD'] + tags_count['VBG'] +\
         tags_count['VBN'] + tags_count['VBP'] + tags_count['VBZ']
 
-    return math.log(total_verbs + 1)
+    return total_verbs

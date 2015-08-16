@@ -106,7 +106,6 @@ class ContextKnn:
 
         return self.get_rating(user, item)
 
-
     def create_similarity_matrix(self):
 
         similarity_matrix = {}
@@ -118,7 +117,6 @@ class ContextKnn:
             similarity = self.calculate_user_similarity(user_id1, user_id2, 0)
             similarity_matrix[user_id1][user_id2] = similarity
             similarity_matrix[user_id2][user_id1] = similarity
-            # print('similarity', similarity)
 
         return similarity_matrix
 
@@ -157,7 +155,6 @@ class ContextKnn:
             self.calculate_user_baseline(neighbour_id, context, threshold)
 
         return neighbour_rating - neighbor_average
-        # return self.get_rating(neighbour_id, item_id)
 
     def calculate_user_baseline(self, user_id, context, threshold):
         user_rated_items = self.user_dictionary[user_id].item_ratings
@@ -185,9 +182,6 @@ class ContextKnn:
         filtered_items = {}
 
         for item in common_items:
-            # review1 = self.reviews_matrix[user1][item]
-            # review2 = self.reviews_matrix[user2][item]
-            # similarity = self.calculate_context_similarity(review1, review2)
             context1 = self.context_matrix[user1][item]
             context2 = self.context_matrix[user2][item]
             similarity =\
@@ -203,11 +197,6 @@ class ContextKnn:
         user2_average = self.user_dictionary[user2].average_overall_rating
 
         for item in filtered_items.keys():
-            # review1 = self.reviews_matrix[user1][item]
-            # review2 = self.reviews_matrix[user2][item]
-            # similarity = self.calculate_context_similarity(review1, review2)
-            # context1 = self.context_matrix[user1][item]
-            # context2 = self.context_matrix[user2][item]
             similarity = filtered_items[item]
             user1_rating = self.get_rating(user1, item)
             user2_rating = self.get_rating(user2, item)
@@ -245,34 +234,22 @@ class ContextKnn:
         all_users.remove(user)
         neighbours = []
 
-        # print('item', item)
-
         # We remove the users who have not rated the given item
         for neighbour in all_users:
-            # print(self.reviews_matrix[neighbour].keys())
             if item in self.reviews_matrix[neighbour]:
                 neighbours.append(neighbour)
 
         neighbour_similarity_map = {}
         for neighbour in neighbours:
-            # neighbour_review = self.reviews_matrix[neighbour][item]
             neighbour_context = self.context_matrix[neighbour][item]
-            # context_similarity =\
-            #     self.calculate_context_similarity(review, neighbour_review)
             context_similarity = get_context_similarity(
                 context, neighbour_context, self.topic_indices)
             if context_similarity > threshold:
                 neighbour_similarity_map[neighbour] = context_similarity
 
-            # print('context similarity', context_similarity)
-
-        # print(neighbour_similarity_map)
-
         # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             neighbour_similarity_map)  # [:self.num_neighbors]
-
-        # print('neighbourhood size:', len(neighbourhood))
 
         return neighbourhood
 
@@ -291,16 +268,9 @@ class ContextKnn:
             k: v for k, v in sim_users_matrix.items()
             if v}
 
-        # print(sim_users_matrix)
-
         # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             sim_users_matrix)[:self.num_neighbors]
-
-        if user in neighbourhood:
-            print('Help!!!')
-
-        # print('neighbourhood size:', len(neighbourhood))
 
         return neighbourhood
 
@@ -324,7 +294,6 @@ class ContextKnn:
         if not neighbourhood:
             return None
 
-        # print('num neighbours', len(neighbourhood))
         num_neighbours = 0
 
         for neighbour in neighbourhood:
@@ -337,23 +306,14 @@ class ContextKnn:
 
                 num_neighbours += 1
 
-                # neighbor_rating = self.calculate_neighbour_contribution(
-                #     neighbour, item, user_context, threshold2)
-                # neighbor_average = self.calculate_user_baseline(
-                #     neighbour, user_context, threshold2)
                 neighbour_contribution = self.calculate_neighbour_contribution(
                     neighbour, item, user_context, threshold2)
-                # ratings_sum += similarity * (neighbor_rating - neighbor_average)
                 ratings_sum += similarity * neighbour_contribution
                 similarities_sum += abs(similarity)
                 num_users += 1
 
-                # print('similarity', similarity)
-
             if num_users == self.num_neighbors:
                 break
-
-        # print('num neighbours', num_neighbours)
 
         if similarities_sum == 0:
             return None
@@ -526,16 +486,3 @@ main()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)
-
-
-# my_doc1 = numpy.array([1, 3, 5])
-# my_doc2 = numpy.array([1, 3, 5])
-#
-# print(get_context_similarity(my_doc1, my_doc2))
-
-
-# my_list1 = [1, 1, 1, 1, 2]
-# my_list2 = [2, 4, 0, 8, -10]
-#
-# print(calculate_pearson_similarity(my_list1, my_list2))
-# print(scipy.stats.pearsonr(my_list1, my_list2))
