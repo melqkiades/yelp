@@ -305,7 +305,8 @@ def get_item_average_overall_rating(reviews, item_id, apply_filter=True):
     given to all the items he/she has reviewed
     """
     if apply_filter:
-        user_reviews = ETLUtils.filter_records(reviews, 'offering_id', [item_id])
+        user_reviews =\
+            ETLUtils.filter_records(reviews, 'offering_id', [item_id])
     else:
         user_reviews = reviews
 
@@ -402,7 +403,8 @@ def initialize_users(reviews, is_multi_criteria):
         user_dictionary[user_id] = user
 
         if is_multi_criteria:
-            user.item_multi_ratings = get_user_item_multi_ratings(user_reviews, user_id)
+            user.item_multi_ratings =\
+                get_user_item_multi_ratings(user_reviews, user_id)
 
     return user_dictionary
 
@@ -507,7 +509,8 @@ def get_user_item_multi_ratings(reviews, user_id, apply_filter=False):
             averaged_rating = 0.
             rating_index = 0
             for rating in review['multi_ratings']:
-                averaged_multi_ratings[rating_index] += rating / len(item_reviews)
+                averaged_multi_ratings[rating_index] +=\
+                    rating / len(item_reviews)
                 averaged_rating += rating
                 rating_index += 1
 
@@ -539,6 +542,13 @@ def get_five_star_hotels_from_user(user_reviews, min_value):
 
 
 def get_common_items(user_dictionary, user1, user2):
+    """
+    Obtains the items that user1 and user2 have rated in common
+
+    :param user1: the id of the first user
+    :param user2: the id of the second user
+    """
+
     items_user1 = set(user_dictionary[user1].item_ratings.keys())
     items_user2 = set(user_dictionary[user2].item_ratings.keys())
 
