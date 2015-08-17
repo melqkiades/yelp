@@ -6,7 +6,7 @@ from nltk.corpus import stopwords
 __author__ = 'fpena'
 
 
-def update_reviews_with_topics(topic_model, corpora, reviews):
+def update_reviews_with_topics(topic_model, corpus_list, reviews):
     """
 
     :type topic_model: LdaModel
@@ -16,9 +16,8 @@ def update_reviews_with_topics(topic_model, corpora, reviews):
     """
     print('reviews length', len(reviews))
 
-    for review, corpus in zip(reviews, corpora):
-        review.topics = topic_model[corpus]
-
+    for review, corpus in zip(reviews, corpus_list):
+        review.topics = topic_model.get_document_topics(corpus)
 
 def calculate_topic_weighted_frequency(topic, reviews):
     """
