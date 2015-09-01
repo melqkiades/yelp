@@ -4,7 +4,9 @@ import math
 from nltk import tokenize
 import nltk
 import numpy as np
+import cPickle as pickle
 from sklearn.cluster import KMeans
+from topicmodeling.context.review import Review
 
 __author__ = 'fpena'
 
@@ -28,6 +30,7 @@ def cluster_reviews(reviews):
 
     for index in range(len(reviews)):
         records[index] = get_review_metrics(reviews[index])
+    normalize_matrix_by_columns(records)
 
     k_means = KMeans(n_clusters=2)
     k_means.fit(records)
@@ -42,6 +45,17 @@ def cluster_reviews(reviews):
         labels = [1 if element == 0 else 0 for element in labels]
 
     return labels
+
+
+def normalize_matrix_by_columns(matrix):
+    """
+
+    :type matrix: numpy.array
+    """
+    max_values = matrix.max(axis=0)
+
+    for index in range(matrix.shape[1]):
+        matrix[:, index] /= max_values[index]
 
 
 def split_list_by_labels(lst, labels):
@@ -93,8 +107,8 @@ def get_review_metrics(review):
     log_verbs = math.log(count_verbs(counts) + 1)
 
     # This ensures that when log_verbs = 0 the program won't crash
-    if log_past_verbs == log_verbs:
-        verbs_ratio = 1
+    if log_verbs == 0:
+        verbs_ratio = 0
     else:
         verbs_ratio = log_past_verbs / log_verbs
 
@@ -152,3 +166,56 @@ def count_verbs(tags_count):
         tags_count['VBN'] + tags_count['VBP'] + tags_count['VBZ']
 
     return total_verbs
+
+
+def get_stats_from_reviews(reviews):
+
+    records = np.zeros((len(reviews), 5))
+
+    for index in range(len(reviews)):
+        records[index] = count_review_info(reviews[index])
+
+    max_values = records.max(axis=0)
+    min_values = records.min(axis=0)
+    mean_values = records.mean(axis=0)
+
+    stats = {
+        'total_reviews': len(reviews),
+        'sentences': {'max': max_values[0], 'min': min_values[0], 'mean': mean_values[0]},
+        'words': {'max': max_values[1], 'min': min_values[1], 'mean': mean_values[1]},
+        'past_verbs': {'max': max_values[2], 'min': min_values[2], 'mean': mean_values[2]},
+        'verbs': {'max': max_values[3], 'min': min_values[3], 'mean': mean_values[3]},
+        'ratio': {'max': max_values[4], 'min': min_values[4], 'mean': mean_values[4]},
+    }
+
+    return stats
+
+
+def count_review_info(review):
+    num_sentences = count_sentences(review.text)
+    num_words = count_words(review.text)
+    tagged_words = review.tagged_words
+    counts = Counter(tag for word, tag in tagged_words)
+    num_past_verbs = float(counts['VBD'])
+    num_verbs = count_verbs(counts)
+
+    # This ensures that when log_verbs = 0 the program won't crash
+    if num_verbs == 0:
+        verbs_ratio = 0
+    else:
+        verbs_ratio = num_past_verbs / num_verbs
+
+    result = [num_sentences, num_words, num_past_verbs, num_verbs, verbs_ratio]
+
+    # print('ratio', verbs_ratio, '\tpast verbs', num_past_verbs, 'verbs', num_verbs)
+
+    return np.array(result)
+
+
+# my_file = '/Users/fpena/tmp/reviews_restaurant_shuffled.pkl'
+# # my_file = '/Users/fpena/tmp/reviews_hotel_shuffled.pkl'
+# # my_file = '/Users/fpena/tmp/reviews_spa.pkl'
+# with open(my_file, 'rb') as read_file:
+#     my_reviews = pickle.load(read_file)
+#
+# print(get_stats_from_reviews(my_reviews))

@@ -110,7 +110,7 @@ review_text8 = "Scary things to me:\nParis Hilton has a career. \nSarah Palin." 
 review_text9 = "Beef gyros are always good here."
 
 
-class TestContextUtils(TestCase):
+class TestReviewClusterer(TestCase):
 
     def test_count_sentences(self):
 
@@ -187,3 +187,23 @@ class TestContextUtils(TestCase):
         actual_matrix = reviews_clusterer.split_list_by_labels(lst, labels)
 
         self.assertItemsEqual(actual_matrix, expected_matrix)
+
+    def test_normalize_matrix_by_columns(self):
+        matrix = [
+            [2., 3., 0.],
+            [8., 9., 4.],
+            [5., 1., 7.],
+            [6., 6., 6.]]
+        matrix = numpy.array(matrix)
+
+        reviews_clusterer.normalize_matrix_by_columns(matrix)
+
+        expected_matrix = [
+            [0.25, 0.33333333, 0.],
+            [1., 1., 0.57142857],
+            [0.625, 0.11111111, 1.],
+            [0.75, 0.66666667, 0.85714286]]
+        expected_matrix = numpy.array(expected_matrix)
+
+        nptest.assert_allclose(matrix, expected_matrix)
+
