@@ -10,6 +10,8 @@ class User:
         self.cluster = None
         self.item_ratings = None
         self.item_multi_ratings = None
+        self.item_reviews = None
+        self.item_contexts = None
 
     @property
     def user_id(self):
@@ -58,3 +60,19 @@ class User:
     @item_multi_ratings.setter
     def item_multi_ratings(self, item_multi_ratings):
         self.item_multi_ratings = item_multi_ratings
+
+    @property
+    def item_reviews(self):
+        return self.item_reviews
+
+    @item_reviews.setter
+    def item_reviews(self, item_reviews):
+        self.item_reviews = item_reviews
+
+    @property
+    def item_contexts(self):
+        return self.item_contexts
+
+    @item_contexts.setter
+    def item_contexts(self, item_contexts):
+        self.item_ratings = item_contexts
