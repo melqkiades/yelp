@@ -1,13 +1,16 @@
-from gensim import corpora
 import itertools
 import math
-import numpy
 import time
 import cPickle as pickle
+
+from gensim import corpora
+import numpy
+
 from etl import ETLUtils
 from evaluation import precision_in_top_n
+
 from recommenders.context import basic_knn
-from recommenders.context.basic.basic_contextual_knn import BasicContextualKNN
+# from recommenders.context.basic.basic_contextual_knn import BasicContextualKNN
 from recommenders.context.basic.basic_neighbour_contribution_calculator import \
     BasicNeighbourContributionCalculator
 from recommenders.context.basic.basic_neighbourhood_calculator import \
@@ -18,17 +21,20 @@ from recommenders.context.basic.basic_user_similarity_calculator import \
     BasicUserSimilarityCalculator
 from recommenders.context.basic_knn import BasicKNN
 from recommenders.context.contextual_knn import ContextualKNN
-from recommenders.context.neighbour_contribution_calculator import \
+from recommenders.context.neighbour_contribution.neighbour_contribution_calculator import \
     NeighbourContributionCalculator
-from recommenders.context.neighbourhood_calculator import \
-    NeighbourhoodCalculator
+from recommenders.context.neighbourhood.context_hybrid_neighbourhood_calculator import \
+    ContextHybridNeighbourhoodCalculator
+from recommenders.context.neighbourhood.context_neighbourhood_calculator import \
+    ContextNeighbourhoodCalculator
 from recommenders.context.top_k_neighbourhood_calculator import \
     TopKNeighbourhoodCalculator
-from recommenders.context.user_baseline_calculator import UserBaselineCalculator
-from recommenders.context.user_similarity_calculator import \
-    UserSimilarityCalculator
+from recommenders.context.baseline.user_baseline_calculator import UserBaselineCalculator
+from recommenders.context.similarity.pbc_similarity_calculator import \
+    PBCSimilarityCalculator
+from recommenders.context.neighbourhood.simple_neighbourhood_calculator import \
+    SimpleNeighbourhoodCalculator
 from topicmodeling.context import lda_context_utils
-from topicmodeling.context import context_utils
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
 from utils import dictionary_utils
@@ -41,7 +47,7 @@ class ContextKnn:
 
     def __init__(self, num_topics, reviews=None):
         self.records = None
-        self.num_neighbors = 5
+        self.num_neighbors = None
         self.ratings_matrix = None
         self.reviews_matrix = None
         self.context_matrix = None
@@ -50,9 +56,10 @@ class ContextKnn:
         self.user_ids = None
         self.num_topics = num_topics
         self.lda_model = None
-        self.context_topics = None
-        self.topic_indices = None
+        self.none = None
         self.reviews = reviews
+        self.context_rich_topics = None
+        self.has_context = True
 
     def load(self, records):
         self.records = records
@@ -64,7 +71,8 @@ class ContextKnn:
         # self.lda_model =\
         #     lda_context_utils.discover_topics(text_reviews, self.num_topics)
         if self.reviews:
-            lda_based_context = LdaBasedContext(reviews=self.reviews)
+            lda_based_context = LdaBasedContext()
+            lda_based_context.reviews = self.reviews
             lda_based_context.init_reviews()
         else:
             text_reviews = []
@@ -72,25 +80,13 @@ class ContextKnn:
                 text_reviews.append(record['text'])
             lda_based_context = LdaBasedContext(text_reviews)
             lda_based_context.init_reviews()
-        self.context_topics = lda_based_context.filter_topics()
-        self.topic_indices =\
-            self.filter_context_topics_by_ratio(self.context_topics)
+        self.context_rich_topics = lda_based_context.get_context_rich_topics()
 
         self.lda_model = lda_based_context.topic_model
         print('building similarity matrix', time.strftime("%H:%M:%S"))
         self.context_matrix = self.create_context_matrix(records)
         self.similarity_matrix = self.create_similarity_matrix()
         print('finished building similarity matrix', time.strftime("%H:%M:%S"))
-
-    def filter_context_topics_by_ratio(self, context_topics):
-
-        filtered_topics = []
-        for topic in context_topics:
-            ratio = topic[1]
-            if ratio > 1.0:
-                filtered_topics.append(topic)
-
-        return filtered_topics
 
     def get_rating(self, user, item):
         return self.ratings_matrix[user][item]
@@ -99,7 +95,7 @@ class ContextKnn:
 
         neighbour_context = self.context_matrix[user][item]
         context_similarity = get_context_similarity(
-            context, neighbour_context, self.topic_indices)
+            context, neighbour_context, self.context_rich_topics)
 
         if context_similarity < threshold:
             return None
@@ -120,15 +116,6 @@ class ContextKnn:
 
         return similarity_matrix
 
-    def train(self, reviews):
-        """
-
-        :type reviews: list[str]
-        :param reviews:
-        """
-        self.lda_model =\
-            lda_context_utils.discover_topics(reviews, self.num_topics)
-
     def get_topic_distribution(self, review):
         """
 
@@ -137,7 +124,7 @@ class ContextKnn:
         review_bow = lda_context_utils.create_bag_of_words([review])
         dictionary = corpora.Dictionary(review_bow)
         corpus = dictionary.doc2bow(review_bow[0])
-        lda_corpus = self.lda_model[corpus]
+        lda_corpus = self.lda_model.get_document_topics(corpus)
 
         topic_distribution =\
             lda_document_to_topic_distribution(lda_corpus, self.num_topics)
@@ -184,8 +171,8 @@ class ContextKnn:
         for item in common_items:
             context1 = self.context_matrix[user1][item]
             context2 = self.context_matrix[user2][item]
-            similarity =\
-                get_context_similarity(context1, context2, self.topic_indices)
+            similarity = get_context_similarity(
+                context1, context2, self.context_rich_topics)
             if similarity > threshold:
                 filtered_items[item] = similarity
 
@@ -243,7 +230,7 @@ class ContextKnn:
         for neighbour in neighbours:
             neighbour_context = self.context_matrix[neighbour][item]
             context_similarity = get_context_similarity(
-                context, neighbour_context, self.topic_indices)
+                context, neighbour_context, self.context_rich_topics)
             if context_similarity > threshold:
                 neighbour_similarity_map[neighbour] = context_similarity
 
@@ -270,7 +257,9 @@ class ContextKnn:
 
         # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
-            sim_users_matrix)[:self.num_neighbors]
+            sim_users_matrix)
+        if self.num_neighbors:
+            return neighbourhood[:self.num_neighbors]
 
         return neighbourhood
 
@@ -294,11 +283,13 @@ class ContextKnn:
         if not neighbourhood:
             return None
 
+        # print('neighbourhood size', len(neighbourhood))
+
         num_neighbours = 0
 
         for neighbour in neighbourhood:
 
-            similarity =\
+            similarity = \
                 self.calculate_user_similarity(user, neighbour, threshold4)
 
             if (item in self.user_dictionary[neighbour].item_ratings and
@@ -315,11 +306,13 @@ class ContextKnn:
             if num_users == self.num_neighbors:
                 break
 
+        # print('used neighbours', num_neighbours)
+
         if similarities_sum == 0:
             return None
 
         k = 1 / similarities_sum
-        user_average =\
+        user_average = \
             self.calculate_user_baseline(user, user_context, threshold3)
 
         predicted_rating = user_average + k * ratings_sum
@@ -387,18 +380,20 @@ def create_reviews_matrix(records):
     return reviews_matrix
 
 
-def get_context_similarity(context1, context2, topic_indices):
+def get_context_similarity(context1, context2, context_rich_topics):
 
     # We filter the topic model, selecting only the topics that contain context
-    filtered_context1 = numpy.array([context1[i[0]] for i in topic_indices])
-    filtered_context2 = numpy.array([context2[i[0]] for i in topic_indices])
+    filtered_context1 =\
+        numpy.array([context1[i[0]] for i in context_rich_topics])
+    filtered_context2 =\
+        numpy.array([context2[i[0]] for i in context_rich_topics])
 
     return 1 / (1 + numpy.linalg.norm(filtered_context1-filtered_context2))
 
 
 def lda_document_to_topic_distribution(lda_document, num_topics):
 
-    topic_distribution = numpy.zeros((num_topics))
+    topic_distribution = numpy.zeros(num_topics)
     for pair in lda_document:
         topic_distribution[pair[0]] = pair[1]
     return topic_distribution
@@ -407,37 +402,45 @@ def lda_document_to_topic_distribution(lda_document, num_topics):
 
 
 def main():
+    # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
     reviews_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_hotels_shuffled.json"
     # reviews_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_restaurants_shuffled.json"
-    my_reviews = context_utils.load_reviews(reviews_file)
-    print("reviews:", len(my_reviews))
+    # my_records = context_utils.load_reviews(reviews_file)
+    my_records = load_data(reviews_file)
+    print("records:", len(my_records))
     my_num_topics = 150
 
     print("\n***************************\n")
 
-    my_records = load_data(reviews_file)
+    # my_records = load_data(reviews_file)
     # my_records = extractor.remove_users_with_low_reviews(my_records, 200)
-    my_records = extractor.remove_users_with_low_reviews(my_records, 2)
+    # my_records = extractor.remove_users_with_low_reviews(my_records, 2)
     # shuffle(my_records)
 
+    # my_index = 0
     # my_reviews = []
     # for record in my_records:
-    #     my_reviews.append(Review(record['text']))
+    #     my_index += 1
+    #     my_reviews.append(Review(record))
+    #     print('index', my_index)
     # my_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_context_restaurants_200.pkl'
-    my_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_context_hotel_2.pkl'
+    # my_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_context_hotel_2.pkl'
+    my_file = '/Users/fpena/tmp/reviews_hotel_shuffled.pkl'
+    # my_file = '/Users/fpena/tmp/reviews_restaurant_shuffled.pkl'
     # with open(my_file, 'wb') as write_file:
     #     pickle.dump(my_reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
     with open(my_file, 'rb') as read_file:
-        my_reviews = pickle.load(read_file)
+        my_cache_reviews = pickle.load(read_file)
 
-    context_knn = ContextKnn(my_num_topics, my_reviews)
+    print("reviews:", len(my_cache_reviews))
+    context_knn = ContextKnn(my_num_topics)
 
     tknc = TopKNeighbourhoodCalculator()
-    nc = NeighbourhoodCalculator()
+    nc = ContextNeighbourhoodCalculator()
     ncc = NeighbourContributionCalculator()
     ubc = UserBaselineCalculator()
-    usc = UserSimilarityCalculator()
+    usc = PBCSimilarityCalculator()
 
     # contextual_knn2 = ContextualKNN(my_num_topics, tknc, ncc, ubc, usc, my_reviews)
 
@@ -446,41 +449,59 @@ def main():
     bubc = BasicUserBaselineCalculator()
     busc = BasicUserSimilarityCalculator()
 
-    contextual_knn = ContextualKNN(my_num_topics, nc, ncc, ubc, usc, my_reviews)
-    contextual_knn2 = ContextualKNN(my_num_topics, nc, ncc, ubc, busc, my_reviews)
-    contextual_knn3 = ContextualKNN(my_num_topics, bnc, bncc, bubc, usc, my_reviews)
-    basic_contextual_knn = BasicContextualKNN(my_num_topics, bnc, bncc, bubc, busc, my_reviews)
+    snc = SimpleNeighbourhoodCalculator()
+    chnc = ContextHybridNeighbourhoodCalculator()
 
+    contextual_knn = ContextualKNN(my_num_topics, nc, ncc, ubc, usc, has_context=True)
+    contextual_knn2 = ContextualKNN(my_num_topics, nc, ncc, ubc, busc, has_context=True)
+    contextual_knn3 = ContextualKNN(my_num_topics, bnc, bncc, bubc, busc)
+    # basic_contextual_knn = BasicContextualKNN(my_num_topics, bnc, bncc, bubc, busc)
+
+    # contextual_knn.threshold1 = 0.8
+    # contextual_knn.threshold2 = 0.8
+    # contextual_knn.threshold3 = 0.8
+    # contextual_knn.threshold4 = 0.8
+
+    # print('Context KNN')
     # context_knn.load(my_records)
     # recommender_evaluator.perform_cross_validation(my_records, context_knn, 5, True)
     basic_knn_rec = BasicKNN(None)
     # print('Basic KNN')
     # recommender_evaluator.perform_cross_validation(my_records, basic_knn_rec, 5)
-    # print('Basic Contextual KNN')
-    # recommender_evaluator.perform_cross_validation(my_records, basic_contextual_knn, 5)
-    # print('Contextual KNN')
-    # recommender_evaluator.perform_cross_validation(my_records, contextual_knn, 5, True)
-    # print('Contextual KNN2')
-    # recommender_evaluator.perform_cross_validation(my_records, contextual_knn2, 5, True)
-    # print('Contextual KNN3')
-    # recommender_evaluator.perform_cross_validation(my_records, contextual_knn3, 5, True)
+    # print('Context KNN')
+    # recommender_evaluator.perform_cross_validation(my_records, context_knn, 5, my_cache_reviews)
+    print('Contextual KNN')
+    recommender_evaluator.perform_cross_validation(my_records, contextual_knn, 5, my_cache_reviews)
+    print('Contextual KNN2')
+    recommender_evaluator.perform_cross_validation(my_records, contextual_knn2, 5, my_cache_reviews)
+    print('Contextual KNN3')
+    # recommender_evaluator.perform_cross_validation(my_records, contextual_knn3, 5)
+    # recommender_evaluator.perform_cross_validation(my_records, contextual_knn3, 5)
+    # recommender_evaluator.perform_cross_validation(my_records, contextual_knn3, 5, True, my_cache_reviews)
     # precision_in_top_n.calculate_recall_in_top_n(my_records, basic_contextual_knn, 10, 65)
     # precision_in_top_n.calculate_recall_in_top_n(my_records, basic_knn_rec, 10, 65)
     print('Basic KNN')
-    precision_in_top_n.calculate_recall_in_top_n(my_records, basic_knn_rec, 10, 65)
-    # print('Contextual KNN')
-    # precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn, 10, 65, 5.0, True)
-    # precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn2, 10, 65, 5.0, True)
+    precision_in_top_n.calculate_recall_in_top_n(my_records, basic_knn_rec, 10, 5, 5.0, my_cache_reviews)
+    # precision_in_top_n.calculate_recall_in_top_n(my_records, basic_knn_rec, 10, 5, 5.0, False, my_cache_reviews)
+    print('Context KNN')
+    precision_in_top_n.calculate_recall_in_top_n(my_records, context_knn, 10, 5, 5.0, my_cache_reviews)
+    print('Contextual KNN')
+    precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn, 10, 5, 5.0, my_cache_reviews)
+    print('Contextual KNN 2')
+    precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn2, 10, 5, 5.0, my_cache_reviews)
     print('Contextual KNN 3')
-    precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn3, 10, 65, 5.0, True)
+    precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn3, 10, 5, 5.0, my_cache_reviews)
+    # print('Basic Contextual KNN')
+    # precision_in_top_n.calculate_recall_in_top_n(my_records, basic_contextual_knn, 10, 5, 5.0, True, my_cache_reviews)
     # precision_in_top_n.calculate_recall_in_top_n(my_records, context_knn, 10, 65, 5.0, True)
     # precision_in_top_n.calculate_recall_in_top_n(my_records, contextual_knn2, 10, 65, 5.0, True)
 
     # lda_based_context = LdaBasedContext(my_reviews)
     # lda_based_context.init_reviews()
-    # my_topics = lda_based_context.filter_topics()
+    # my_topics = lda_based_context.get_context_rich_topics()
     # print(my_topics)
 
+numpy.random.seed(0)
 start = time.time()
 main()
 end = time.time()

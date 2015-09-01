@@ -6,7 +6,6 @@ from evaluation import precision_in_top_n
 from utils import dictionary_utils
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
-from tripadvisor.fourcity import recommender_evaluator
 
 __author__ = 'fpena'
 
@@ -20,6 +19,7 @@ class BasicKNN:
         self.similarity_matrix = None
         self.user_dictionary = None
         self.user_ids = None
+        self.has_context=False
 
     def load(self, reviews):
         self.reviews = reviews
@@ -126,6 +126,8 @@ class BasicKNN:
             similarity_matrix[user1][user2] = similarity
             similarity_matrix[user2][user1] = similarity
 
+            # print('similarity', user1, user2, similarity)
+
         return similarity_matrix
 
     def get_common_rated_items(self, user1, user2):
@@ -160,6 +162,9 @@ class BasicKNN:
         # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             sim_users_matrix)  # [:self.num_neighbors]
+
+        if self.num_neighbors:
+            neighbourhood = neighbourhood[:self.num_neighbors]
 
         # print('neighbourhood', neighbourhood)
         # print('neighbourhood size:', len(neighbourhood))
@@ -230,6 +235,8 @@ class BasicKNN:
 
             if num_users == self.num_neighbors:
                 break
+
+        # print('used neighbours', num_neighbours)
 
         if similarities_sum == 0:
             return None

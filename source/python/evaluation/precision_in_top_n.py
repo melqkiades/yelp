@@ -2,6 +2,7 @@ import operator
 from random import shuffle
 import time
 from etl import ETLUtils
+from topicmodeling.context import reviews_clusterer
 from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
@@ -78,7 +79,7 @@ def calculate_precision(known_ratings, predicted_ratings, n, min_score):
 
 
 def calculate_recall_in_top_n(
-        reviews, recommender, n, num_folds, min_score=5.0, has_context=False):
+        records, recommender, n, num_folds, min_score=5.0, cache_reviews=None):
 
     start_time = time.time()
     split = 1 - (1/float(num_folds))
@@ -87,27 +88,39 @@ def calculate_recall_in_top_n(
 
     for i in xrange(0, num_folds):
         print('Fold', i)
-        start = float(i) / num_folds
-        train, test = ETLUtils.split_train_test(
-            reviews, split=split, shuffle_data=False, start=start)
         print('started training', time.strftime("%H:%M:%S"))
-        recommender.load(train)
+        start = float(i) / num_folds
+        cluster_labels = None
+        train_records, test_records = ETLUtils.split_train_test(
+            records, split=split, shuffle_data=False, start=start)
+        if cache_reviews:
+            train_reviews, test_reviews = ETLUtils.split_train_test(
+                cache_reviews, split=split, shuffle_data=False, start=start)
+            cluster_labels = reviews_clusterer.cluster_reviews(test_reviews)
+            recommender.reviews = train_reviews
+        recommender.load(train_records)
+
         print('finished training', time.strftime("%H:%M:%S"))
 
-        positive_reviews =\
-            [review for review in test if review['overall_rating'] >= min_score]
+        if cluster_labels is not None:
+            specific_records = reviews_clusterer.split_list_by_labels(
+                test_records, cluster_labels)[0]
+            # test_records = specific_records
+
+        positive_reviews = \
+            [review for review in test_records if review['overall_rating'] >= min_score]
 
         num_hits = 0.0
         for review in positive_reviews:
             user_id = review['user_id']
             item_id = review['offering_id']
-            if not has_context:
+            if not recommender.has_context:
                 hit = calculate_is_a_hit(
-                    test, recommender, user_id, item_id, n)
+                    test_records, recommender, user_id, item_id, n)
             else:
                 text_review = review['text']
                 hit = calculate_is_a_hit(
-                    test, recommender, user_id, item_id, n, text_review, True)
+                    test_records, recommender, user_id, item_id, n, text_review)
             if hit:
                 num_hits += 1
 
@@ -130,14 +143,14 @@ def calculate_recall_in_top_n(
     return final_recall
 
 
-def calculate_is_a_hit(reviews, recommender, user_id, liked_item, n, text_review=None, has_context=False):
+def calculate_is_a_hit(reviews, recommender, user_id, liked_item, n, text_review=None):
     unknown_items = get_unknown_items(reviews, user_id)
     unknown_items.append(liked_item)
     all_items = unknown_items[:]
 
     predicted_ratings = {}
     for item in all_items:
-        if not has_context:
+        if not recommender.has_context:
             predicted_ratings[item] = recommender.predict_rating(user_id, item)
         else:
             predicted_ratings[item] =\

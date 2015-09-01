@@ -10,7 +10,7 @@ from recommenders.similarity.single_similarity_matrix_builder import \
 __author__ = 'fpena'
 
 
-def predict_rating_list(predictor, reviews, has_context=False):
+def predict_rating_list(predictor, reviews):
     """
     For each one of the reviews this method predicts the rating for the
     user and item contained in the review and also returns the error
@@ -32,7 +32,7 @@ def predict_rating_list(predictor, reviews, has_context=False):
         user_id = review['user_id']
         item_id = review['offering_id']
 
-        if not has_context:
+        if not predictor.has_context:
             predicted_rating = predictor.predict_rating(user_id, item_id)
         else:
             text_review = review['text']
@@ -57,7 +57,7 @@ def predict_rating_list(predictor, reviews, has_context=False):
     return predicted_ratings, errors, num_unknown_ratings
 
 
-def perform_cross_validation(reviews, recommender, num_folds, has_context=False):
+def perform_cross_validation(records, recommender, num_folds, cache_reviews=None):
 
     start_time = time.time()
     split = 1 - (1/float(num_folds))
@@ -67,14 +67,19 @@ def perform_cross_validation(reviews, recommender, num_folds, has_context=False)
     num_cycles = 0
 
     for i in range(0, num_folds):
-        print('Num cycles:', i)
+        print('\n\nNum cycles: %d' % i)
         start = float(i) / num_folds
-        train, test = ETLUtils.split_train_test(reviews, split=split, shuffle_data=False, start=start)
-        recommender.load(train)
-        _, errors, num_unknown_ratings = predict_rating_list(recommender, test, has_context)
+        train_records, test_records = ETLUtils.split_train_test(
+            records, split=split, shuffle_data=False, start=start)
+        if cache_reviews:
+            train_reviews, test_reviews = ETLUtils.split_train_test(
+                cache_reviews, split=split, shuffle_data=False, start=start)
+            recommender.reviews = train_reviews
+        recommender.load(train_records)
+        _, errors, num_unknown_ratings = predict_rating_list(recommender, test_records)
         mean_absolute_error = MeanAbsoluteError.compute_list(errors)
         root_mean_square_error = RootMeanSquareError.compute_list(errors)
-        num_samples = len(test)
+        num_samples = len(test_records)
         coverage = float((num_samples - num_unknown_ratings) / num_samples)
         # print('Total length:', len(test))
         # print('Unknown ratings:', num_unknown_ratings)

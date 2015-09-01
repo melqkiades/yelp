@@ -2,6 +2,8 @@ from gensim import corpora
 from gensim.models import ldamodel
 from nltk import RegexpTokenizer
 from nltk.corpus import stopwords
+import numpy
+from etl import ETLUtils
 
 __author__ = 'fpena'
 
@@ -18,6 +20,7 @@ def update_reviews_with_topics(topic_model, corpus_list, reviews):
 
     for review, corpus in zip(reviews, corpus_list):
         review.topics = topic_model.get_document_topics(corpus)
+
 
 def calculate_topic_weighted_frequency(topic, reviews):
     """
@@ -89,6 +92,61 @@ def create_bag_of_words(document_list):
         processed.append([word for word in row if word not in cached_stop_words])
 
     return processed
+
+
+def get_user_item_reviews(records, user_id, apply_filter=False):
+
+    if apply_filter:
+        user_records = ETLUtils.filter_records(records, 'user_id', [user_id])
+    else:
+        user_records = records
+
+    if not user_records:
+        return {}
+
+    items_reviews = {}
+
+    for record in user_records:
+        items_reviews[record['offering_id']] = record['text']
+
+    return items_reviews
+
+
+def get_user_item_contexts(records, lda_model, user_id, apply_filter=False):
+
+    if apply_filter:
+        user_records = ETLUtils.filter_records(records, 'user_id', [user_id])
+    else:
+        user_records = records
+
+    if not user_records:
+        return {}
+
+    items_reviews = {}
+
+    for record in user_records:
+        review_text = record['text']
+        context = get_topic_distribution(review_text, lda_model)
+        items_reviews[record['offering_id']] = context
+
+    return items_reviews
+
+
+def get_topic_distribution(review_text, lda_model):
+        """
+
+        :type review_text: str
+        """
+        review_bow = create_bag_of_words([review_text])
+        dictionary = corpora.Dictionary(review_bow)
+        corpus = dictionary.doc2bow(review_bow[0])
+        lda_corpus = lda_model.get_document_topics(corpus)
+
+        topic_distribution = numpy.zeros(lda_model.num_topics)
+        for pair in lda_corpus:
+            topic_distribution[pair[0]] = pair[1]
+
+        return topic_distribution
 
 
 my_documents = [
