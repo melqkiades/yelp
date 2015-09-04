@@ -84,6 +84,7 @@ def calculate_recall_in_top_n(
     start_time = time.time()
     split = 1 - (1/float(num_folds))
     total_recall = 0.
+    total_coverage = 0.
     num_cycles = 0.0
 
     for i in xrange(0, num_folds):
@@ -111,6 +112,7 @@ def calculate_recall_in_top_n(
             [review for review in test_records if review['overall_rating'] >= min_score]
 
         num_hits = 0.0
+        num_predictions = 0.0
         for review in positive_reviews:
             user_id = review['user_id']
             item_id = review['offering_id']
@@ -121,18 +123,26 @@ def calculate_recall_in_top_n(
                 text_review = review['text']
                 hit = calculate_is_a_hit(
                     test_records, recommender, user_id, item_id, n, text_review)
+            if hit is None:
+                continue
             if hit:
                 num_hits += 1
+            num_predictions += 1
 
-        recall = num_hits / float(len(positive_reviews))
+        recall = num_hits / num_predictions
+        coverage = num_predictions / len(positive_reviews)
         print('recall', recall, time.strftime("%H:%M:%S"))
+        print('coverage', coverage, time.strftime("%H:%M:%S"))
         total_recall += recall
+        total_coverage += coverage
         num_cycles += 1
 
     final_recall = total_recall / num_cycles
+    final_coverage = total_coverage / num_cycles
     execution_time = time.time() - start_time
 
     print('Final Top N Precision: %f' % final_recall)
+    print('Final Coverage: %f' % final_coverage)
     print("--- %s seconds ---" % execution_time)
 
     result = {
@@ -145,11 +155,22 @@ def calculate_recall_in_top_n(
 
 def calculate_is_a_hit(reviews, recommender, user_id, liked_item, n, text_review=None):
     unknown_items = get_unknown_items(reviews, user_id)
-    unknown_items.append(liked_item)
-    all_items = unknown_items[:]
+    # unknown_items.append(liked_item)
+    # all_items = unknown_items[:]
 
-    predicted_ratings = {}
-    for item in all_items:
+    if not recommender.has_context:
+        desired_prediction =\
+            recommender.predict_rating(user_id, liked_item)
+    else:
+        desired_prediction =\
+            recommender.predict_rating(user_id, liked_item, text_review)
+
+    if desired_prediction is None:
+        return None
+
+    predicted_ratings = {liked_item: desired_prediction}
+
+    for item in unknown_items:
         if not recommender.has_context:
             predicted_ratings[item] = recommender.predict_rating(user_id, item)
         else:
