@@ -91,7 +91,7 @@ class ContextualKNN:
 
     def predict_rating(self, user, item, review=None):
 
-        # print('predict_rating')
+        # print('predict_rating', user, item)
 
         if user not in self.user_ids:
             return None
@@ -120,6 +120,9 @@ class ContextualKNN:
             if (item in self.user_dictionary[neighbour].item_ratings and
                     similarity is not None):
 
+                if similarity <= 0:
+                    continue
+
                 num_neighbours += 1
 
                 neighbour_contribution = self.neighbour_contribution_calculator.\
@@ -141,6 +144,8 @@ class ContextualKNN:
             user, user_context, self.threshold3)
 
         predicted_rating = user_average + k * ratings_sum
+
+        # print('num used neighbours', num_users)
 
         return predicted_rating
 

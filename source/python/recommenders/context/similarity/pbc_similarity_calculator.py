@@ -52,6 +52,6 @@ class PBCSimilarityCalculator(BaseSimilarityCalculator):
         denominator = math.sqrt(denominator1 * denominator2 * denominator3)
 
         if denominator == 0:
-            return 0
+            return None
 
         return numerator / denominator
