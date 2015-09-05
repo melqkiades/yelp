@@ -147,10 +147,11 @@ def calculate_recall_in_top_n(
 
     result = {
         'Top N': final_recall,
+        'Coverage': final_coverage,
         'Execution time': execution_time
     }
 
-    return final_recall
+    return result
 
 
 def calculate_is_a_hit(reviews, recommender, user_id, liked_item, n, text_review=None):
