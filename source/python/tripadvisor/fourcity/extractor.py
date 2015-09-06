@@ -224,7 +224,7 @@ def get_user_list(reviews, min_reviews):
     print('Number of users: %i' % num_users)
     print('Number of reviews: %i' % num_reviews)
 
-    users = filtered_counts.index.get_level_values(1).tolist()
+    users = filtered_counts.index.get_level_values(0).tolist()
     return users
 
 
@@ -241,7 +241,7 @@ def get_groupby_list(reviews, column):
     data_frame = DataFrame(reviews)
     counts = data_frame.groupby(column).size()
 
-    users = counts.index.get_level_values(1).tolist()
+    users = counts.index.get_level_values(0).tolist()
     return users
 
 
@@ -264,7 +264,7 @@ def get_item_list(reviews, min_reviews):
     print('Number of items: %i' % num_items)
     print('Number of reviews: %i' % num_reviews)
 
-    items = filtered_counts.index.get_level_values(1).tolist()
+    items = filtered_counts.index.get_level_values(0).tolist()
     return items
 
 
@@ -467,7 +467,7 @@ def get_user_item_ratings(reviews, user_id, apply_filter=False):
     column = 'offering_id'
     counts = data_frame.groupby(column).mean()
 
-    items = counts.index.get_level_values(1).tolist()
+    items = counts.index.get_level_values(0).tolist()
     items_ratings = {}
 
     for item, mean in zip(items, counts['overall_rating']):
@@ -537,7 +537,7 @@ def get_five_star_hotels_from_user(user_reviews, min_value):
 
     # print(filtered_counts)
 
-    items = filtered_counts.index.get_level_values(1).tolist()
+    items = filtered_counts.index.get_level_values(0).tolist()
     return items
 
 
@@ -602,9 +602,9 @@ def main():
     column = 'offering_id'
     groupby = data_frame.groupby(column)
     counts = groupby.mean()
-    print(counts)
+    # print(counts)
 
-    items = counts.index.get_level_values(1).tolist()
+    items = counts.index.get_level_values(0).tolist()
 
     for item, mean in zip(items, counts['overall_rating']):
         print(item, mean)
@@ -619,3 +619,10 @@ def main():
 # main()
 # end_time = time.time() - start_time
 # print("--- %s seconds ---" % end_time)
+
+# my_records_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_hotels_shuffled.json"
+# my_records = ETLUtils.load_json_file(my_records_file)
+# print(get_user_list(my_records, 0))
+
+# main()
+
