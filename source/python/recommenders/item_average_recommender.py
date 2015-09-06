@@ -9,6 +9,7 @@ class ItemAverageRecommender(BaseRecommender):
     def __init__(self):
         super(ItemAverageRecommender, self).__init__('AverageRecommender', None)
         self._rating = None
+        self.has_context = False
 
     def load(self, reviews):
         self.reviews = reviews

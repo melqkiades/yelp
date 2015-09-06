@@ -170,7 +170,7 @@ class TestReviewClusterer(TestCase):
 
     def test_process_review(self):
 
-        expected_value = numpy.array([math.log(2), 0, 0, 0, 1])
+        expected_value = numpy.array([math.log(2), 0, 0, 0, 0])
         actual_value =\
             reviews_clusterer.get_review_metrics(Review(empty_paragraph))
         nptest.assert_allclose(actual_value, expected_value)
