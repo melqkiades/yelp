@@ -97,7 +97,9 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
 
     log += "\nFinish time: " + time.strftime("%H:%M:%S")
     print(log)
-    return records
+    f = open('recommender-rmse-results' + time.strftime("%Y%m%d-%H%M%S") + '.log', 'w')
+    f.write(log)  # python will convert \n to os.linesep
+    f.close()
 
 
 def run_top_n_test(records_file, recommenders, binary_reviews_file):
@@ -132,8 +134,11 @@ def run_top_n_test(records_file, recommenders, binary_reviews_file):
         log += "\n\tCoverage: " + str(results['Coverage'])
         log += "\n\tExecution time: " + str(results['Execution time'])
 
-    log += "\nFinish time: " + time.strftime("%H:%M:%S")
+    log += "\nFinish time: " + time.strftime("%H:%M:%S") + "\n\n"
     print(log)
+    f = open('recommender-topn-results' + time.strftime("%Y%m%d-%H%M%S") + '.log', 'w')
+    f.write(log)  # python will convert \n to os.linesep
+    f.close()
 
 
 my_records_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_hotels_shuffled.json"
