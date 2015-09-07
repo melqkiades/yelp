@@ -25,9 +25,10 @@ class UserBaselineCalculator:
                 ratings_sum += rating
                 num_ratings += 1
 
-        user_baseline = ratings_sum / num_ratings
         if num_ratings == 0:
             return None
+
+        user_baseline = ratings_sum / num_ratings
 
         return user_baseline
 
