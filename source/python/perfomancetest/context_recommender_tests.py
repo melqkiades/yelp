@@ -1,5 +1,7 @@
 import cPickle as pickle
+import copy
 import time
+import itertools
 import numpy
 from etl import ETLUtils
 from evaluation import precision_in_top_n
@@ -10,8 +12,12 @@ from recommenders.context.baseline.user_baseline_calculator import \
 from recommenders.context.contextual_knn import ContextualKNN
 from recommenders.context.neighbour_contribution.neighbour_contribution_calculator import \
     NeighbourContributionCalculator
+from recommenders.context.neighbour_contribution.context_nc_calculator import \
+    ContextNCCalculator
 from recommenders.context.neighbourhood.context_neighbourhood_calculator import \
     ContextNeighbourhoodCalculator
+from recommenders.context.neighbourhood.context_hybrid_neighbourhood_calculator import \
+    ContextHybridNeighbourhoodCalculator
 from recommenders.context.neighbourhood.simple_neighbourhood_calculator import \
     SimpleNeighbourhoodCalculator
 from recommenders.context.similarity.cbc_similarity_calculator import \
@@ -50,7 +56,20 @@ def get_knn_recommender_info(recommender):
     recommender_info += "\n\tThreshold 3: " + str(recommender.threshold3)
     recommender_info += "\n\tThreshold 4: " + str(recommender.threshold4)
 
-    return recommender_info
+    recommender_info_map = {}
+    recommender_info_map['name'] = recommender_name
+    recommender_info_map['neighbourhood_calculator'] = nc_name
+    recommender_info_map['neighbour_contribution_calculator'] = ncc_name
+    recommender_info_map['user_baseline_calculator'] = ubc_name
+    recommender_info_map['user_similarity_calculator'] = usc_name
+    recommender_info_map['num_neighbours'] = recommender.num_neighbours
+    recommender_info_map['num_topics'] = recommender.num_topics
+    recommender_info_map['threshold1'] = recommender.threshold1
+    recommender_info_map['threshold2'] = recommender.threshold2
+    recommender_info_map['threshold3'] = recommender.threshold3
+    recommender_info_map['threshold4'] = recommender.threshold4
+
+    return recommender_info, recommender_info_map
 
 
 def load_records(json_file):
@@ -86,8 +105,16 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
     log += "\n" + dataset_info
     log += "\nCross validation folds: " + str(num_folds)
 
+    results_list = []
+    count = 0
+    print('Total recommenders: %d' % (len(recommenders)))
+
     for recommender in recommenders:
-        log += "\n" + get_knn_recommender_info(recommender) + "\n"
+
+        print('\n**************\n%d/%d\n**************' %
+              (count, len(recommenders)))
+        recommender_info = get_knn_recommender_info(recommender)
+        log += "\n" + recommender_info[0] + "\n"
         results = recommender_evaluator.perform_cross_validation(
             records, recommender, num_folds, binary_reviews)
         log += "\n\tMAE: " + str(results['MAE'])
@@ -95,11 +122,53 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
         log += "\n\tCoverage: " + str(results['Coverage'])
         log += "\n\tExecution time: " + str(results['Execution time'])
 
+        result_log = recommender_info[1]
+        result_log['dataset'] = records_file.split('/')[-1]
+        result_log['cache_reviews'] = binary_reviews_file.split('/')[-1]
+        result_log['num_records'] = len(records)
+        result_log['cross_validation_folds'] = num_folds
+        result_log['MAE'] = results['MAE']
+        result_log['RMSE'] = results['RMSE']
+        result_log['coverage'] = results['Coverage']
+        result_log['time'] = results['Execution time']
+
+        results_list.append(result_log)
+        remaining_time = results['Execution time'] * (len(recommenders) - count)
+        remaining_time /= 3600
+        print('Estimated remaining time: %.2f hours' % remaining_time)
+        count += 1
+
     log += "\nFinish time: " + time.strftime("%H:%M:%S")
     print(log)
-    f = open('recommender-rmse-results' + time.strftime("%Y%m%d-%H%M%S") + '.log', 'w')
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    file_name = 'recommender-rmse-results' + timestamp
+    f = open(file_name + '.log', 'w')
     f.write(log)  # python will convert \n to os.linesep
     f.close()
+
+    headers = [
+        'dataset',
+        'cache_reviews',
+        'num_records',
+        'cross_validation_folds',
+        'RMSE',
+        'MAE',
+        'coverage',
+        'time',
+        'name',
+        'neighbourhood_calculator',
+        'neighbour_contribution_calculator',
+        'user_baseline_calculator',
+        'user_similarity_calculator',
+        'num_neighbours',
+        'num_topics',
+        'threshold1',
+        'threshold2',
+        'threshold3',
+        'threshold4'
+    ]
+
+    ETLUtils.save_csv_file(file_name + '.csv', results_list, headers, '\t')
 
 
 def run_top_n_test(records_file, recommenders, binary_reviews_file):
@@ -125,8 +194,17 @@ def run_top_n_test(records_file, recommenders, binary_reviews_file):
     log += "\nMin score to like: " + str(min_like_score)
     log += "\nTop N: " + str(top_n)
 
+    results_list = []
+    count = 0
+    print('Total recommenders: %d' % (len(recommenders)))
+
     for recommender in recommenders:
-        log += "\n" + get_knn_recommender_info(recommender) + "\n"
+
+        print('\n**************\nProgress: %d/%d\n**************' %
+              (count, len(recommenders)))
+
+        recommender_info = get_knn_recommender_info(recommender)
+        log += "\n" + recommender_info[0] + "\n"
         results = precision_in_top_n.calculate_recall_in_top_n(
             records, recommender, top_n, num_folds, min_like_score,
             binary_reviews)
@@ -134,36 +212,217 @@ def run_top_n_test(records_file, recommenders, binary_reviews_file):
         log += "\n\tCoverage: " + str(results['Coverage'])
         log += "\n\tExecution time: " + str(results['Execution time'])
 
+        result_log = recommender_info[1]
+        result_log['dataset'] = records_file.split('/')[-1]
+        result_log['cache_reviews'] = binary_reviews_file.split('/')[-1]
+        result_log['num_records'] = len(records)
+        result_log['cross_validation_folds'] = num_folds
+        result_log['min_like_score'] = min_like_score
+        result_log['top_n'] = top_n
+        result_log['recall'] = results['Top N']
+        result_log['coverage'] = results['Coverage']
+        result_log['time'] = results['Execution time']
+
+        results_list.append(result_log)
+        remaining_time = results['Execution time'] * (len(recommenders) - count)
+        remaining_time /= 3600
+        print('Estimated remaining time: %.2f hours' % remaining_time)
+        count += 1
+
     log += "\nFinish time: " + time.strftime("%H:%M:%S") + "\n\n"
     print(log)
-    f = open('recommender-topn-results' + time.strftime("%Y%m%d-%H%M%S") + '.log', 'w')
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    file_name = 'recommender-topn-results' + timestamp
+    f = open(file_name + '.log', 'w')
     f.write(log)  # python will convert \n to os.linesep
     f.close()
 
+    headers = [
+        'dataset',
+        'cache_reviews',
+        'num_records',
+        'cross_validation_folds',
+        'min_like_score',
+        'top_n',
+        'recall',
+        'coverage',
+        'time',
+        'name',
+        'neighbourhood_calculator',
+        'neighbour_contribution_calculator',
+        'user_baseline_calculator',
+        'user_similarity_calculator',
+        'num_neighbours',
+        'num_topics',
+        'threshold1',
+        'threshold2',
+        'threshold3',
+        'threshold4'
+    ]
 
-my_records_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_hotels_shuffled.json"
-my_binary_reviews_file = '/Users/fpena/tmp/reviews_hotel_shuffled.pkl'
-# my_binary_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_context_hotel_2.pkl'
+    ETLUtils.save_csv_file(file_name + '.csv', results_list, headers, '\t')
 
 
-nc = ContextNeighbourhoodCalculator()
-ncc = NeighbourContributionCalculator()
-ubc = UserBaselineCalculator()
-usc = PBCSimilarityCalculator()
-# cosine_usc = CBCSimilarityCalculator()
-snc = SimpleNeighbourhoodCalculator()
-cosine_usc = CosineSimilarityCalculator()
-pearson_usc = PearsonSimilarityCalculator()
-subc = SimpleUserBaselineCalculator()
-num_topics = 150
-num_neighbours = None
+def main():
 
-numpy.random.seed(0)
-contextual_knn1 = ContextualKNN(num_topics, snc, ncc, subc, pearson_usc, has_context=False)
-contextual_knn1.num_neighbours = num_neighbours
-contextual_knn2 = ContextualKNN(num_topics, nc, ncc, ubc, usc, has_context=True)
-contextual_knn2.num_neighbours = num_neighbours
-# get_knn_recommender_info(contextual_knn1)
-run_rmse_test(my_records_file, [contextual_knn1], my_binary_reviews_file)
-run_top_n_test(my_records_file, [contextual_knn1], my_binary_reviews_file)
+    folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+    my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
+    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
 
+    # nc = ContextNeighbourhoodCalculator()
+    # ncc = NeighbourContributionCalculator()
+    # ubc = UserBaselineCalculator()
+    # usc = PBCSimilarityCalculator()
+    # cosine_usc = CBCSimilarityCalculator()
+
+    # Similarity calculators
+    cosine_sc = CosineSimilarityCalculator()
+    pearson_sc = PearsonSimilarityCalculator()
+    pbc_sc = PBCSimilarityCalculator()
+    cbu_sc = CBCSimilarityCalculator()
+    similarity_calculators = [
+        cosine_sc,
+        pearson_sc,
+        pbc_sc,
+        cbu_sc
+    ]
+    
+    # Neighbourhood calculators
+    simple_nc = SimpleNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    context_nc = ContextNeighbourhoodCalculator()
+    # ch_nc0 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # ch_nc0.weight = 0.0
+    # ch_nc02 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # ch_nc02.weight = 0.2
+    hybrid_nc05 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    hybrid_nc05.weight = 0.5
+    # ch_nc08 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # ch_nc08.weight = 0.8
+    # ch_nc1 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # ch_nc1.weight = 1.0
+    neighbourhood_calculators = [
+        simple_nc,
+        context_nc,
+        # ch_nc0,
+        # ch_nc02,
+        hybrid_nc05,
+        # ch_nc08,
+        # ch_nc1
+    ]
+
+    # Baseline calculators
+    simple_ubc = SimpleUserBaselineCalculator()
+    ubc = UserBaselineCalculator()
+    baseline_calculators = [
+        ubc,
+        simple_ubc
+    ]
+
+    # Neighbour contribution calculators
+    ncc = NeighbourContributionCalculator()
+    context_ncc = ContextNCCalculator()
+    neighbour_contribution_calculators = [
+        ncc,
+        # context_ncc
+    ]
+
+    num_topics = 150
+    # num_neighbours = None
+
+    numpy.random.seed(0)
+    basic_cosine_knn = ContextualKNN(num_topics, simple_nc, ncc, simple_ubc, cosine_sc, has_context=False)
+    basic_pearson_knn = ContextualKNN(num_topics, simple_nc, ncc, simple_ubc, pearson_sc, has_context=False)
+    contextual_knn = ContextualKNN(num_topics, context_nc, ncc, ubc, pbc_sc, has_context=True)
+    # get_knn_recommender_info(contextual_knn1)
+
+    # ocelma_recommender = OcelmaRecommender()
+
+    recommenders = [
+        # basic_cosine_knn,
+        # basic_pearson_knn,
+        contextual_knn
+        # ocelma_recommender
+    ]
+
+    num_neighbours_list = [None]
+    # num_neighbours_list = [None, 3, 6, 10, 15, 20]
+    threshold_list = [0.0, 0.5, 0.9]
+    # num_topics_list = [10, 50, 150, 300, 500]
+    num_topics_list = [150]
+
+    # combined_recommenders = []
+    # for recommender, num_neighbours in itertools.product(recommenders, num_neighbours_list):
+    #     new_recommender = copy.deepcopy(recommender)
+    #     new_recommender.num_neighbours = num_neighbours
+    #     combined_recommenders.append(new_recommender)
+
+    # threshold_list = [None]
+    #
+    # combined_recommenders = []
+    # for recommender, threshold in itertools.product(recommenders, threshold_list):
+    #     new_recommender = copy.deepcopy(recommender)
+    #     new_recommender.threshold1 = threshold
+    #     new_recommender.threshold2 = threshold
+    #     new_recommender.threshold3 = threshold
+    #     new_recommender.threshold4 = threshold
+    #     combined_recommenders.append(new_recommender)
+
+
+    # num_threshold_list = [0.2, 0.5, 0.7]
+
+    combined_recommenders = combine_recommenders(
+        neighbourhood_calculators,
+        neighbour_contribution_calculators,
+        baseline_calculators,
+        similarity_calculators,
+        num_neighbours_list,
+        threshold_list,
+        num_topics_list
+    )
+
+    run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
+    run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
+
+
+def combine_recommenders(
+        neighbourhood_calculators,
+        neighbour_contribution_calculators,
+        baseline_calculators,
+        similarity_calculators,
+        num_neighbours_list,
+        thresholds,
+        num_topics_list):
+
+    recommender = ContextualKNN(None, None, None, None, None, has_context=True)
+    combined_recommenders = []
+
+    for neighbourhood_calculator,\
+        neighbour_contribution_calculator,\
+        baseline_calculator,\
+        similarity_calculator,\
+        num_neighbours,\
+        threshold,\
+        num_topics_list\
+        in itertools.product(
+            neighbourhood_calculators,
+            neighbour_contribution_calculators,
+            baseline_calculators,
+            similarity_calculators,
+            num_neighbours_list,
+            thresholds,
+            num_topics_list):
+        new_recommender = copy.deepcopy(recommender)
+        new_recommender.neighbourhood_calculator = neighbourhood_calculator
+        new_recommender.neighbour_contribution_calculator =\
+            neighbour_contribution_calculator
+        new_recommender.user_baseline_calculator = baseline_calculator
+        new_recommender.user_similarity_calculator = similarity_calculator
+        new_recommender.num_neighbours = num_neighbours
+        combined_recommenders.append(new_recommender)
+
+    return combined_recommenders
+
+
+main()
