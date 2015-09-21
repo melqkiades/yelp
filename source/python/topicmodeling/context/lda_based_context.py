@@ -52,7 +52,7 @@ class LdaBasedContext:
         by clustering
 
         """
-        print('separating reviews', time.strftime("%H:%M:%S"))
+        # print('separating reviews', time.strftime("%H:%M:%S"))
 
         cluster_labels = reviews_clusterer.cluster_reviews(self.reviews)
         review_clusters =\
@@ -61,9 +61,9 @@ class LdaBasedContext:
         self.specific_reviews = review_clusters[0]
         self.generic_reviews = review_clusters[1]
 
-        print('specific reviews', len(self.specific_reviews))
-        print('generic reviews', len(self.generic_reviews))
-        print('finished separating reviews', time.strftime("%H:%M:%S"))
+        # print('specific reviews', len(self.specific_reviews))
+        # print('generic reviews', len(self.generic_reviews))
+        # print('finished separating reviews', time.strftime("%H:%M:%S"))
 
     def get_context_rich_topics(self):
         """
@@ -144,8 +144,8 @@ class LdaBasedContext:
         #     ratio = topic[1]
         #     print('topic', ratio, topic_index, self.topic_model.print_topic(topic_index, topn=50))
 
-        print('num_topics', len(self.topics))
-        print('ratio_topics', ratio_topics)
+        # print('num_topics', len(self.topics))
+        # print('ratio_topics', ratio_topics)
 
         return sorted_topics
 

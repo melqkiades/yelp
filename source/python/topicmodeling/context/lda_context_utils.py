@@ -16,7 +16,7 @@ def update_reviews_with_topics(topic_model, corpus_list, reviews):
     :type reviews: list[Review]
     :param reviews:
     """
-    print('reviews length', len(reviews))
+    # print('reviews length', len(reviews))
 
     for review, corpus in zip(reviews, corpus_list):
         review.topics = topic_model.get_document_topics(corpus)

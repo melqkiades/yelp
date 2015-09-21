@@ -67,7 +67,7 @@ def perform_cross_validation(records, recommender, num_folds, cache_reviews=None
     num_cycles = 0
 
     for i in range(0, num_folds):
-        print('\n\nNum cycles: %d' % i)
+        print('Num cycles: %d' % i)
         start = float(i) / num_folds
         train_records, test_records = ETLUtils.split_train_test(
             records, split=split, shuffle_data=False, start=start)
