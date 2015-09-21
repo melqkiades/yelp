@@ -21,7 +21,10 @@ class ContextHybridNeighbourhoodCalculator:
         self.user_dictionary = user_dictionary
         self.topic_indices = topic_indices
         self.num_neighbours = num_neighbours
-        self.similarity_matrix = self.user_similarity_calculator.create_matrix()
+        self.user_similarity_calculator.load(
+            self.user_ids, self.user_dictionary, self.topic_indices)
+        self.similarity_matrix =\
+            self.user_similarity_calculator.create_similarity_matrix()
 
     def get_neighbourhood(self, user, item, context, threshold):
 
