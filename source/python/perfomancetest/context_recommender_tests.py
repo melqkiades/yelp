@@ -86,12 +86,13 @@ def load_records(json_file):
     return records
 
 
-def run_rmse_test(records_file, recommenders, binary_reviews_file):
+def run_rmse_test(
+        records_file, recommenders, binary_reviews_file, reviews_type=None):
 
     log = "Start time: " + time.strftime("%H:%M:%S")
 
     records = load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
+    records = extractor.remove_users_with_low_reviews(records, 2)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -116,7 +117,7 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
         recommender_info = get_knn_recommender_info(recommender)
         log += "\n" + recommender_info[0] + "\n"
         results = recommender_evaluator.perform_cross_validation(
-            records, recommender, num_folds, binary_reviews)
+            records, recommender, num_folds, binary_reviews, reviews_type)
         log += "\n\tMAE: " + str(results['MAE'])
         log += "\n\tRMSE: " + str(results['RMSE'])
         log += "\n\tCoverage: " + str(results['Coverage'])
@@ -126,6 +127,7 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
         result_log['dataset'] = records_file.split('/')[-1]
         result_log['cache_reviews'] = binary_reviews_file.split('/')[-1]
         result_log['num_records'] = len(records)
+        result_log['reviews_type'] = reviews_type
         result_log['cross_validation_folds'] = num_folds
         result_log['MAE'] = results['MAE']
         result_log['RMSE'] = results['RMSE']
@@ -150,6 +152,7 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
         'dataset',
         'cache_reviews',
         'num_records',
+        'reviews_type',
         'cross_validation_folds',
         'RMSE',
         'MAE',
@@ -171,12 +174,13 @@ def run_rmse_test(records_file, recommenders, binary_reviews_file):
     ETLUtils.save_csv_file(file_name + '.csv', results_list, headers, '\t')
 
 
-def run_top_n_test(records_file, recommenders, binary_reviews_file):
+def run_top_n_test(
+        records_file, recommenders, binary_reviews_file, reviews_type=None):
 
     log = "Start time: " + time.strftime("%H:%M:%S")
 
     records = load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
+    records = extractor.remove_users_with_low_reviews(records, 2)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -207,7 +211,7 @@ def run_top_n_test(records_file, recommenders, binary_reviews_file):
         log += "\n" + recommender_info[0] + "\n"
         results = precision_in_top_n.calculate_recall_in_top_n(
             records, recommender, top_n, num_folds, min_like_score,
-            binary_reviews)
+            binary_reviews, reviews_type)
         log += "\n\tTop N: " + str(results['Top N'])
         log += "\n\tCoverage: " + str(results['Coverage'])
         log += "\n\tExecution time: " + str(results['Execution time'])
@@ -216,6 +220,7 @@ def run_top_n_test(records_file, recommenders, binary_reviews_file):
         result_log['dataset'] = records_file.split('/')[-1]
         result_log['cache_reviews'] = binary_reviews_file.split('/')[-1]
         result_log['num_records'] = len(records)
+        result_log['reviews_type'] = reviews_type
         result_log['cross_validation_folds'] = num_folds
         result_log['min_like_score'] = min_like_score
         result_log['top_n'] = top_n
@@ -268,8 +273,8 @@ def main():
     folder = '/Users/fpena/UCC/Thesis/datasets/context/'
     my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
     # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
-    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
-    # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
+    # my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
 
     # nc = ContextNeighbourhoodCalculator()
     # ncc = NeighbourContributionCalculator()
@@ -292,24 +297,24 @@ def main():
     # Neighbourhood calculators
     simple_nc = SimpleNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     context_nc = ContextNeighbourhoodCalculator()
-    # ch_nc0 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
-    # ch_nc0.weight = 0.0
-    # ch_nc02 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
-    # ch_nc02.weight = 0.2
+    # hybrid_nc0 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # hybrid_nc0.weight = 0.0
+    # hybrid_nc02 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # hybrid_nc02.weight = 0.2
     hybrid_nc05 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     hybrid_nc05.weight = 0.5
-    # ch_nc08 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
-    # ch_nc08.weight = 0.8
-    # ch_nc1 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
-    # ch_nc1.weight = 1.0
+    # hybrid_nc08 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # hybrid_nc08.weight = 0.8
+    # hybrid_nc1 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    # hybrid_nc1.weight = 1.0
     neighbourhood_calculators = [
         simple_nc,
         context_nc,
-        # ch_nc0,
-        # ch_nc02,
+        # hybrid_nc0,
+        # hybrid_nc02,
         hybrid_nc05,
-        # ch_nc08,
-        # ch_nc1
+        # hybrid_nc08,
+        # hybrid_nc1
     ]
 
     # Baseline calculators
@@ -382,8 +387,14 @@ def main():
         num_topics_list
     )
 
-    run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
-    run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
+    run_rmse_test(my_records_file, combined_recommenders[71:], my_binary_reviews_file)
+    # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
+
+    # run_rmse_test(my_records_file, combined_recommenders[47:], my_binary_reviews_file, 'specific')
+    # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file, 'specific')
+
+    # run_rmse_test(my_records_file, combined_recommenders[47:], my_binary_reviews_file, 'generic')
+    # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file, 'generic')
 
 
 def combine_recommenders(

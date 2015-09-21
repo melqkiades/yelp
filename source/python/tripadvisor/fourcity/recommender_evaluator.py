@@ -5,7 +5,7 @@ from evaluation.mean_absolute_error import MeanAbsoluteError
 from evaluation.root_mean_square_error import RootMeanSquareError
 from recommenders.similarity.single_similarity_matrix_builder import \
     SingleSimilarityMatrixBuilder
-
+from topicmodeling.context import reviews_clusterer
 
 __author__ = 'fpena'
 
@@ -57,7 +57,8 @@ def predict_rating_list(predictor, reviews):
     return predicted_ratings, errors, num_unknown_ratings
 
 
-def perform_cross_validation(records, recommender, num_folds, cache_reviews=None):
+def perform_cross_validation(
+        records, recommender, num_folds, cache_reviews=None, reviews_type=None):
 
     start_time = time.time()
     split = 1 - (1/float(num_folds))
@@ -69,13 +70,25 @@ def perform_cross_validation(records, recommender, num_folds, cache_reviews=None
     for i in range(0, num_folds):
         print('Num cycles: %d' % i)
         start = float(i) / num_folds
+        cluster_labels = None
         train_records, test_records = ETLUtils.split_train_test(
             records, split=split, shuffle_data=False, start=start)
         if cache_reviews:
             train_reviews, test_reviews = ETLUtils.split_train_test(
                 cache_reviews, split=split, shuffle_data=False, start=start)
+            if reviews_type is not None:
+                cluster_labels = reviews_clusterer.cluster_reviews(test_reviews)
             recommender.reviews = train_reviews
         recommender.load(train_records)
+
+        if cluster_labels is not None:
+            separated_records = reviews_clusterer.split_list_by_labels(
+                test_records, cluster_labels)
+            if reviews_type == 'specific':
+                test_records = separated_records[0]
+            if reviews_type == 'generic':
+                test_records = separated_records[1]
+
         _, errors, num_unknown_ratings = predict_rating_list(recommender, test_records)
         mean_absolute_error = MeanAbsoluteError.compute_list(errors)
         root_mean_square_error = RootMeanSquareError.compute_list(errors)
@@ -183,6 +196,7 @@ def evaluate_recommender_similarity_metrics(reviews, recommender):
                     result['Similarity metric'] = recommender._similarity_matrix_builder._similarity_metric
                     result['Cross validation'] = 'Folds=' + str(num_folds) + ', Iterations = ' + str(num_folds)
                     result['Num neighbors'] = recommender._num_neighbors
+                    result['Specific/Generic'] = recommender._num_neighbors
                     result['Dataset'] = 'Four City'
                     result['Machine'] = 'Mac'
                     results.append(result)

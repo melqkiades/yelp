@@ -79,7 +79,8 @@ def calculate_precision(known_ratings, predicted_ratings, n, min_score):
 
 
 def calculate_recall_in_top_n(
-        records, recommender, n, num_folds, min_score=5.0, cache_reviews=None):
+        records, recommender, n, num_folds, min_score=5.0, cache_reviews=None,
+        reviews_type=None):
 
     start_time = time.time()
     split = 1 - (1/float(num_folds))
@@ -97,16 +98,20 @@ def calculate_recall_in_top_n(
         if cache_reviews:
             train_reviews, test_reviews = ETLUtils.split_train_test(
                 cache_reviews, split=split, shuffle_data=False, start=start)
-            cluster_labels = reviews_clusterer.cluster_reviews(test_reviews)
+            if reviews_type is not None:
+                cluster_labels = reviews_clusterer.cluster_reviews(test_reviews)
             recommender.reviews = train_reviews
         recommender.load(train_records)
 
         print('finished training', time.strftime("%H:%M:%S"))
 
         if cluster_labels is not None:
-            specific_records = reviews_clusterer.split_list_by_labels(
-                test_records, cluster_labels)[0]
-            # test_records = specific_records
+            separated_records = reviews_clusterer.split_list_by_labels(
+                test_records, cluster_labels)
+            if reviews_type == 'specific':
+                test_records = separated_records[0]
+            if reviews_type == 'generic':
+                test_records = separated_records[1]
 
         positive_reviews = \
             [review for review in test_records if review['overall_rating'] >= min_score]
