@@ -11,15 +11,12 @@ class ContextNeighbourhoodCalculator:
         self.user_dictionary = None
         self.topic_indices = None
         self.num_neighbours = None
-        self.user_similarity_matrix = None
 
-    def load(self, user_ids, user_dictionary,
-             topic_indices, num_neighbours, user_similarity_matrix):
+    def load(self, user_ids, user_dictionary, topic_indices, num_neighbours):
         self.user_ids = user_ids
         self.user_dictionary = user_dictionary
         self.topic_indices = topic_indices
         self.num_neighbours = num_neighbours
-        self.user_similarity_matrix = user_similarity_matrix
 
     def get_neighbourhood(self, user, item, context, threshold):
 
@@ -44,5 +41,8 @@ class ContextNeighbourhoodCalculator:
         # Sort the users by similarity
         neighbourhood = dictionary_utils.sort_dictionary_keys(
             neighbour_similarity_map)  # [:self.num_neighbors]
+
+        if self.num_neighbours is None:
+            return neighbourhood
 
         return neighbourhood

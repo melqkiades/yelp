@@ -6,7 +6,7 @@ __author__ = 'fpena'
 class Review:
 
     def __init__(self, text):
-        # self.id = id
+        self.id = None
         self.text = text
         self.tagged_words = review_utils.tag_words(self.text)
         self.nouns = review_utils.get_nouns(self.tagged_words)

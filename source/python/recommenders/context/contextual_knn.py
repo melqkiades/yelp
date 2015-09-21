@@ -39,16 +39,16 @@ class ContextualKNN:
         if self.has_context:
             self.load_context(records)
 
-        print('building similarity matrix', time.strftime("%H:%M:%S"))
+        # print('building similarity matrix', time.strftime("%H:%M:%S"))
         self.user_similarity_calculator.load(
             self.user_ids, self.user_dictionary, self.context_rich_topics)
-        user_similarity_matrix = self.user_similarity_calculator.\
-            create_similarity_matrix(self.threshold4)
-        print('finished building similarity matrix', time.strftime("%H:%M:%S"))
+        # user_similarity_matrix = self.user_similarity_calculator.\
+        #     create_similarity_matrix(self.threshold4)
+        # print('finished building similarity matrix', time.strftime("%H:%M:%S"))
 
         self.neighbourhood_calculator.load(
             self.user_ids, self.user_dictionary, self.context_rich_topics,
-            self.num_neighbours, user_similarity_matrix)
+            self.num_neighbours)
         self.user_baseline_calculator.load(
             self.user_dictionary, self.context_rich_topics)
         self.neighbour_contribution_calculator.load(
@@ -98,7 +98,7 @@ class ContextualKNN:
 
         ratings_sum = 0
         similarities_sum = 0
-        num_users = 0
+        num_neighbours = 0
         user_context = None
         if self.has_context:
             user_context =\
@@ -108,8 +108,6 @@ class ContextualKNN:
 
         if not neighbourhood:
             return None
-
-        num_neighbours = 0
 
         for neighbour in neighbourhood:
 
@@ -134,7 +132,12 @@ class ContextualKNN:
 
                 ratings_sum += similarity * neighbour_contribution
                 similarities_sum += abs(similarity)
-                num_users += 1
+                num_neighbours += 1
+
+                if num_neighbours == self.num_neighbours:
+                    break
+
+        # print('num neighbours', num_neighbours)
 
         if similarities_sum == 0:
             return None
@@ -142,6 +145,9 @@ class ContextualKNN:
         k = 1 / similarities_sum
         user_average = self.user_baseline_calculator.calculate_user_baseline(
             user, user_context, self.threshold3)
+
+        if user_average is None:
+            return None
 
         predicted_rating = user_average + k * ratings_sum
 

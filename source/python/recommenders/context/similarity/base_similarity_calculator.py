@@ -13,7 +13,7 @@ class BaseSimilarityCalculator:
         self.user_dictionary = None
         self.context_rich_topics = None
 
-    def create_similarity_matrix(self, threshold):
+    def create_similarity_matrix(self):
         """
         Builds a matrix that contains the similarity between every pair of users
         in the dataset of this recommender system. This is particularly useful
@@ -27,7 +27,7 @@ class BaseSimilarityCalculator:
 
         for user_id1, user_id2 in itertools.combinations(self.user_ids, 2):
             similarity =\
-                self.calculate_user_similarity(user_id1, user_id2, threshold)
+                self.calculate_user_similarity(user_id1, user_id2, 0.0)
             similarity_matrix[user_id1][user_id2] = similarity
             similarity_matrix[user_id2][user_id1] = similarity
 
