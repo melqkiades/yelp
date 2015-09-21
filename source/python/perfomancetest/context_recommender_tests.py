@@ -387,7 +387,7 @@ def main():
         num_topics_list
     )
 
-    run_rmse_test(my_records_file, combined_recommenders[71:], my_binary_reviews_file)
+    run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
     # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
 
     # run_rmse_test(my_records_file, combined_recommenders[47:], my_binary_reviews_file, 'specific')
