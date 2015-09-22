@@ -102,6 +102,7 @@ def run_rmse_test(
     dataset_info = "Dataset: " + records_file.split('/')[-1]
     dataset_info += "\n\tCache reviews: " + binary_reviews_file.split('/')[-1]
     dataset_info += "\n\tNumber of records: " + str(len(records))
+    dataset_info += "\n\tReviews type: " + str(reviews_type)
     num_folds = 5
     log += "\n" + dataset_info
     log += "\nCross validation folds: " + str(num_folds)
@@ -190,6 +191,7 @@ def run_top_n_test(
     dataset_info = "Dataset: " + records_file.split('/')[-1]
     dataset_info += "\n\tChache reviews: " + binary_reviews_file.split('/')[-1]
     dataset_info += "\n\tNumber of records: " + str(len(records))
+    dataset_info += "\n\tReviews type: " + str(reviews_type)
     num_folds = 5
     min_like_score = 5.0
     top_n = 10
@@ -416,7 +418,7 @@ def combine_recommenders(
         similarity_calculator,\
         num_neighbours,\
         threshold,\
-        num_topics_list\
+        num_topics\
         in itertools.product(
             neighbourhood_calculators,
             neighbour_contribution_calculators,
@@ -432,6 +434,11 @@ def combine_recommenders(
         new_recommender.user_baseline_calculator = baseline_calculator
         new_recommender.user_similarity_calculator = similarity_calculator
         new_recommender.num_neighbours = num_neighbours
+        new_recommender.threshold1 = threshold
+        new_recommender.threshold2 = threshold
+        new_recommender.threshold3 = threshold
+        new_recommender.threshold4 = threshold
+        new_recommender.num_topics = num_topics
         combined_recommenders.append(new_recommender)
 
     return combined_recommenders
