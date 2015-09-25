@@ -1,10 +1,13 @@
+from recommenders.context.neighbour_contribution.abstract_neighbour_contribution_calculator import \
+    AbstractNeighbourContributionCalculator
+
 __author__ = 'fpena'
 
 
-class NeighbourContributionCalculator:
+class NeighbourContributionCalculator(AbstractNeighbourContributionCalculator):
 
     def __init__(self):
-        self.user_baseline_calculator = None
+        super(NeighbourContributionCalculator, self).__init__()
 
     def load(self, user_baseline_calculator):
         self.user_baseline_calculator = user_baseline_calculator

@@ -1,12 +1,15 @@
+from recommenders.context.neighbourhood.abstract_neighbourhood_calculator import \
+    AbstractNeighbourhoodCalculator
 from utils import dictionary_utils
 from topicmodeling.context import context_utils
 
 __author__ = 'fpena'
 
 
-class ContextHybridNeighbourhoodCalculator:
+class ContextHybridNeighbourhoodCalculator(AbstractNeighbourhoodCalculator):
 
     def __init__(self, user_similarity_calculator, weight=0.5):
+        super(ContextHybridNeighbourhoodCalculator, self).__init__()
         self.user_ids = None
         self.user_dictionary = None
         self.topic_indices = None
@@ -57,3 +60,11 @@ class ContextHybridNeighbourhoodCalculator:
             return neighbourhood
 
         return neighbourhood[:self.num_neighbours]
+
+    def clear(self):
+        self.user_ids = None
+        self.user_dictionary = None
+        self.topic_indices = None
+        self.similarity_matrix = None
+        self.user_similarity_calculator.clear()
+        self.user_similarity_calculator = None

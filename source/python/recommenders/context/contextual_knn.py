@@ -1,9 +1,8 @@
-import time
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
 
-# __author__ = 'fpena'
+__author__ = 'fpena'
 
 
 class ContextualKNN:
@@ -74,21 +73,6 @@ class ContextualKNN:
                 records, self.lda_model, user.user_id, True
             )
 
-
-    # def get_topic_distribution(self, review):
-    #     """
-    #
-    #     :type review: str
-    #     """
-    #     review_bow = lda_context_utils.create_bag_of_words([review])
-    #     dictionary = corpora.Dictionary(review_bow)
-    #     corpus = dictionary.doc2bow(review_bow[0])
-    #     lda_corpus = self.lda_model.get_document_topics(corpus)
-    #
-    #     topic_distribution = self.lda_document_to_topic_distribution(lda_corpus)
-    #
-    #     return topic_distribution
-
     def predict_rating(self, user, item, review=None):
 
         # print('predict_rating', user, item)
@@ -155,66 +139,14 @@ class ContextualKNN:
 
         return predicted_rating
 
-    # def lda_document_to_topic_distribution(self, lda_document):
-    #
-    #     topic_distribution = numpy.zeros(self.num_topics)
-    #     for pair in lda_document:
-    #         topic_distribution[pair[0]] = pair[1]
-    #     return topic_distribution
+    def clear(self):
+        self.user_ids = None
+        self.user_dictionary = None
+        self.lda_model = None
+        self.num_neighbours = None
+        self.context_rich_topics = None
 
-    # def create_context_matrix(self, records):
-    #     context_matrix = {}
-    #
-    #     for record in records:
-    #         user = record['user_id']
-    #         item = record['offering_id']
-    #         review_text = record['text']
-    #         topic_distribution = lda_context_utils.get_topic_distribution(review_text, self.lda_model)
-    #
-    #         if user not in context_matrix:
-    #             context_matrix[user] = {}
-    #         context_matrix[user][item] = topic_distribution
-    #
-    #     return context_matrix
-
-
-# def create_reviews_matrix(records):
-#     """
-#     Creates a dictionary of dictionaries with all the ratings available in the
-#     records. A rating can then be accessed by using ratings_matrix[user][item].
-#     The goal of this method is to generate a data structure in which the ratings
-#     can be queried in constant time.
-#
-#     Beware that this method assumes that there is only one rating per user-item
-#     pair, in case there is more than one, only the last rating found in the
-#     records list will be present on the matrix, the rest will be ignored
-#
-#     :type records: list[dict]
-#     :param records: a list of  dictionaries, in which each record contains three
-#     fields: 'user_id', 'business_id' and 'rating'
-#     :rtype: dict[dict]
-#     :return: a dictionary of dictionaries with all the ratings
-#     """
-#     reviews_matrix = {}
-#
-#     for record in records:
-#         user = record['user_id']
-#         item = record['offering_id']
-#         rating = record['text']
-#
-#         if user not in reviews_matrix:
-#             reviews_matrix[user] = {}
-#         reviews_matrix[user][item] = rating
-#
-#     return reviews_matrix
-
-
-# def filter_context_topics_by_ratio(context_topics):
-#
-#     filtered_topics = []
-#     for topic in context_topics:
-#         ratio = topic[1]
-#         if ratio > 1.0:
-#             filtered_topics.append(topic)
-#
-#     return filtered_topics
+        self.neighbourhood_calculator.clear()
+        self.neighbour_contribution_calculator.clear()
+        self.user_baseline_calculator.clear()
+        self.user_similarity_calculator.clear()

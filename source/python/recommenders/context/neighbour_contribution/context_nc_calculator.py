@@ -1,27 +1,29 @@
+from recommenders.context.neighbour_contribution.abstract_neighbour_contribution_calculator import \
+    AbstractNeighbourContributionCalculator
 from topicmodeling.context import context_utils
 
 __author__ = 'fpena'
 
 
-class ContextNCCalculator:
+class ContextNCCalculator(AbstractNeighbourContributionCalculator):
 
     def __init__(self):
-        self.ubc = None
+        super(ContextNCCalculator, self).__init__()
 
     def load(self, user_baseline_calculator):
-        self.ubc = user_baseline_calculator
+        self.user_baseline_calculator = user_baseline_calculator
 
     def calculate_neighbour_contribution(
             self, neighbour_id, item_id, context, threshold):
 
-        neighbour_rating = self.ubc.get_rating_on_context(
+        neighbour_rating = self.user_baseline_calculator.get_rating_on_context(
             neighbour_id, item_id, context, threshold)
         neighbor_average =\
-            self.ubc.calculate_user_baseline(
+            self.user_baseline_calculator.calculate_user_baseline(
                 neighbour_id, context, threshold)
         neighbour_context =\
-            self.ubc.user_dictionary[neighbour_id].item_contexts[item_id]
+            self.user_baseline_calculator.user_dictionary[neighbour_id].item_contexts[item_id]
         context_similarity = context_utils.get_context_similarity(
-            context, neighbour_context, self.ubc.topic_indices)
+            context, neighbour_context, self.user_baseline_calculator.topic_indices)
 
         return (neighbour_rating - neighbor_average) * context_similarity

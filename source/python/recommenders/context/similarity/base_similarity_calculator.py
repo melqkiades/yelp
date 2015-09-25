@@ -44,3 +44,8 @@ class BaseSimilarityCalculator:
         Calculates the similarity between two users
         """
 
+    def clear(self):
+        self.user_ids = None
+        self.user_dictionary = None
+        self.context_rich_topics = None
+

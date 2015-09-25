@@ -1,12 +1,15 @@
+from recommenders.context.neighbourhood.abstract_neighbourhood_calculator import \
+    AbstractNeighbourhoodCalculator
 from utils import dictionary_utils
 from topicmodeling.context import context_utils
 
 __author__ = 'fpena'
 
 
-class ContextNeighbourhoodCalculator:
+class ContextNeighbourhoodCalculator(AbstractNeighbourhoodCalculator):
 
     def __init__(self):
+        super(ContextNeighbourhoodCalculator, self).__init__()
         self.user_ids = None
         self.user_dictionary = None
         self.topic_indices = None
@@ -46,3 +49,8 @@ class ContextNeighbourhoodCalculator:
             return neighbourhood
 
         return neighbourhood
+
+    def clear(self):
+        self.user_ids = None
+        self.user_dictionary = None
+        self.topic_indices = None

@@ -33,32 +33,21 @@ class CBCSimilarityCalculator(BaseSimilarityCalculator):
         denominator1 = 0
         denominator2 = 0
         denominator3 = 0
-        user1_average = self.user_dictionary[user1].average_overall_rating
-        user2_average = self.user_dictionary[user2].average_overall_rating
 
         for item in filtered_items.keys():
             context_similarity = filtered_items[item]
             user1_rating = self.user_dictionary[user1].item_ratings[item]
             user2_rating = self.user_dictionary[user2].item_ratings[item]
 
-            # numerator +=\
-            #     (user1_rating - user1_average) *\
-            #     (user2_rating - user2_average) *\
-            #     context_similarity
-            # denominator1 += (user1_rating - user1_average) ** 2
-            # denominator2 += (user2_rating - user2_average) ** 2
             numerator += user1_rating * user2_rating * context_similarity
             denominator1 += user1_rating ** 2
             denominator2 += user2_rating ** 2
             denominator3 += context_similarity ** 2
 
-        denominator = math.sqrt(denominator1) * math.sqrt(denominator2) * math.sqrt(denominator3)
-
-        # return self.calculate_cosine_similarity(user1, user2)
+        denominator = math.sqrt(denominator1) * math.sqrt(denominator2) *\
+            math.sqrt(denominator3)
 
         if denominator == 0:
             return None
-        #
+
         return numerator / denominator
-        # return self.calculate_pearson_similarity(user1, user2)
-        # return self.calculate_cosine_similarity(user1, user2)

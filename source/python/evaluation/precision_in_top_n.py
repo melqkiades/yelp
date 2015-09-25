@@ -116,6 +116,9 @@ def calculate_recall_in_top_n(
         positive_reviews = \
             [review for review in test_records if review['overall_rating'] >= min_score]
 
+        if len(positive_reviews) == 0:
+            continue
+
         num_hits = 0.0
         num_predictions = 0.0
         for review in positive_reviews:
@@ -133,6 +136,9 @@ def calculate_recall_in_top_n(
             if hit:
                 num_hits += 1
             num_predictions += 1
+
+        if num_predictions == 0:
+            continue
 
         recall = num_hits / num_predictions
         coverage = num_predictions / len(positive_reviews)

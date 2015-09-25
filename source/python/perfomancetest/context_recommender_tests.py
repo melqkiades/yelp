@@ -92,7 +92,7 @@ def run_rmse_test(
     log = "Start time: " + time.strftime("%H:%M:%S")
 
     records = load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
+    records = extractor.remove_users_with_low_reviews(records, 2)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -181,7 +181,7 @@ def run_top_n_test(
     log = "Start time: " + time.strftime("%H:%M:%S")
 
     records = load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
+    records = extractor.remove_users_with_low_reviews(records, 2)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -275,8 +275,10 @@ def main():
 
     folder = '/Users/fpena/UCC/Thesis/datasets/context/'
     my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    # my_records_file = folder + 'yelp_training_set_review_spas_shuffled.json'
     # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
     my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    # my_binary_reviews_file = folder + 'reviews_spa_shuffled_2.pkl'
     # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
 
     # nc = ContextNeighbourhoodCalculator()
@@ -389,6 +391,18 @@ def main():
         threshold_list,
         num_topics_list
     )
+
+    baseline_recommender = ContextualKNN(num_topics, simple_nc, ncc, simple_ubc, pearson_sc, has_context=True)
+    best_recommender = ContextualKNN(num_topics, hybrid_nc05, ncc, simple_ubc, pbc_sc, has_context=True)
+    best_recommender.threshold1 = 0.9
+    best_recommender.threshold2 = 0.9
+    best_recommender.threshold3 = 0.9
+    best_recommender.threshold4 = 0.9
+
+    my_recommenders = [
+        baseline_recommender,
+        best_recommender
+    ]
 
     # run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
     run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
