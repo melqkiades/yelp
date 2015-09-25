@@ -56,4 +56,3 @@ class SimpleNeighbourhoodCalculator(AbstractNeighbourhoodCalculator):
         self.topic_indices = None
         self.similarity_matrix = None
         self.user_similarity_calculator.clear()
-        self.user_similarity_calculator = None

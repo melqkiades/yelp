@@ -92,7 +92,7 @@ def run_rmse_test(
     log = "Start time: " + time.strftime("%H:%M:%S")
 
     records = load_records(records_file)
-    records = extractor.remove_users_with_low_reviews(records, 2)
+    # records = extractor.remove_users_with_low_reviews(records, 2)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -181,7 +181,7 @@ def run_top_n_test(
     log = "Start time: " + time.strftime("%H:%M:%S")
 
     records = load_records(records_file)
-    records = extractor.remove_users_with_low_reviews(records, 2)
+    # records = extractor.remove_users_with_low_reviews(records, 2)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 

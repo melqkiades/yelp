@@ -11,4 +11,4 @@ class AbstractNeighbourContributionCalculator:
         self.user_baseline_calculator = None
 
     def clear(self):
-        self.user_baseline_calculator = None
+        self.user_baseline_calculator.clear()
