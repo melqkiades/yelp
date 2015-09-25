@@ -90,6 +90,7 @@ def perform_cross_validation(
                 test_records = separated_records[1]
 
         _, errors, num_unknown_ratings = predict_rating_list(recommender, test_records)
+        recommender.clear()
         mean_absolute_error = MeanAbsoluteError.compute_list(errors)
         root_mean_square_error = RootMeanSquareError.compute_list(errors)
         num_samples = len(test_records)

@@ -140,6 +140,7 @@ def calculate_recall_in_top_n(
         if num_predictions == 0:
             continue
 
+        recommender.clear()
         recall = num_hits / num_predictions
         coverage = num_predictions / len(positive_reviews)
         print('recall', recall, time.strftime("%H:%M:%S"))

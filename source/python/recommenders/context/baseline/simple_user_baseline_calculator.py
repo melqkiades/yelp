@@ -1,10 +1,13 @@
+from recommenders.context.baseline.abstract_user_baseline_calculator import \
+    AbstractUserBaselineCalculator
 
 __author__ = 'fpena'
 
 
-class SimpleUserBaselineCalculator:
+class SimpleUserBaselineCalculator(AbstractUserBaselineCalculator):
 
     def __init__(self):
+        super(SimpleUserBaselineCalculator, self).__init__()
         self.user_dictionary = None
         self.topic_indices = None
 
