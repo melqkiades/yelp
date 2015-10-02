@@ -28,223 +28,38 @@ from recommenders.context.similarity.pbc_similarity_calculator import \
     PBCSimilarityCalculator
 from recommenders.context.similarity.pearson_similarity_calculator import \
     PearsonSimilarityCalculator
+from topicmodeling.context import lda_context_utils
+from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import recommender_evaluator
 from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
 
 
-def get_knn_recommender_info(recommender):
+RMSE_HEADERS = [
+    'dataset',
+    'cache_reviews',
+    'num_records',
+    'reviews_type',
+    'cross_validation_folds',
+    'RMSE',
+    'MAE',
+    'coverage',
+    'time',
+    'name',
+    'neighbourhood_calculator',
+    'neighbour_contribution_calculator',
+    'user_baseline_calculator',
+    'user_similarity_calculator',
+    'num_neighbours',
+    'num_topics',
+    'threshold1',
+    'threshold2',
+    'threshold3',
+    'threshold4'
+]
 
-    recommender_name = recommender.__class__.__name__
-    nc_name = recommender.neighbourhood_calculator.__class__.__name__
-    ncc_name = recommender.neighbour_contribution_calculator.__class__.__name__
-    ubc_name = recommender.user_baseline_calculator.__class__.__name__
-    usc_name = recommender.user_similarity_calculator.__class__.__name__
-
-    recommender_info = recommender_name
-    recommender_info += "\n\tNeighbourhood calculator: " + nc_name
-    recommender_info += "\n\tNeighbour contribution calculator: " + ncc_name
-    recommender_info += "\n\tUser baseline calculator: " + ubc_name
-    recommender_info += "\n\tUser similarity calculator: " + usc_name
-    recommender_info += "\n\tHas context: " + str(recommender.has_context)
-    recommender_info += "\n\tNumber of neighbours: " +\
-                        str(recommender.num_neighbours)
-    recommender_info += "\n\tNumber of topics: " + str(recommender.num_topics)
-    recommender_info += "\n\tThreshold 1: " + str(recommender.threshold1)
-    recommender_info += "\n\tThreshold 2: " + str(recommender.threshold2)
-    recommender_info += "\n\tThreshold 3: " + str(recommender.threshold3)
-    recommender_info += "\n\tThreshold 4: " + str(recommender.threshold4)
-
-    recommender_info_map = {}
-    recommender_info_map['name'] = recommender_name
-    recommender_info_map['neighbourhood_calculator'] = nc_name
-    recommender_info_map['neighbour_contribution_calculator'] = ncc_name
-    recommender_info_map['user_baseline_calculator'] = ubc_name
-    recommender_info_map['user_similarity_calculator'] = usc_name
-    recommender_info_map['num_neighbours'] = recommender.num_neighbours
-    recommender_info_map['num_topics'] = recommender.num_topics
-    recommender_info_map['threshold1'] = recommender.threshold1
-    recommender_info_map['threshold2'] = recommender.threshold2
-    recommender_info_map['threshold3'] = recommender.threshold3
-    recommender_info_map['threshold4'] = recommender.threshold4
-
-    return recommender_info, recommender_info_map
-
-
-def load_records(json_file):
-    records = ETLUtils.load_json_file(json_file)
-    fields = ['user_id', 'business_id', 'stars', 'text']
-    records = ETLUtils.select_fields(fields, records)
-
-    # We rename the 'stars' field to 'overall_rating' to take advantage of the
-    # function extractor.get_user_average_overall_rating
-    for record in records:
-        record['overall_rating'] = record.pop('stars')
-        record['offering_id'] = record.pop('business_id')
-
-    return records
-
-
-def run_rmse_test(
-        records_file, recommenders, binary_reviews_file, reviews_type=None):
-
-    log = "Start time: " + time.strftime("%H:%M:%S")
-
-    records = load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
-    with open(binary_reviews_file, 'rb') as read_file:
-        binary_reviews = pickle.load(read_file)
-
-    if len(records) != len(binary_reviews):
-        raise ValueError("The records and reviews should have the same length")
-
-    dataset_info = "Dataset: " + records_file.split('/')[-1]
-    dataset_info += "\n\tCache reviews: " + binary_reviews_file.split('/')[-1]
-    dataset_info += "\n\tNumber of records: " + str(len(records))
-    dataset_info += "\n\tReviews type: " + str(reviews_type)
-    num_folds = 5
-    log += "\n" + dataset_info
-    log += "\nCross validation folds: " + str(num_folds)
-
-    results_list = []
-    count = 0
-    print('Total recommenders: %d' % (len(recommenders)))
-
-    for recommender in recommenders:
-
-        print('\n**************\n%d/%d\n**************' %
-              (count, len(recommenders)))
-        recommender_info = get_knn_recommender_info(recommender)
-        log += "\n" + recommender_info[0] + "\n"
-        results = recommender_evaluator.perform_cross_validation(
-            records, recommender, num_folds, binary_reviews, reviews_type)
-        log += "\n\tMAE: " + str(results['MAE'])
-        log += "\n\tRMSE: " + str(results['RMSE'])
-        log += "\n\tCoverage: " + str(results['Coverage'])
-        log += "\n\tExecution time: " + str(results['Execution time'])
-
-        result_log = recommender_info[1]
-        result_log['dataset'] = records_file.split('/')[-1]
-        result_log['cache_reviews'] = binary_reviews_file.split('/')[-1]
-        result_log['num_records'] = len(records)
-        result_log['reviews_type'] = reviews_type
-        result_log['cross_validation_folds'] = num_folds
-        result_log['MAE'] = results['MAE']
-        result_log['RMSE'] = results['RMSE']
-        result_log['coverage'] = results['Coverage']
-        result_log['time'] = results['Execution time']
-
-        results_list.append(result_log)
-        remaining_time = results['Execution time'] * (len(recommenders) - count)
-        remaining_time /= 3600
-        print('Estimated remaining time: %.2f hours' % remaining_time)
-        count += 1
-
-    log += "\nFinish time: " + time.strftime("%H:%M:%S")
-    print(log)
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    file_name = 'recommender-rmse-results' + timestamp
-    f = open(file_name + '.log', 'w')
-    f.write(log)  # python will convert \n to os.linesep
-    f.close()
-
-    headers = [
-        'dataset',
-        'cache_reviews',
-        'num_records',
-        'reviews_type',
-        'cross_validation_folds',
-        'RMSE',
-        'MAE',
-        'coverage',
-        'time',
-        'name',
-        'neighbourhood_calculator',
-        'neighbour_contribution_calculator',
-        'user_baseline_calculator',
-        'user_similarity_calculator',
-        'num_neighbours',
-        'num_topics',
-        'threshold1',
-        'threshold2',
-        'threshold3',
-        'threshold4'
-    ]
-
-    ETLUtils.save_csv_file(file_name + '.csv', results_list, headers, '\t')
-
-
-def run_top_n_test(
-        records_file, recommenders, binary_reviews_file, reviews_type=None):
-
-    log = "Start time: " + time.strftime("%H:%M:%S")
-
-    records = load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
-    with open(binary_reviews_file, 'rb') as read_file:
-        binary_reviews = pickle.load(read_file)
-
-    if len(records) != len(binary_reviews):
-        raise ValueError("The records and reviews should have the same length")
-
-    dataset_info = "Dataset: " + records_file.split('/')[-1]
-    dataset_info += "\n\tChache reviews: " + binary_reviews_file.split('/')[-1]
-    dataset_info += "\n\tNumber of records: " + str(len(records))
-    dataset_info += "\n\tReviews type: " + str(reviews_type)
-    num_folds = 5
-    min_like_score = 5.0
-    top_n = 10
-    log += "\n" + dataset_info
-    log += "\nCross validation folds: " + str(num_folds)
-    log += "\nMin score to like: " + str(min_like_score)
-    log += "\nTop N: " + str(top_n)
-
-    results_list = []
-    count = 0
-    print('Total recommenders: %d' % (len(recommenders)))
-
-    for recommender in recommenders:
-
-        print('\n**************\nProgress: %d/%d\n**************' %
-              (count, len(recommenders)))
-
-        recommender_info = get_knn_recommender_info(recommender)
-        log += "\n" + recommender_info[0] + "\n"
-        results = precision_in_top_n.calculate_recall_in_top_n(
-            records, recommender, top_n, num_folds, min_like_score,
-            binary_reviews, reviews_type)
-        log += "\n\tTop N: " + str(results['Top N'])
-        log += "\n\tCoverage: " + str(results['Coverage'])
-        log += "\n\tExecution time: " + str(results['Execution time'])
-
-        result_log = recommender_info[1]
-        result_log['dataset'] = records_file.split('/')[-1]
-        result_log['cache_reviews'] = binary_reviews_file.split('/')[-1]
-        result_log['num_records'] = len(records)
-        result_log['reviews_type'] = reviews_type
-        result_log['cross_validation_folds'] = num_folds
-        result_log['min_like_score'] = min_like_score
-        result_log['top_n'] = top_n
-        result_log['recall'] = results['Top N']
-        result_log['coverage'] = results['Coverage']
-        result_log['time'] = results['Execution time']
-
-        results_list.append(result_log)
-        remaining_time = results['Execution time'] * (len(recommenders) - count)
-        remaining_time /= 3600
-        print('Estimated remaining time: %.2f hours' % remaining_time)
-        count += 1
-
-    log += "\nFinish time: " + time.strftime("%H:%M:%S") + "\n\n"
-    print(log)
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    file_name = 'recommender-topn-results' + timestamp
-    f = open(file_name + '.log', 'w')
-    f.write(log)  # python will convert \n to os.linesep
-    f.close()
-
-    headers = [
+TOPN_HEADERS = [
         'dataset',
         'cache_reviews',
         'num_records',
@@ -268,20 +83,217 @@ def run_top_n_test(
         'threshold4'
     ]
 
-    ETLUtils.save_csv_file(file_name + '.csv', results_list, headers, '\t')
+
+def get_knn_recommender_info(recommender):
+
+    recommender_name = recommender.__class__.__name__
+    nc_name = recommender.neighbourhood_calculator.__class__.__name__
+    ncc_name = recommender.neighbour_contribution_calculator.__class__.__name__
+    ubc_name = recommender.user_baseline_calculator.__class__.__name__
+    usc_name = recommender.user_similarity_calculator.__class__.__name__
+
+    recommender_info_map = {}
+    recommender_info_map['name'] = recommender_name
+    recommender_info_map['neighbourhood_calculator'] = nc_name
+    recommender_info_map['neighbour_contribution_calculator'] = ncc_name
+    recommender_info_map['user_baseline_calculator'] = ubc_name
+    recommender_info_map['user_similarity_calculator'] = usc_name
+    recommender_info_map['num_neighbours'] = recommender.num_neighbours
+    recommender_info_map['num_topics'] = recommender.num_topics
+    recommender_info_map['threshold1'] = recommender.threshold1
+    recommender_info_map['threshold2'] = recommender.threshold2
+    recommender_info_map['threshold3'] = recommender.threshold3
+    recommender_info_map['threshold4'] = recommender.threshold4
+
+    return recommender_info_map
 
 
-def main():
+def load_records(json_file):
+    records = ETLUtils.load_json_file(json_file)
+    fields = ['user_id', 'business_id', 'stars', 'text']
+    records = ETLUtils.select_fields(fields, records)
 
-    folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
-    # my_records_file = folder + 'yelp_training_set_review_spas_shuffled.json'
-    # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
-    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
-    # my_binary_reviews_file = folder + 'reviews_spa_shuffled_2.pkl'
-    # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
+    # We rename the 'stars' field to 'overall_rating' to take advantage of the
+    # function extractor.get_user_average_overall_rating
+    for record in records:
+        record['overall_rating'] = record.pop('stars')
+        record['offering_id'] = record.pop('business_id')
 
-    # nc = ContextNeighbourhoodCalculator()
+    return records
+
+
+def run_rmse_test(
+        records_file, recommenders, binary_reviews_file, reviews_type=None):
+
+    records = load_records(records_file)
+    # records = extractor.remove_users_with_low_reviews(records, 2)
+    with open(binary_reviews_file, 'rb') as read_file:
+        binary_reviews = pickle.load(read_file)
+
+    if len(records) != len(binary_reviews):
+        raise ValueError("The records and reviews should have the same length")
+
+    num_folds = 5
+
+    dataset_info_map = {}
+    dataset_info_map['dataset'] = records_file.split('/')[-1]
+    dataset_info_map['cache_reviews'] = binary_reviews_file.split('/')[-1]
+    dataset_info_map['num_records'] = len(records)
+    dataset_info_map['reviews_type'] = reviews_type
+    dataset_info_map['cross_validation_folds'] = num_folds
+
+    results_list = []
+    results_log_list = []
+    count = 0
+    print('Total recommenders: %d' % (len(recommenders)))
+
+    for recommender in recommenders:
+
+        print('\n**************\n%d/%d\n**************' %
+              (count, len(recommenders)))
+        results = recommender_evaluator.perform_cross_validation(
+            records, recommender, num_folds, binary_reviews, reviews_type)
+
+        results_list.append(results)
+
+        remaining_time = results['Execution time'] * (len(recommenders) - count)
+        remaining_time /= 3600
+        print('Estimated remaining time: %.2f hours' % remaining_time)
+        count += 1
+
+    for recommender, results in zip(recommenders, results_list):
+        results_log_list.append(process_rmse_results(recommender, results, dataset_info_map))
+
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    file_name = 'recommender-rmse-results' + timestamp
+
+    ETLUtils.save_csv_file(file_name + '.csv', results_log_list, RMSE_HEADERS, '\t')
+
+
+def run_top_n_test(
+        records_file, recommenders, binary_reviews_file, reviews_type=None):
+
+    records = load_records(records_file)
+    # records = extractor.remove_users_with_low_reviews(records, 2)
+    with open(binary_reviews_file, 'rb') as read_file:
+        binary_reviews = pickle.load(read_file)
+
+    if len(records) != len(binary_reviews):
+        raise ValueError("The records and reviews should have the same length")
+
+    num_folds = 5
+    min_like_score = 5.0
+    top_n = 10
+
+    dataset_info_map = {}
+    dataset_info_map['dataset'] = records_file.split('/')[-1]
+    dataset_info_map['cache_reviews'] = binary_reviews_file.split('/')[-1]
+    dataset_info_map['num_records'] = len(records)
+    dataset_info_map['reviews_type'] = reviews_type
+    dataset_info_map['cross_validation_folds'] = num_folds
+    dataset_info_map['min_like_score'] = min_like_score
+    dataset_info_map['top_n'] = top_n
+
+    results_list = []
+    results_log_list = []
+    count = 0
+    print('Total recommenders: %d' % (len(recommenders)))
+
+    for recommender in recommenders:
+
+        print('\n**************\nProgress: %d/%d\n**************' %
+              (count, len(recommenders)))
+
+        results = precision_in_top_n.calculate_recall_in_top_n(
+            records, recommender, top_n, num_folds, min_like_score,
+            binary_reviews, reviews_type)
+
+        results_list.append(results)
+
+        remaining_time = results['Execution time'] * (len(recommenders) - count)
+        remaining_time /= 3600
+        print('Estimated remaining time: %.2f hours' % remaining_time)
+        count += 1
+
+    for recommender, results in zip(recommenders, results_list):
+        results_log_list.append(process_topn_results(recommender, results, dataset_info_map))
+
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    file_name = 'recommender-topn-results' + timestamp
+
+    ETLUtils.save_csv_file(file_name + '.csv', results_log_list, TOPN_HEADERS, '\t')
+
+
+def process_rmse_results(recommender, results, dataset_info):
+
+    log = dataset_info.copy()
+    log.update(get_knn_recommender_info(recommender))
+    log['MAE'] = results['MAE']
+    log['RMSE'] = results['RMSE']
+    log['coverage'] = results['Coverage']
+    log['time'] = results['Execution time']
+
+    return log
+
+
+def process_topn_results(recommender, results, dataset_info):
+
+    log = dataset_info.copy()
+    log.update(get_knn_recommender_info(recommender))
+    log['recall'] = results['Top N']
+    log['coverage'] = results['Coverage']
+    log['time'] = results['Execution time']
+
+    return log
+
+
+def combine_recommenders(
+        neighbourhood_calculators,
+        neighbour_contribution_calculators,
+        baseline_calculators,
+        similarity_calculators,
+        num_neighbours_list,
+        thresholds,
+        num_topics_list):
+
+    combined_recommenders = []
+
+    for neighbourhood_calculator,\
+        neighbour_contribution_calculator,\
+        baseline_calculator,\
+        similarity_calculator,\
+        num_neighbours,\
+        threshold,\
+        num_topics\
+        in itertools.product(
+            neighbourhood_calculators,
+            neighbour_contribution_calculators,
+            baseline_calculators,
+            similarity_calculators,
+            num_neighbours_list,
+            thresholds,
+            num_topics_list):
+        recommender = ContextualKNN(
+            None, None, None, None, None, has_context=True)
+        recommender.neighbourhood_calculator = neighbourhood_calculator
+        recommender.neighbour_contribution_calculator =\
+            neighbour_contribution_calculator
+        recommender.user_baseline_calculator = baseline_calculator
+        recommender.user_similarity_calculator = similarity_calculator
+        recommender.num_neighbours = num_neighbours
+        recommender.threshold1 = threshold
+        recommender.threshold2 = threshold
+        recommender.threshold3 = threshold
+        recommender.threshold4 = threshold
+        recommender.num_topics = num_topics
+        combined_recommenders.append(recommender)
+
+    return combined_recommenders
+
+
+def get_recommenders_set():
+
+     # nc = ContextNeighbourhoodCalculator()
     # ncc = NeighbourContributionCalculator()
     # ubc = UserBaselineCalculator()
     # usc = PBCSimilarityCalculator()
@@ -298,7 +310,7 @@ def main():
         pbc_sc,
         cbu_sc
     ]
-    
+
     # Neighbourhood calculators
     simple_nc = SimpleNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     context_nc = ContextNeighbourhoodCalculator()
@@ -313,8 +325,8 @@ def main():
     # hybrid_nc1 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     # hybrid_nc1.weight = 1.0
     neighbourhood_calculators = [
-        simple_nc,
-        context_nc,
+        # simple_nc,
+        # context_nc,
         # hybrid_nc0,
         # hybrid_nc02,
         hybrid_nc05,
@@ -326,7 +338,7 @@ def main():
     simple_ubc = SimpleUserBaselineCalculator()
     ubc = UserBaselineCalculator()
     baseline_calculators = [
-        ubc,
+        # ubc,
         simple_ubc
     ]
 
@@ -358,7 +370,8 @@ def main():
 
     num_neighbours_list = [None]
     # num_neighbours_list = [None, 3, 6, 10, 15, 20]
-    threshold_list = [0.0, 0.5, 0.9]
+    # threshold_list = [0.0, 0.5, 0.9]
+    threshold_list = [0.0]
     # num_topics_list = [10, 50, 150, 300, 500]
     num_topics_list = [150]
 
@@ -404,6 +417,21 @@ def main():
         best_recommender
     ]
 
+    return combined_recommenders
+
+
+def main():
+
+    folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+    my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    # my_records_file = folder + 'yelp_training_set_review_spas_shuffled.json'
+    # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
+    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    # my_binary_reviews_file = folder + 'reviews_spa_shuffled_2.pkl'
+    # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
+
+    combined_recommenders = get_recommenders_set()
+
     # run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
     run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
 
@@ -414,48 +442,8 @@ def main():
     # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file, 'generic')
 
 
-def combine_recommenders(
-        neighbourhood_calculators,
-        neighbour_contribution_calculators,
-        baseline_calculators,
-        similarity_calculators,
-        num_neighbours_list,
-        thresholds,
-        num_topics_list):
-
-    recommender = ContextualKNN(None, None, None, None, None, has_context=True)
-    combined_recommenders = []
-
-    for neighbourhood_calculator,\
-        neighbour_contribution_calculator,\
-        baseline_calculator,\
-        similarity_calculator,\
-        num_neighbours,\
-        threshold,\
-        num_topics\
-        in itertools.product(
-            neighbourhood_calculators,
-            neighbour_contribution_calculators,
-            baseline_calculators,
-            similarity_calculators,
-            num_neighbours_list,
-            thresholds,
-            num_topics_list):
-        new_recommender = copy.deepcopy(recommender)
-        new_recommender.neighbourhood_calculator = neighbourhood_calculator
-        new_recommender.neighbour_contribution_calculator =\
-            neighbour_contribution_calculator
-        new_recommender.user_baseline_calculator = baseline_calculator
-        new_recommender.user_similarity_calculator = similarity_calculator
-        new_recommender.num_neighbours = num_neighbours
-        new_recommender.threshold1 = threshold
-        new_recommender.threshold2 = threshold
-        new_recommender.threshold3 = threshold
-        new_recommender.threshold4 = threshold
-        new_recommender.num_topics = num_topics
-        combined_recommenders.append(new_recommender)
-
-    return combined_recommenders
-
-
+start = time.time()
 main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)

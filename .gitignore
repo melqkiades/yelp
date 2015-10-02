@@ -1,5 +1,7 @@
 # Compiled files
 *.pyc
+*.log
+*.csv
 
 # Directories
 examples

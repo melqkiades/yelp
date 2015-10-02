@@ -38,13 +38,8 @@ class ContextualKNN:
         if self.has_context:
             self.load_context(records)
 
-        # print('building similarity matrix', time.strftime("%H:%M:%S"))
         self.user_similarity_calculator.load(
             self.user_ids, self.user_dictionary, self.context_rich_topics)
-        # user_similarity_matrix = self.user_similarity_calculator.\
-        #     create_similarity_matrix(self.threshold4)
-        # print('finished building similarity matrix', time.strftime("%H:%M:%S"))
-
         self.neighbourhood_calculator.load(
             self.user_ids, self.user_dictionary, self.context_rich_topics,
             self.num_neighbours)
