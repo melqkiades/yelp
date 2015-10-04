@@ -87,11 +87,15 @@ def parallel_run_topn_test(
         raise ValueError("The records and reviews should have the same length")
 
     num_folds = 5
+    top_n = 10
+    min_like_score = 5.0
 
     args = itertools.product(
         [records],
         recommenders,
+        [top_n],
         [num_folds],
+        [min_like_score],
         [binary_reviews],
         [reviews_type]
     )
@@ -108,6 +112,8 @@ def parallel_run_topn_test(
     dataset_info_map['num_records'] = len(records)
     dataset_info_map['reviews_type'] = reviews_type
     dataset_info_map['cross_validation_folds'] = num_folds
+    dataset_info_map['min_like_score'] = min_like_score
+    dataset_info_map['top_n'] = top_n
 
     results_log_list = []
     for recommender, results in zip(recommenders, results_list):

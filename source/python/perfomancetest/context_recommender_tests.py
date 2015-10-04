@@ -442,8 +442,8 @@ def main():
     # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file, 'generic')
 
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
