@@ -26,4 +26,9 @@ class ContextNCCalculator(AbstractNeighbourContributionCalculator):
         context_similarity = context_utils.get_context_similarity(
             context, neighbour_context, self.user_baseline_calculator.topic_indices)
 
+        if not neighbour_rating:
+            return None
+        if not neighbor_average:
+            return None
+
         return (neighbour_rating - neighbor_average) * context_similarity
