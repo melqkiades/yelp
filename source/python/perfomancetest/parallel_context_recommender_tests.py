@@ -1,4 +1,5 @@
 import sys
+import traceback
 from etl import ETLUtils
 from evaluation import precision_in_top_n
 from perfomancetest.context_recommender_tests import RMSE_HEADERS
@@ -20,12 +21,33 @@ __author__ = 'fpena'
 # This wrapper is necessary when you want to pass a function more
 # than 1 parameter
 def run_rmse_test_wrapper(args):
-    return recommender_evaluator.perform_cross_validation(*args)
+    try:
+        return recommender_evaluator.perform_cross_validation(*args)
+    except Exception as e:
+        print('Caught exception in worker thread')
+
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        print()
+        raise e
+
 
 # This wrapper is necessary when you want to pass a function more
 # than 1 parameter
 def run_topn_test_wrapper(args):
-    return precision_in_top_n.calculate_recall_in_top_n(*args)
+    try:
+        return precision_in_top_n.calculate_recall_in_top_n(*args)
+    except Exception as e:
+        print('Caught exception in worker thread')
+
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        print()
+        raise e
 
 
 def parallel_run_rmse_test(
