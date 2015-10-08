@@ -182,6 +182,7 @@ def run_top_n_test(
         raise ValueError("The records and reviews should have the same length")
 
     num_folds = 5
+    split = 0.986
     min_like_score = 5.0
     top_n = 10
 
@@ -203,9 +204,10 @@ def run_top_n_test(
 
         print('\n**************\nProgress: %d/%d\n**************' %
               (count, len(recommenders)))
+        print(get_knn_recommender_info(recommender))
 
         results = precision_in_top_n.calculate_recall_in_top_n(
-            records, recommender, top_n, num_folds, min_like_score,
+            records, recommender, top_n, num_folds, split, min_like_score,
             binary_reviews, reviews_type)
 
         results_list.append(results)
@@ -316,17 +318,17 @@ def get_recommenders_set():
     context_nc = ContextNeighbourhoodCalculator()
     # hybrid_nc0 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     # hybrid_nc0.weight = 0.0
-    # hybrid_nc02 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
-    # hybrid_nc02.weight = 0.2
+    hybrid_nc02 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    hybrid_nc02.weight = 0.2
     hybrid_nc05 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     hybrid_nc05.weight = 0.5
-    # hybrid_nc08 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
-    # hybrid_nc08.weight = 0.8
+    hybrid_nc08 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
+    hybrid_nc08.weight = 0.8
     # hybrid_nc1 = ContextHybridNeighbourhoodCalculator(copy.deepcopy(pearson_sc))
     # hybrid_nc1.weight = 1.0
     neighbourhood_calculators = [
-        # simple_nc,
-        # context_nc,
+        simple_nc,
+        context_nc,
         # hybrid_nc0,
         # hybrid_nc02,
         hybrid_nc05,
@@ -338,7 +340,7 @@ def get_recommenders_set():
     simple_ubc = SimpleUserBaselineCalculator()
     ubc = UserBaselineCalculator()
     baseline_calculators = [
-        # ubc,
+        ubc,
         simple_ubc
     ]
 
@@ -370,8 +372,8 @@ def get_recommenders_set():
 
     num_neighbours_list = [None]
     # num_neighbours_list = [None, 3, 6, 10, 15, 20]
-    # threshold_list = [0.0, 0.5, 0.9]
-    threshold_list = [0.0]
+    threshold_list = [0.0, 0.5, 0.9]
+    # threshold_list = [0.0]
     # num_topics_list = [10, 50, 150, 300, 500]
     num_topics_list = [150]
 
@@ -407,26 +409,32 @@ def get_recommenders_set():
 
     baseline_recommender = ContextualKNN(num_topics, simple_nc, ncc, simple_ubc, pearson_sc, has_context=True)
     best_recommender = ContextualKNN(num_topics, hybrid_nc05, ncc, simple_ubc, pbc_sc, has_context=True)
+    # best_recommender = ContextualKNN(num_topics, simple_nc, ncc, ubc, cosine_sc, has_context=True)
     best_recommender.threshold1 = 0.9
     best_recommender.threshold2 = 0.9
     best_recommender.threshold3 = 0.9
     best_recommender.threshold4 = 0.9
 
     my_recommenders = [
-        baseline_recommender,
+        # baseline_recommender,
         best_recommender
     ]
 
+    # return my_recommenders
     return combined_recommenders
 
 
 def main():
 
+    print('Process start: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
     folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    # my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    my_records_file = folder + 'yelp_training_set_review_restaurants_shuffled.json'
     # my_records_file = folder + 'yelp_training_set_review_spas_shuffled.json'
     # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
-    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    # my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    my_binary_reviews_file = folder + 'reviews_restaurant_shuffled_20.pkl'
     # my_binary_reviews_file = folder + 'reviews_spa_shuffled_2.pkl'
     # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
 

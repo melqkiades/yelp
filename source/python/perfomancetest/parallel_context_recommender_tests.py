@@ -1,19 +1,18 @@
-import sys
+# import sys
+# sys.path.append('/Users/fpena/UCC/Thesis/projects/yelp/source/python')
+
 import traceback
 from etl import ETLUtils
 from evaluation import precision_in_top_n
 from perfomancetest.context_recommender_tests import RMSE_HEADERS
 from perfomancetest.context_recommender_tests import TOPN_HEADERS
-
-sys.path.append('/Users/fpena/UCC/Thesis/projects/yelp/source/python')
 import time
-from functools import partial
 from multiprocessing import Pool
 import itertools
-import numpy
 import cPickle as pickle
 from perfomancetest import context_recommender_tests
 from tripadvisor.fourcity import recommender_evaluator
+from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
 
@@ -54,7 +53,7 @@ def parallel_run_rmse_test(
         records_file, recommenders, binary_reviews_file, reviews_type=None):
 
     records = context_recommender_tests.load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
+    records = extractor.remove_users_with_low_reviews(records, 20)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -71,7 +70,9 @@ def parallel_run_rmse_test(
         [reviews_type]
     )
 
-    pool = Pool(processes=2)
+    print('Total recommenders: %d' % (len(recommenders)))
+
+    pool = Pool()
     results_list = pool.map(run_rmse_test_wrapper, args)
     pool.close()
     pool.join()
@@ -101,7 +102,7 @@ def parallel_run_topn_test(
         records_file, recommenders, binary_reviews_file, reviews_type=None):
 
     records = context_recommender_tests.load_records(records_file)
-    # records = extractor.remove_users_with_low_reviews(records, 2)
+    records = extractor.remove_users_with_low_reviews(records, 20)
     with open(binary_reviews_file, 'rb') as read_file:
         binary_reviews = pickle.load(read_file)
 
@@ -109,6 +110,7 @@ def parallel_run_topn_test(
         raise ValueError("The records and reviews should have the same length")
 
     num_folds = 5
+    split = 0.986
     top_n = 10
     min_like_score = 5.0
 
@@ -117,12 +119,15 @@ def parallel_run_topn_test(
         recommenders,
         [top_n],
         [num_folds],
+        [split],
         [min_like_score],
         [binary_reviews],
         [reviews_type]
     )
 
-    pool = Pool(processes=2)
+    print('Total recommenders: %d' % (len(recommenders)))
+
+    pool = Pool()
     results_list = pool.map(run_topn_test_wrapper, args)
     pool.close()
     pool.join()
@@ -151,21 +156,24 @@ def parallel_run_topn_test(
 
 
 def main():
+    print('Process start: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
     folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    my_records_file = folder + 'yelp_training_set_review_restaurants_shuffled.json'
+    # my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
     # my_records_file = folder + 'yelp_training_set_review_spas_shuffled.json'
-    # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
-    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    my_binary_reviews_file = folder + 'reviews_restaurant_shuffled_20.pkl'
+    # my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
     # my_binary_reviews_file = folder + 'reviews_spa_shuffled_2.pkl'
     # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
 
     combined_recommenders = context_recommender_tests.get_recommenders_set()
 
     # run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
-    # parallel_run_rmse_test(
-    #     my_records_file, combined_recommenders, my_binary_reviews_file)
-    parallel_run_topn_test(
+    parallel_run_rmse_test(
         my_records_file, combined_recommenders, my_binary_reviews_file)
+    # parallel_run_topn_test(
+    #     my_records_file, combined_recommenders, my_binary_reviews_file)
 
 
 

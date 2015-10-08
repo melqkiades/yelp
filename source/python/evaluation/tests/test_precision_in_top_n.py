@@ -148,7 +148,7 @@ class TestPrecisionInTopN(TestCase):
         recommender.load(reviews_matrix_5)
 
         actual_value = precision_in_top_n.calculate_recall_in_top_n(
-            reviews_matrix_5, recommender, 2, 2, 4.0)['Top N']
+            reviews_matrix_5, recommender, 2, 2, None, 4.0)['Top N']
         expected_value = 0.875
         self.assertEqual(expected_value, actual_value)
 

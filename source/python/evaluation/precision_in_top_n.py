@@ -79,18 +79,21 @@ def calculate_precision(known_ratings, predicted_ratings, n, min_score):
 
 
 def calculate_recall_in_top_n(
-        records, recommender, n, num_folds, min_score=5.0, cache_reviews=None,
-        reviews_type=None):
+        records, recommender, n, num_folds, split=None, min_score=5.0,
+        cache_reviews=None, reviews_type=None):
 
     start_time = time.time()
-    split = 1 - (1/float(num_folds))
+    if split is None:
+        split = 1 - (1/float(num_folds))
+    # split = 0.984
     total_recall = 0.
     total_coverage = 0.
     num_cycles = 0.0
+    num_folds = 1
 
     for i in xrange(0, num_folds):
         print('Fold', i)
-        print('started training', time.strftime("%H:%M:%S"))
+        print('started training', time.strftime("%Y/%d/%m-%H:%M:%S"))
         start = float(i) / num_folds
         cluster_labels = None
         train_records, test_records = ETLUtils.split_train_test(
@@ -103,7 +106,7 @@ def calculate_recall_in_top_n(
             recommender.reviews = train_reviews
         recommender.load(train_records)
 
-        print('finished training', time.strftime("%H:%M:%S"))
+        print('finished training', time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         if cluster_labels is not None:
             separated_records = reviews_clusterer.split_list_by_labels(
@@ -136,6 +139,7 @@ def calculate_recall_in_top_n(
             if hit:
                 num_hits += 1
             num_predictions += 1
+            # print('num predictions: %d/%d %s' % (num_predictions, len(positive_reviews), time.strftime("%Y/%d/%m-%H:%M:%S")))
 
         if num_predictions == 0:
             continue
@@ -143,8 +147,8 @@ def calculate_recall_in_top_n(
         recommender.clear()
         recall = num_hits / num_predictions
         coverage = num_predictions / len(positive_reviews)
-        print('recall', recall, time.strftime("%H:%M:%S"))
-        print('coverage', coverage, time.strftime("%H:%M:%S"))
+        print('recall', recall, time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('coverage', coverage, time.strftime("%Y/%d/%m-%H:%M:%S"))
         total_recall += recall
         total_coverage += coverage
         num_cycles += 1
