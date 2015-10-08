@@ -73,6 +73,9 @@ def parallel_run_rmse_test(
     print('Total recommenders: %d' % (len(recommenders)))
 
     pool = Pool()
+
+    print('Total CPUs: %d' % pool._processes)
+
     results_list = pool.map(run_rmse_test_wrapper, args)
     pool.close()
     pool.join()
@@ -128,6 +131,9 @@ def parallel_run_topn_test(
     print('Total recommenders: %d' % (len(recommenders)))
 
     pool = Pool()
+
+    print('Total CPUs: %d' % pool._processes)
+
     results_list = pool.map(run_topn_test_wrapper, args)
     pool.close()
     pool.join()

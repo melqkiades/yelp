@@ -89,7 +89,6 @@ def calculate_recall_in_top_n(
     total_recall = 0.
     total_coverage = 0.
     num_cycles = 0.0
-    num_folds = 1
 
     for i in xrange(0, num_folds):
         print('Fold', i)
