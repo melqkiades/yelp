@@ -7,10 +7,12 @@ from nltk import tokenize
 import nltk
 import numpy as np
 import cPickle as pickle
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MiniBatchKMeans
 import time
 from sklearn.cross_validation import KFold
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import silhouette_score, adjusted_rand_score, \
+    adjusted_mutual_info_score, homogeneity_score
 from etl import ETLUtils
 from topicmodeling.context import review_metrics_extractor
 from topicmodeling.context import context_utils
@@ -18,6 +20,9 @@ from topicmodeling.context.review import Review
 from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
+
+
+NUM_FEATURES = 2
 
 
 def cluster_reviews(reviews):
@@ -35,7 +40,7 @@ def cluster_reviews(reviews):
     that review is generic
     """
 
-    records = np.zeros((len(reviews), 2))
+    records = np.zeros((len(reviews), NUM_FEATURES))
 
     for index in range(len(reviews)):
         records[index] =\
@@ -129,68 +134,92 @@ def count_review_info(review):
     return np.array(result)
 
 
-def cluster_reviews2(reviews, records):
+def compare_clusterers():
 
-    matrix = np.zeros((len(reviews), 5))
+    my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+    # my_file = my_folder + 'classified_hotel_reviews.json'
+    # binary_reviews_file = my_folder + 'classified_hotel_reviews.pkl'
+    my_file = my_folder + 'classified_restaurant_reviews.json'
+    binary_reviews_file = my_folder + 'classified_restaurant_reviews.pkl'
+    my_records = ETLUtils.load_json_file(my_file)
+    my_labels = np.array([record['specific'] == 'yes' for record in my_records])
 
-    for index in range(len(reviews)):
-        matrix[index] =\
-            review_metrics_extractor.get_review_metrics(reviews[index])
-    # review_metrics_extractor.normalize_matrix_by_columns(matrix)
-    labels = np.array([1 if record['context'] == 'yes' else 0 for record in records])
+    # my_reviews = build_reviews(my_records)
+    # with open(binary_reviews_file, 'wb') as write_file:
+    #     pickle.dump(my_reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
-    scores = []
-    cv = KFold(n=len(reviews), n_folds=5, indices=True)
-    for train, test in cv:
-        X_train, y_train = matrix[train], labels[train]
-        X_test, y_test = matrix[test], labels[test]
-        clf = neighbors.KNeighborsClassifier()
-        clf.fit(X_train, y_train)
-        scores.append(clf.score(X_test, y_test))
+    with open(binary_reviews_file, 'rb') as read_file:
+        my_reviews = pickle.load(read_file)
 
-    # print("Mean(scores)=%.5f\tStddev(scores)=%.5f"%(np.mean(scores), np.std(scores))
-    print("Mean(scores) = ", np.mean(scores))
-    print("Stddev(scores) = ", np.std(scores))
+    my_metrics = np.zeros((len(my_reviews), NUM_FEATURES))
+    for index in range(len(my_reviews)):
+        my_metrics[index] =\
+            review_metrics_extractor.get_review_metrics(my_reviews[index])
+        # print(my_metrics[index])
 
-    # knn = neighbors.KNeighborsClassifier(n_neighbors=20)
-    # knn.fit(matrix[:200], labels[:200])
-    #
-    # num_hits = 0.0
-    # for row, label in zip(matrix[200:], labels[200:]):
-    #     if knn.predict(row)[0] == label:
-    #         num_hits += 1
-    #
-    # accuracy = num_hits / len(records[200:])
-    # print('accuracy', accuracy)
-    #
-    # return knn
+    review_metrics_extractor.normalize_matrix_by_columns(my_metrics)
 
+    clusterers = [
+        KMeans(n_clusters=2),
+        MiniBatchKMeans(n_clusters=4),
+        # MeanShift(),
+        # AgglomerativeClustering(n_clusters=2)
+        # DummyClassifier(strategy='most_frequent', random_state=0),
+        # DummyClassifier(strategy='stratified', random_state=0),
+        # DummyClassifier(strategy='uniform', random_state=0),
+        # DummyClassifier(strategy='constant', random_state=0, constant=True),
+        # LogisticRegression(C=100),
+        # SVC(C=1.0, kernel='rbf'),
+        # SVC(C=1.0, kernel='linear'),
+        # KNeighborsClassifier(n_neighbors=10),
+        # tree.DecisionTreeClassifier(),
+        # NuSVC(),
+        # LinearSVC()
+    ]
+    scores = [[] for i in range(len(clusterers))]
 
-def cluster_reviews3(reviews, records):
+    Xtrans = my_metrics
+    # pca = decomposition.PCA(n_components=2)
+    # Xtrans = pca.fit_transform(my_metrics)
+    # print(pca.explained_variance_ratio_)
+    # lda_inst = lda.LDA()
+    # Xtrans = lda_inst.fit_transform(my_metrics, my_labels)
+    # print(lda_inst.get_params())
+    # mds = manifold.MDS(n_components=2)
+    # Xtrans = mds.fit_transform(my_metrics)
 
-    matrix = np.zeros((len(reviews), 5))
+    cv = KFold(n=len(my_metrics), n_folds=5)
 
-    for index in range(len(reviews)):
-        matrix[index] = review_metrics_extractor.get_review_metrics(reviews[index])
-    # review_metrics_extractor.normalize_matrix_by_columns(matrix)
+    for i in range(len(clusterers)):
+        for train, test in cv:
+            x_train, y_train = Xtrans[train], my_labels[train]
+            x_test, y_test = Xtrans[test], my_labels[test]
 
-    labels = [record['context'] for record in records]
-    knn = LogisticRegression()
-    knn.fit(matrix[:200], labels[:200])
+            clusterer = clusterers[i]
+            clusterer.fit(x_train)
+            cluster_labels = clusterer.predict(x_test)
 
-    num_hits = 0.0
-    for row, label in zip(matrix[200:], labels[200:]):
-        print(knn.predict(row)[0], label)
-        if knn.predict(row)[0] == label:
-            num_hits += 1
+            scores_map = {}
+            scores_map['silhouette'] = silhouette_score(x_test, cluster_labels)
+            scores_map['adjusted_rand'] = adjusted_rand_score(y_test, cluster_labels)
+            scores_map['adjusted_mutual'] = adjusted_mutual_info_score(y_test, cluster_labels)
+            scores_map['homogeneity'] = homogeneity_score(y_test, cluster_labels)
+            scores[i].append(scores_map)
+            # print('silhouette score', silhouette_avg)
 
-    accuracy = num_hits / len(records[200:])
-    print('accuracy', accuracy)
-
-    return knn
-
-
-
+    for score in scores:
+        silhouette = [d['silhouette'] for d in score]
+        adjusted_rand = [d['adjusted_rand'] for d in score]
+        adjusted_mutual = [d['adjusted_mutual'] for d in score]
+        homogeneity = [d['homogeneity'] for d in score]
+        print("Silhouette:\t\t\tMean=%.5f\tStddev=%.5f" %
+              (np.mean(silhouette), np.std(silhouette)))
+        print("Adjusted Rand:\t\tMean=%.5f\tStddev=%.5f" %
+              (np.mean(adjusted_rand), np.std(adjusted_rand)))
+        print("Adjusted Mutual:\tMean=%.5f\tStddev=%.5f" %
+              (np.mean(adjusted_mutual), np.std(adjusted_mutual)))
+        print("Homogeneity:\t\tMean=%.5f\tStddev=%.5f" %
+              (np.mean(homogeneity), np.std(homogeneity)))
 
 
 # my_file = '/Users/fpena/tmp/reviews_restaurant_shuffled.pkl'
@@ -249,11 +278,9 @@ def main():
     generic_precision /= len(generic_records)
     print('context precision', generic_precision)
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+    compare_clusterers()
+
+# start = time.tif seconds" % total_time)
 
 # folder = '/Users/fp\-oupby(['user_id']).size().order(ascending=False))
 # data_frame.sort('user_id', ascending=False, inplace=True )

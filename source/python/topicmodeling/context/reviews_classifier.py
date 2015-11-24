@@ -5,6 +5,7 @@ import time
 import math
 import nltk
 import numpy
+from pandas import DataFrame
 import sklearn
 from sklearn import decomposition, lda, manifold
 from sklearn.cross_validation import KFold
@@ -44,8 +45,8 @@ def plot(my_metrics, my_labels):
     yvals = -(coef[0] * xvals + intercept[0]) / coef[1]
     plt.plot(xvals, yvals, color='g', label='decision boundary')
 
-    plt.xlabel("Ln number of words (normalized)")
-    plt.ylabel("Ln number of verbs in past tense (normalized)")
+    plt.xlabel("log number of words (normalized)")
+    plt.ylabel("log number of verbs in past tense (normalized)")
     for outcome, marker, colour in zip([0, 1], "ox", "br"):
         plt.scatter(
             my_metrics[:, 0][my_labels == outcome],
@@ -55,13 +56,11 @@ def plot(my_metrics, my_labels):
 
 def main():
     my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    # my_file = my_folder + 'classified_hotel_reviews.json'
-    # binary_reviews_file = my_folder + 'classified_hotel_reviews.pkl'
-    my_file = my_folder + 'classified_restaurant_reviews.json'
-    binary_reviews_file = my_folder + 'classified_restaurant_reviews.pkl'
+    my_file = my_folder + 'classified_hotel_reviews.json'
+    binary_reviews_file = my_folder + 'classified_hotel_reviews.pkl'
+    # my_file = my_folder + 'classified_restaurant_reviews.json'
+    # binary_reviews_file = my_folder + 'classified_restaurant_reviews.pkl'
     my_records = ETLUtils.load_json_file(my_file)
-
-    print(my_records[10])
 
     # my_reviews = build_reviews(my_records)
     # with open(binary_reviews_file, 'wb') as write_file:
@@ -132,7 +131,6 @@ def main():
     cv = KFold(n=len(my_metrics), n_folds=5)
 
     for i in range(len(classifiers)):
-        # scores.append([])
         for train, test in cv:
             x_train, y_train = Xtrans[train], my_labels[train]
             x_test, y_test = Xtrans[test], my_labels[test]
@@ -140,6 +138,8 @@ def main():
             clf = classifiers[i]
             clf.fit(x_train, y_train)
             scores[i].append(clf.score(x_test, y_test))
+
+            print(y_test)
 
             # selector = RFE(clf, n_features_to_select=3)
             # selector = selector.fit(x_train, y_train)
@@ -181,10 +181,6 @@ def main():
 
 
 
-
-
-
-
 start = time.time()
 main()
 end = time.time()
@@ -193,14 +189,13 @@ print("Total time = %f seconds" % total_time)
 
 
 
-
-
-
-
 # from nltk.corpus import wordnet as wn
-# animate = x = filter(lambda s:s.lexname() in {'noun.time'}, wn.all_synsets('n'))
+# animate = x = filter(lambda s:s.lexname() in {'noun.time'}, wordnet.all_synsets('n'))
 # animate = {lemma.name() for s in animate for lemma in s.lemmas()}
-# print(animate)
+#
+# for i in animate:
+#     print(i)
+
 # print(time.time())
 # for i in range(1000000):
 #     boolean = 'yesterday' in animate
@@ -233,16 +228,23 @@ print("Total time = %f seconds" % total_time)
 
 
 
+my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+# my_file = my_folder + 'classified_hotel_reviews.json'
+# my_file = my_folder + 'classified_restaurant_reviews.json'
+my_file = my_folder + 'yelp_training_set_review_spas_shuffled.json'
+my_records = ETLUtils.load_json_file(my_file)
+print(len(my_records))
 
-# evenly sampled time at 200ms intervals
-t = numpy.arange(0., 5., 0.2)
-
-# red dashes, blue squares and green triangles
-# plt.plot(t, t, 'r--', t, t**2, 'bs', t, t**3, 'g^')
-# plt.show()
-
-import matplotlib.rcsetup as rcsetup
-print(rcsetup.all_backends)
+data_frame = DataFrame(my_records, columns=['business_id'])
+df_agg = data_frame.groupby(['business_id']).size()
+# print(data_frame.groupby(['business_id']).size())
+# print(df_agg.nlargest(5))
 
 
+# \begin{equation}
+#     pbc\_sim(u_{1}, u_{2}) = \frac{\sum_{r \in T} (r_{u_{1}id} - \bar{r}_{u_{1}}) (r_{u_{2}ie} - \bar{r}_{u_{2}}) \times cont\_sim(d,e)}{\sqrt{\sum (r_{u_{1}id} - \bar{r}_{u_{1}})^{2} \sum (r_{u_{2}ie} - \bar{r}_{u_{2}})^{2} \sum cont\_sim(d,e)^{2}}}
+# \end{equation}
 
+# \begin{equation}
+# 	user\_similarity(u_{1}, u_{2}) = \frac{\sum_{r \in T} (r_{u_{1}id} - \bar{r}_{u_{1}}) (r_{u_{2}ie} - \bar{r}_{u_{2}}) \times cont\_sim(d,e)}{\sqrt{\sum (r_{u_{1}id} - \bar{r}_{u_{1}})^{2} \sum (r_{u_{2}ie} - \bar{r}_{u_{2}})^{2} \sum cont\_sim(d,e)^{2}}}
+# \end{equation}
