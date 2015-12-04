@@ -55,7 +55,7 @@ def get_review_metrics(review):
         # time_words_ratio = log_time_words / log_words
         personal_pronouns_ratio = log_personal_pronouns / log_words
 
-    result = [log_sentences, log_words, log_past_verbs, log_verbs, past_verbs_ratio2]#, log_personal_pronouns, personal_pronouns_ratio, past_verbs_ratio2]#, log_time_words, time_words_ratio]
+    # result = [log_sentences, log_words, log_past_verbs, log_verbs, past_verbs_ratio, log_personal_pronouns, personal_pronouns_ratio, past_verbs_ratio2]#, log_time_words, time_words_ratio]
     # result = [log_sentences]
     result = [log_words, log_past_verbs]
     # result = [time_words_ratio, personal_pronouns_ratio]
@@ -71,13 +71,15 @@ def get_review_metrics(review):
     return numpy.array(result)
 
 
-def normalize_matrix_by_columns(matrix):
+def normalize_matrix_by_columns(matrix, min_values=None, max_values=None):
     """
 
     :type matrix: numpy.array
     """
-    max_values = matrix.max(axis=0)
-    min_values = matrix.min(axis=0)
+    if max_values is None:
+        max_values = matrix.max(axis=0)
+    if min_values is None:
+        min_values = matrix.min(axis=0)
 
     print('max values', max_values)
     print('min values', min_values)

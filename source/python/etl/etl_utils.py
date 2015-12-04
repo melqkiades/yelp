@@ -1,7 +1,9 @@
 import csv
 import json
+import random
 import nltk
 import numpy as np
+from pandas import DataFrame
 
 __author__ = 'franpena'
 
@@ -215,14 +217,80 @@ class ETLUtils:
         return records
 
     @staticmethod
-    def save_csv_file(file_path, records, headers, delimiter=','):
+    def save_csv_file(
+            file_path, records, headers, delimiter=',', write_headers=True):
 
         with open(file_path, 'wb') as write_file:
             writer = csv.DictWriter(write_file, headers, delimiter=delimiter)
-            writer.writeheader()
+
+            if write_headers:
+                writer.writeheader()
 
             for record in records:
                 writer.writerow(record)
+
+    @staticmethod
+    def json_to_csv(
+            input_file, output_file, user_field, item_field, rating_field,
+            shuffle=False, transform_ids=False, num_folds=None, delimiter=','):
+
+        records = ETLUtils.load_json_file(input_file)
+        fields = [user_field, item_field, rating_field]
+        records = ETLUtils.select_fields(fields, records)
+        if shuffle:
+            random.shuffle(records)
+        if transform_ids:
+            records = ETLUtils.transform_ids(
+                records, user_field, item_field, rating_field)
+
+        if num_folds is None:
+            ETLUtils.save_csv_file(
+                output_file, records, fields, delimiter)
+            return
+
+        for fold in range(num_folds):
+            split = 1 - (1/float(num_folds))
+            start = float(fold) / num_folds
+            train_records, test_records =\
+                ETLUtils.split_train_test(records, split, False, start)
+
+            ETLUtils.save_csv_file(
+                output_file + "_train_" + str(fold), train_records, fields, delimiter)
+            ETLUtils.save_csv_file(
+                output_file + "_test_" + str(fold), test_records, fields, delimiter)
+
+    @staticmethod
+    def transform_ids(records, user_field, item_field, rating_field):
+        user_id = 1
+        item_id = 1
+
+        user_map = {}
+        item_map = {}
+
+        new_records = []
+
+        for record in records:
+
+            old_user_id = record[user_field]
+            old_item_id = record[item_field]
+
+            if old_user_id not in user_map:
+                user_map[old_user_id] = user_id
+                user_id += 1
+
+            if old_item_id not in item_map:
+                item_map[old_item_id] = item_id
+                item_id += 1
+
+            new_record = {
+                user_field:   user_map[old_user_id],
+                item_field:   item_map[old_item_id],
+                rating_field: record[rating_field]
+            }
+
+            new_records.append(new_record)
+
+        return new_records
 
 
 # headers = ['Algorithm',
@@ -241,4 +309,31 @@ class ETLUtils:
 # ]
 # ETLUtils.save_csv_file('/Users/fpena/tmp/test.csv', records, headers, delimiter='|')
 
+my_input_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+my_input_file = my_input_folder + 'yelp_training_set_review_hotels.json'
+my_fields = ['user_id', 'business_id', 'stars']
+my_records = ETLUtils.load_json_file(my_input_file)
+my_records = ETLUtils.select_fields(my_fields, my_records)
+random.shuffle(my_records)
+
+my_export_folder = '/Users/fpena/tmp/libfm-1.42.src/scripts/'
+# my_export_file = my_export_folder + 'yelp_training_set_review_hotels_shuffled.csv'
+my_export_file = my_export_folder + 'yelp.csv'
+# ETLUtils.save_csv_file(my_export_file, my_records, my_fields, '\t', False)
+
+# my_new_records = ETLUtils.transform_ids(my_records, 'user_id', 'business_id', 'stars')
+
+# for my_new_record in my_new_records:
+#     print(my_new_record)
+
+# ETLUtils.json_to_csv(my_input_file, my_export_file, 'user_id', 'business_id', 'stars', True, True)
+#
+# print(my_records[0])
+# print(my_records[2])
+# print(my_records[5])
+#
+# data_frame = DataFrame(my_records)
+# column = 'user_id'
+# counts = data_frame.groupby(column).size()
+# print(len(counts))
 

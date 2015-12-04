@@ -1,31 +1,90 @@
-from collections import Counter
 import cPickle as pickle
-import string
 import time
-import math
-import nltk
+
 import numpy
-from pandas import DataFrame
-import sklearn
-from sklearn import decomposition, lda, manifold
 from sklearn.cross_validation import KFold
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import RFE
 from sklearn.linear_model import LogisticRegression
-from nltk.corpus import wordnet
-from sklearn.metrics import precision_recall_curve, classification_report
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, NuSVC, LinearSVC
 from sklearn.tree import tree
 import matplotlib.pyplot as plt
+
 from etl import ETLUtils
 from topicmodeling.context import review_metrics_extractor
+from topicmodeling.context.review import Review
 
 __author__ = 'fpena'
 
 
-NUM_FEATURES = 2
+class ReviewsClassifier:
+
+    def __init__(self):
+        self.num_features = 2
+        self.classifier = LogisticRegression(C=100)
+        self.min_values = None
+        self.max_values = None
+
+    def train(self, records, reviews=None):
+
+        if reviews is None:
+            reviews = []
+            for record in records:
+                reviews.append(Review(record['text']))
+
+        if len(records) != len(reviews):
+            msg = 'The size of the records and reviews arrays must be the same'
+            raise ValueError(msg)
+
+        metrics = numpy.zeros((len(reviews), self.num_features))
+
+        for index in range(len(reviews)):
+            metrics[index] =\
+                review_metrics_extractor.get_review_metrics(reviews[index])
+
+        self.min_values = metrics.min(axis=0)
+        self.max_values = metrics.max(axis=0)
+        review_metrics_extractor.normalize_matrix_by_columns(
+            metrics, self.min_values, self.max_values)
+
+        labels = numpy.array([record['specific'] == 'yes' for record in records])
+        self.classifier.fit(metrics, labels)
+
+    def predict(self, reviews):
+        metrics = numpy.zeros((len(reviews), self.num_features))
+        for index in range(len(reviews)):
+            metrics[index] =\
+                review_metrics_extractor.get_review_metrics(reviews[index])
+
+        review_metrics_extractor.normalize_matrix_by_columns(
+            metrics, self.min_values, self.max_values)
+        return self.classifier.predict(metrics)
+
+    def label_json_reviews(self, input_file, output_file, reviews=None):
+
+        records = ETLUtils.load_json_file(input_file)
+
+        if reviews is None:
+            reviews = []
+            for record in records:
+                reviews.append(Review(record['text']))
+
+        if len(records) != len(reviews):
+            msg = 'The size of the records and reviews arrays must be the same'
+            raise ValueError(msg)
+        predicted_classes = self.predict(reviews)
+
+        for record, predicted_class in zip(records, predicted_classes):
+            if predicted_class:
+                label = 'specific'
+            else:
+                label = 'generic'
+
+            record['predicted_class'] = label
+
+        ETLUtils.save_json_file(output_file, records)
+
+
 
 
 def plot(my_metrics, my_labels):
@@ -69,7 +128,9 @@ def main():
     with open(binary_reviews_file, 'rb') as read_file:
         my_reviews = pickle.load(read_file)
 
-    my_metrics = numpy.zeros((len(my_reviews), NUM_FEATURES))
+    num_features = 2
+
+    my_metrics = numpy.zeros((len(my_reviews), num_features))
     for index in range(len(my_reviews)):
         my_metrics[index] =\
             review_metrics_extractor.get_review_metrics(my_reviews[index])
@@ -180,71 +241,36 @@ def main():
     plot(my_metrics, my_labels)
 
 
+def test():
+    my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+    my_file = my_folder + 'classified_restaurant_reviews.json'
+    binary_reviews_file = my_folder + 'classified_restaurant_reviews.pkl'
+    my_training_records = ETLUtils.load_json_file(my_file)
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+    # my_reviews = build_reviews(my_records)
+    # with open(binary_reviews_file, 'wb') as write_file:
+    #     pickle.dump(my_reviews, write_file, pickle.HIGHEST_PROTOCOL)
 
+    with open(binary_reviews_file, 'rb') as read_file:
+        my_training_reviews = pickle.load(read_file)
 
+    classifier = ReviewsClassifier()
+    classifier.train(my_training_records, my_training_reviews)
 
-# from nltk.corpus import wordnet as wn
-# animate = x = filter(lambda s:s.lexname() in {'noun.time'}, wordnet.all_synsets('n'))
-# animate = {lemma.name() for s in animate for lemma in s.lemmas()}
-#
-# for i in animate:
-#     print(i)
+    my_input_records_file = my_folder + 'yelp_training_set_review_restaurants_shuffled.json'
+    my_input_reviews_file = my_folder + 'reviews_restaurant_shuffled.pkl'
+    my_output_records_file = my_folder + 'yelp_training_set_review_restaurants_shuffled_tagged.json'
 
-# print(time.time())
-# for i in range(1000000):
-#     boolean = 'yesterday' in animate
-# print(time.time())
+    with open(my_input_reviews_file, 'rb') as read_file:
+        my_input_reviews = pickle.load(read_file)
+
+    classifier.label_json_reviews(
+        my_input_records_file, my_output_records_file, my_input_reviews)
 
 
 # start = time.time()
-#
-# review1 = 'Sheraton Desert Oasis is a great value in the late spring/early summer to get away for a few days and relax. \n\nIt is part of the Starwood Hotel Chain, but this is one of their first forays in to the recent boom in Hotel chains opening time share residences for sale under their brands. So this was meant to be property that was sold in timeshares, which some have. mostly for winter weeks for cold snow birds.\n\nBut in the low season, which is summer, you can get a room for around $100. And what do you get? You get a nicely appointed, decorated model home, about a 700 square foot 1 bedroom apartment. It is repleat with 2 gas fireplaces, full kitchen with all wares and utensils, living room, patio with table and chairs, his/her bathroom sinks, a marbled tiled shower, a king size bed and a heart shaped large jacuzzi bathtub in the bedroom. \n\nIt has a full social and activities calender, so it is a good place to take the kids. There is a large clover shaped pool, with multiple water fountains, and a large rocklike island structure with caves where the jacuzzi is located. There are about 75 chaise lounges and several tables, so there is usually one available for you. There is also a poolside grill for food and beverages. \n\nYou are not far from the restaurants and nightlife of North Scottsdale, near Kierland Commons Mall, Desert Ridge Mall, 101 Mall, and about 6 other strip and big box shopping centers. You can buy food and easily eat in to save some money. The famed Tournament Players Club (TPC) gold course is close by, as well as the more exclusive and expensive Fairmont Princess hotel. \n\nThis is more of a vacation home than an exclusive resort with people waiting on you hand and foot. But it is well maintained, nicely appointed, and a relaxing getaway. Peak season (winter) rates are $325 and up, so if you come in early summer, you get a bargain and a tan by the pool.'
-# review2 = 'Known as \"The Jewel of the Desert\" and the \"Grand Dame,\" this beautiful hotel is the only one in the world with a Frank Lloyd Wright-influenced design.  The architect was a man named Albert Chase McArthur, who had studied under Frank Lloyd Wright.  Hence, the main restaurant\'s name is \"Frank and Albert\'s.\"\n\nCelebrating its 80th birthday this year, this unique art-deco resort is rich in history.  Dozens of presidents have golfed here, Marilyn Monroe splashed around in one of the 8 on-site pools, and many more celebrities and industry magnates have called this their temporary home.\n\nWhen visiting here, it is important to note that on-site parking is costly.  A self parking fee of $12 is imposed even on its guests, and the self parking lot is often located some distance from the hotel entrance.  For those not wanting to bother with parking the car themselves, the price is$27 to valet.  The package I purchased luckily had the self-parking included, but the car was delivered to the valet nonetheless.  I was sure to speak to a hotel manager about how ridiculous it is to ask a hotel guest to pay for parking, and he happily credited our room for the valet fee.\n\nSo, my first experience was our dinner at \"Frank and Albert\'s\", formerly known as the \"Biltmore Grill.\"  Local purveyors provide the ingredients for nearly all of its organic dishes.  From Queen Creek Olive Oil to Shriner\'s Sausage, Mesa Ranch Goat Cheese to Biltmore grown Rosemary, one can taste the difference.  The menu provided a range of selections from salads, pizzas, and flatbreads, to rotisserie and classic comfort foods.  The wood stone baked filet of salmon was flavorful, tender, and full of tender feelings. I recommend their \"bloody rose\" cocktail.  I snicker as I write these words, because bloody marys are my least favorite cocktail.  However, this unique blend is made with crop organic tomato vodka and juice, fresh biltmore grown rosemary and spices.  Service was attentive and timely, waiter was very knowledgeable, and we were very impressed with the quality and flavor of the food.  \n\nNext, it was on to the newly added wing of the resort, the Ocatilla.  The Ocatilla is essentially a new boutique hotel situated on the Biltmore property.  It has its own pool, a concierge, and an executive lounge which offers daily complimentary breakfasts, a light evening fare, beer and wine, desserts, as well as coffee and soft drinks.Our package included a room on the third floor of this location, as well as access to its executive lounge.  \n\nAlthough our stomachs were full from dinner, we made room for chocolate covered cheesecake, choc. covered strawberries, fudge brownies, tarts, and chocolate chunk cookies.  We swallowed it all down with some prosecco, and headed up to our room.\n\nThe room was at least 500sq feet, and I believe that the rest of the hote has fairly sizeable rooms, as well.  The decor was a blend of art deco and southwestern.  The bathroom with its granite countertops, boasted a tub with sea salts and candle, in which we submerged ourselves comfortably up to our chins.  Two plush robes were there for us to lounge around in.  A snack bar was provided, although a package of nuts and dried fruit was $7.  Biggest disappointment was that that there was no wetbar.  I always look forward to these in any hotel room, especially to use them for storing leftovers from dinner.  The king bed was etremely comfortable, with its pillow-top mattress and feather pillows, as well as the high thread count sheets.  Silky soft...\n\nWe enjoyed peace and quiet all night, and were not disturbed in the morning by housekeeping.\n\nThe next day were were early to rise to enjoy the lavish continental breakfast spread in the lounge.  Granola with local pecans and yogurt parfait croissans with spinach and boursin, ham and cheese, small danishes, assortmnt of fresh fruits and juices gave us the perfect start to our day.  We grabbed some bottled waters and cokes and headed to the pool.  We had an appointment at the spa an hour later, for seaweed wraps and massages, and it was wonderful, the service excellent and very personalized.\n\nRecommendations:\ngo to biltmore\'s website directly to book a room. you will find incredible packages. our package was $200 and included dinner for two, lunch for two, 50% off at the spa, and access to the executive lounge at the ocatilla.\n\nif you live locally, they will shuttle you - saves the parking headache.\n\nAbout Ocatilla:\nbasically an upgrade with your stay. For an additional $75-$100/day, these are the following amenities you will receive:\ncomplimentary beverages, wine, beer, breakfast, light evening fare, and desserts in the lounge\nbusiness center (computers, internet, printers)\nWii rentals \npressing service and shoe shine\ntherapeutic turn down bath\nneck and shoulder massages every thursday\npersonal concierge'
-#
-# classifier = ReviewsClassifier()
-# print(classifier.get_time_words(review1))
-# print(classifier.get_time_words(review2))
-#
+# # main()
+# test()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
-
-# nltk.download()
-
-# yesterday = sentiwordnet.senti_synset('yesterday.n.01')
-# print(yesterday)
-
-# happy = sentiwordnet.senti_synsets('time')
-# all_happy = sentiwordnet.all_senti_synsets()
-#
-# for synset in happy:
-#     print(synset)
-
-
-
-my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-# my_file = my_folder + 'classified_hotel_reviews.json'
-# my_file = my_folder + 'classified_restaurant_reviews.json'
-my_file = my_folder + 'yelp_training_set_review_spas_shuffled.json'
-my_records = ETLUtils.load_json_file(my_file)
-print(len(my_records))
-
-data_frame = DataFrame(my_records, columns=['business_id'])
-df_agg = data_frame.groupby(['business_id']).size()
-# print(data_frame.groupby(['business_id']).size())
-# print(df_agg.nlargest(5))
-
-
-# \begin{equation}
-#     pbc\_sim(u_{1}, u_{2}) = \frac{\sum_{r \in T} (r_{u_{1}id} - \bar{r}_{u_{1}}) (r_{u_{2}ie} - \bar{r}_{u_{2}}) \times cont\_sim(d,e)}{\sqrt{\sum (r_{u_{1}id} - \bar{r}_{u_{1}})^{2} \sum (r_{u_{2}ie} - \bar{r}_{u_{2}})^{2} \sum cont\_sim(d,e)^{2}}}
-# \end{equation}
-
-# \begin{equation}
-# 	user\_similarity(u_{1}, u_{2}) = \frac{\sum_{r \in T} (r_{u_{1}id} - \bar{r}_{u_{1}}) (r_{u_{2}ie} - \bar{r}_{u_{2}}) \times cont\_sim(d,e)}{\sqrt{\sum (r_{u_{1}id} - \bar{r}_{u_{1}})^{2} \sum (r_{u_{2}ie} - \bar{r}_{u_{2}})^{2} \sum cont\_sim(d,e)^{2}}}
-# \end{equation}
