@@ -41,7 +41,8 @@ class ReviewsClassifier:
         review_metrics_extractor.normalize_matrix_by_columns(
             metrics, self.min_values, self.max_values)
 
-        labels = numpy.array([record['specific'] == 'yes' for record in records])
+        labels =\
+            numpy.array([record['specific'] == 'yes' for record in records])
         self.classifier.fit(metrics, labels)
 
     def predict(self, reviews):
@@ -80,9 +81,13 @@ class ReviewsClassifier:
 
 
 def main():
+    # dataset = 'hotel'
+    dataset = 'restaurant'
     my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    my_training_records_file = my_folder + 'classified_restaurant_reviews.json'
-    my_training_reviews_file = my_folder + 'classified_restaurant_reviews.pkl'
+    my_training_records_file =\
+        my_folder + 'classified_' + dataset + '_reviews.json'
+    my_training_reviews_file =\
+        my_folder + 'classified_' + dataset + '_reviews.pkl'
     my_training_records = ETLUtils.load_json_file(my_training_records_file)
 
     with open(my_training_reviews_file, 'rb') as read_file:
@@ -91,9 +96,13 @@ def main():
     classifier = ReviewsClassifier()
     classifier.train(my_training_records, my_training_reviews)
 
-    my_input_records_file = my_folder + 'yelp_training_set_review_restaurants_shuffled.json'
-    my_input_reviews_file = my_folder + 'reviews_restaurant_shuffled.pkl'
-    my_output_records_file = my_folder + 'yelp_training_set_review_restaurants_shuffled_tagged.json'
+    my_input_records_file =\
+        my_folder + 'yelp_training_set_review_' + dataset + 's_shuffled.json'
+    my_input_reviews_file =\
+        my_folder + 'reviews_' + dataset + '_shuffled.pkl'
+    my_output_records_file =\
+        my_folder + 'yelp_training_set_review_' + dataset +\
+        's_shuffled_tagged.json'
 
     with open(my_input_reviews_file, 'rb') as read_file:
         my_input_reviews = pickle.load(read_file)
