@@ -55,9 +55,7 @@ class ReviewsClassifier:
             metrics, self.min_values, self.max_values)
         return self.classifier.predict(metrics)
 
-    def label_json_reviews(self, input_file, output_file, reviews=None):
-
-        records = ETLUtils.load_json_file(input_file)
+    def label_json_reviews(self, records, reviews=None):
 
         if reviews is None:
             reviews = []
@@ -77,7 +75,7 @@ class ReviewsClassifier:
 
             record['predicted_class'] = label
 
-        ETLUtils.save_json_file(output_file, records)
+        return records
 
 
 def main():
@@ -107,8 +105,12 @@ def main():
     with open(my_input_reviews_file, 'rb') as read_file:
         my_input_reviews = pickle.load(read_file)
 
-    classifier.label_json_reviews(
-        my_input_records_file, my_output_records_file, my_input_reviews)
+    my_input_records = ETLUtils.load_json_file(my_input_records_file)
+
+    my_output_records =\
+        classifier.label_json_reviews(my_input_records, my_input_reviews)
+
+    ETLUtils.save_json_file(my_output_records_file, my_output_records)
 
 
 # start = time.time()
