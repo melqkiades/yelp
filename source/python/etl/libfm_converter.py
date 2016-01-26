@@ -1,12 +1,13 @@
 
 import csv
+from etl import ETLUtils
 
 __author__ = 'fpena'
 
 
 def csv_to_libfm(
         input_files, target_column, one_hot_columns,
-        delete_columns=None, delimiter=',', has_header=False):
+        delete_columns=None, delimiter=',', has_header=False, suffix='.libfm'):
     """
     Converts a CSV file to the libFM format.
 
@@ -84,7 +85,7 @@ def csv_to_libfm(
                 output_rows[row_index] += " " + str(vector_map[vector_key]) + ":1"
 
     for input_file, output_rows in zip(input_files, output_row_list):
-        with open(input_file + '.libfm', 'w') as write_file:
+        with open(input_file + suffix, 'w') as write_file:
             for row in output_rows:
                 write_file.write("%s\n" % row)
 
@@ -95,9 +96,10 @@ def get_column(matrix, i):
 
 def main():
 
-    my_input_folder = '/Users/fpena/tmp/libfm-1.42.src/scripts/'
-    my_input_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    json_file = my_input_folder + 'yelp_training_set_review_hotels.json'
+    my_input_folder = '/Users/fpena/tmp/libfm-1.42.src/bin/'
+    my_input_folder = '/Users/fpena/UCC/Thesis/datasets/context/generated/'
+    json_file1 = my_input_folder + 'yelp_training_set_review_hotels_shuffled_train.json'
+    json_file2 = my_input_folder + 'records_to_predict_hotel.json'
     # my_output_file = my_input_file + ".libfm"
     # my_input_file = my_input_folder + 'u1.base'
     # my_records = ETLUtils.load_json_file(my_input_file)
@@ -107,9 +109,10 @@ def main():
     #     json_file, my_output_file, 2, delete_columns=my_delete_columns,
     #     delimiter=',', has_header=True)
 
-    my_export_folder = '/Users/fpena/tmp/libfm-1.42.src/scripts/'
-    # my_export_file = my_export_folder + 'yelp_training_set_review_hotels_shuffled.csv'
-    csv_file = my_export_folder + 'yelp3.csv'
+    my_export_folder = '/Users/fpena/tmp/libfm-1.42.src/bin/'
+    my_export_file = my_export_folder + 'yelp_training_set_review_hotels_shuffled_train.csv'
+    # csv_file = my_export_folder + 'yelp3.csv'
+    csv_file = my_export_folder + 'records_to_predict_hotel.csv'
     libfm_file = my_export_folder + 'yelp_delete.libfm'
     # ETLUtils.json_to_csv(json_file, csv_file, 'user_id', 'business_id', 'stars')
     # csv_to_libfm(
@@ -117,7 +120,8 @@ def main():
     #     delimiter=',', has_header=True)
 
 
-    # ETLUtils.json_to_csv(json_file, csv_file, 'user_id', 'business_id', 'stars', False, True)
+    ETLUtils.json_to_csv(json_file1, my_export_file, 'user_id', 'business_id', 'stars', False, True)
+    ETLUtils.json_to_csv(json_file2, csv_file, 'user_id', 'business_id', 'stars', False, True)
 
 
     # csv_file = my_export_folder + 'yelp3.csv'
@@ -133,17 +137,18 @@ def main():
     #     delimiter=',', has_header=True)
 
     csv_files = [
-        "/Users/fpena/UCC/Thesis/datasets/context/yelp_hotel_context_shuffled.csv"
+        "/Users/fpena/tmp/libfm-1.42.src/bin/yelp_training_set_review_hotels_shuffled_train.csv",
+        "/Users/fpena/tmp/libfm-1.42.src/bin/records_to_predict_hotel.csv"
     ]
-    libfm_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_hotel_context_shuffled.libfm"
-    csv_to_libfm(csv_files, 0, [1, 2], [], ',', has_header=True)
+    # libfm_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_hotel_context_shuffled.libfm"
+    csv_to_libfm(csv_files, 2, [0, 1], [], ',', has_header=True)
 
 # main()
 
 # d = StringIO("0.4,21,72,33\n0.1,35,58,44\n0.9,18,71,33\n0.9,18,71,44")
-csv_files = [
-    '/Users/fpena/tmp/libfm-1.42.src/scripts/sample.csv',
-    '/Users/fpena/tmp/libfm-1.42.src/scripts/sample2.csv'
-]
-# libfm_file = '/Users/fpena/tmp/libfm-1.42.src/scripts/sample.libfm'
-csv_to_libfm(csv_files, 1, [4], [2])
+# csv_files = [
+#     '/Users/fpena/tmp/libfm-1.42.src/bin/sample.csv',
+#     '/Users/fpena/tmp/libfm-1.42.src/bin/sample2.csv'
+# ]
+# # libfm_file = '/Users/fpena/tmp/libfm-1.42.src/bin/sample.libfm'
+# csv_to_libfm(csv_files, 1, [4], [2])
