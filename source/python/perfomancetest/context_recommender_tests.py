@@ -420,8 +420,8 @@ def get_recommenders_set():
         best_recommender
     ]
 
-    # return my_recommenders
-    return combined_recommenders
+    return my_recommenders
+    # return combined_recommenders
 
 
 def main():
@@ -429,19 +429,19 @@ def main():
     print('Process start: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
     folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    # my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
-    my_records_file = folder + 'yelp_training_set_review_restaurants_shuffled.json'
+    my_records_file = folder + 'yelp_training_set_review_hotels_shuffled.json'
+    # my_records_file = folder + 'yelp_training_set_review_restaurants_shuffled.json'
     # my_records_file = folder + 'yelp_training_set_review_spas_shuffled.json'
     # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled.pkl'
-    # my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
-    my_binary_reviews_file = folder + 'reviews_restaurant_shuffled_20.pkl'
+    my_binary_reviews_file = folder + 'reviews_hotel_shuffled.pkl'
+    # my_binary_reviews_file = folder + 'reviews_restaurant_shuffled_20.pkl'
     # my_binary_reviews_file = folder + 'reviews_spa_shuffled_2.pkl'
     # my_binary_reviews_file = folder + 'reviews_context_hotel_2.pkl'
 
     combined_recommenders = get_recommenders_set()
 
-    # run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
-    run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
+    run_rmse_test(my_records_file, combined_recommenders, my_binary_reviews_file)
+    # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file)
 
     # run_rmse_test(my_records_file, combined_recommenders[47:], my_binary_reviews_file, 'specific')
     # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file, 'specific')
@@ -450,8 +450,8 @@ def main():
     # run_top_n_test(my_records_file, combined_recommenders, my_binary_reviews_file, 'generic')
 
 
-# start = time.time()
-# main()
-# end = time.time()
-# total_time = end - start
+start = time.time()
+main()
+end = time.time()
+total_time = end - start
 # print("Total time = %f seconds" % total_time)
