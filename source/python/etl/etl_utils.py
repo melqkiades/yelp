@@ -229,35 +229,36 @@ class ETLUtils:
             for record in records:
                 writer.writerow(record)
 
-    @staticmethod
-    def json_to_csv(
-            input_file, output_file, user_field, item_field, rating_field,
-            shuffle=False, transform_ids=False, num_folds=None, delimiter=','):
-
-        records = ETLUtils.load_json_file(input_file)
-        fields = [user_field, item_field, rating_field]
-        records = ETLUtils.select_fields(fields, records)
-        if shuffle:
-            random.shuffle(records)
-        if transform_ids:
-            records = ETLUtils.transform_ids(
-                records, user_field, item_field, rating_field)
-
-        if num_folds is None:
-            ETLUtils.save_csv_file(
-                output_file, records, fields, delimiter)
-            return
-
-        for fold in range(num_folds):
-            split = 1 - (1/float(num_folds))
-            start = float(fold) / num_folds
-            train_records, test_records =\
-                ETLUtils.split_train_test(records, split, False, start)
-
-            ETLUtils.save_csv_file(
-                output_file + "_train_" + str(fold), train_records, fields, delimiter)
-            ETLUtils.save_csv_file(
-                output_file + "_test_" + str(fold), test_records, fields, delimiter)
+    # Use ETLUtils.save_csv_file(file_path, records, headers) instead
+    # @staticmethod
+    # def json_to_csv(
+    #         input_file, output_file, user_field, item_field, rating_field,
+    #         shuffle=False, transform_ids=False, num_folds=None, delimiter=','):
+    #
+    #     records = ETLUtils.load_json_file(input_file)
+    #     fields = [user_field, item_field, rating_field]
+    #     records = ETLUtils.select_fields(fields, records)
+    #     if shuffle:
+    #         random.shuffle(records)
+    #     if transform_ids:
+    #         records = ETLUtils.transform_ids(
+    #             records, user_field, item_field, rating_field)
+    #
+    #     if num_folds is None:
+    #         ETLUtils.save_csv_file(
+    #             output_file, records, fields, delimiter)
+    #         return
+    #
+    #     for fold in range(num_folds):
+    #         split = 1 - (1/float(num_folds))
+    #         start = float(fold) / num_folds
+    #         train_records, test_records =\
+    #             ETLUtils.split_train_test(records, split, False, start)
+    #
+    #         ETLUtils.save_csv_file(
+    #             output_file + "_train_" + str(fold), train_records, fields, delimiter)
+    #         ETLUtils.save_csv_file(
+    #             output_file + "_test_" + str(fold), test_records, fields, delimiter)
 
     @staticmethod
     def transform_ids(records, user_field, item_field, rating_field):
