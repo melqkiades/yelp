@@ -204,9 +204,9 @@ class LdaBasedContext:
                 reviews.append(Review(record['text']))
 
         print('lda num_reviews', len(reviews))
-        print(self.context_rich_topics)
-        print('total_topics', len(self.context_rich_topics))
-        headers = ['rating', 'user_id', 'item_id']
+        # print(self.context_rich_topics)
+        # print('total_topics', len(self.context_rich_topics))
+        headers = ['stars', 'user_id', 'business_id']
         for i in self.context_rich_topics:
             topic_id = 'topic' + str(i[0])
             headers.append(topic_id)
