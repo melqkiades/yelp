@@ -12,4 +12,7 @@ class Review:
         self.nouns = review_utils.get_nouns(self.tagged_words)
         self.senses = None
         self.topics = None
+        self.user_id = None
+        self.item_id = None
+        self.rating = None
 

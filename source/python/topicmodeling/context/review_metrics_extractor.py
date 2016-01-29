@@ -93,7 +93,11 @@ def build_reviews(records):
     reviews = []
     count = 0
     for record in records:
-        reviews.append(Review(record['text']))
+        review = Review(record['text'])
+        review.user_id = record['user_id']
+        review.item_id = record['business_id']
+        review.rating = record['stars']
+        reviews.append(review)
         count += 1
         print('count: %d/%d\r' % (count, len(records))),
 
