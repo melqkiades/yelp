@@ -191,28 +191,6 @@ def get_rated_items(records, user):
         for record in records if record['user_id'] == user]
 
 
-def main():
-
-    dataset = 'hotel'
-    # dataset = 'restaurant'
-
-    my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-
-    my_tagged_records_file = my_folder + 'classified_' + dataset + '_reviews.json'
-    my_tagged_reviews_file = my_folder + 'classified_' + dataset + '_reviews.pkl'
-
-    my_tagged_records = ETLUtils.load_json_file(my_tagged_records_file)
-    with open(my_tagged_reviews_file, 'rb') as read_file:
-        my_tagged_reviews = pickle.load(read_file)
-
-    my_reviews_classifier = ReviewsClassifier()
-    my_reviews_classifier.train(my_tagged_records, my_tagged_reviews)
-
-    print('Trained classifier: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-    my_data_preparer = ContextDataConverter(my_reviews_classifier)
-    my_data_preparer.run(dataset)
-
-
 # start = time.time()
 # main()
 # end = time.time()
