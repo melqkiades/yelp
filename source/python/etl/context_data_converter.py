@@ -1,12 +1,8 @@
-import cPickle as pickle
-import random
 import time
+
 from etl import ETLUtils
 from etl import libfm_converter
-from topicmodeling.context import review_metrics_extractor
 from topicmodeling.context.lda_based_context import LdaBasedContext
-from topicmodeling.context.reviews_classifier import ReviewsClassifier
-from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
 
@@ -33,7 +29,7 @@ class ContextDataConverter:
         # print('Preloaded users and items: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         # train_records = self.reviews_classifier.label_json_reviews(train_records, train_reviews)
-        test_records = self.reviews_classifier.label_json_reviews(test_records, test_reviews)
+        # test_records = self.reviews_classifier.label_json_reviews(test_records, test_reviews)
 
         print('Classified records: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
@@ -71,11 +67,6 @@ class ContextDataConverter:
 
         print('contextual test set size: %d' % len(contextual_test_set))
 
-        print(contextual_test_set[0])
-        print(contextual_test_set[1])
-        print(contextual_test_set[300])
-        print(contextual_test_set[600])
-        print(contextual_test_set[900])
         # specific_contextual_test_set =\
         #     self.lda_based_context.find_contextual_topics(
         #         specific_test_records, test_reviews)
@@ -96,7 +87,7 @@ class ContextDataConverter:
         print('Exported contextual topics: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         return contextual_train_set, contextual_test_set, None, None
-        # return contextual_train_set, contextual_test_set \
+        # return contextual_train_set, contextual_test_set, \
             # specific_contextual_test_set, generic_contextual_test_set
 
     def build_headers(self):
@@ -144,7 +135,7 @@ class ContextDataConverter:
 
         csv_files = [
             csv_train_file,
-            csv_test_file
+            csv_test_file,
             # specific_csv_test_file,
             # generic_csv_test_file
         ]

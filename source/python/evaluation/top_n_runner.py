@@ -16,6 +16,10 @@ DATASET = 'hotel'
 # my_i = 1000
 # SPLIT_PERCENTAGE = '98'
 # DATASET = 'restaurant'
+REVIEW_TYPE = ''
+# REVIEW_TYPE = 'specific_'
+# REVIEW_TYPE = 'generic_'
+
 DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/'
 LIBFM_FOLDER = '/Users/fpena/tmp/libfm-1.42.src/bin/'
 GENERATED_FOLDER = DATASET_FOLDER + 'generated_plain/'
@@ -173,30 +177,6 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
     call(command, stdout=f)
 
 
-def tmp_function():
-
-    training_records_file = '/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_restaurants_shuffled_tagged.json_train'
-    training_records = ETLUtils.load_json_file(training_records_file)
-    reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_restaurant_shuffled.pkl'
-    with open(reviews_file, 'rb') as read_file:
-        reviews = pickle.load(read_file)
-
-    train_reviews = []
-
-    print('training records length', len(training_records))
-
-    for record, review in zip(training_records, reviews):
-        review.user_id = record['user_id']
-        review.item_id = record['business_id']
-        review.rating = record['stars']
-        train_reviews.append(review)
-
-    train_reviews_file = 'train_reviews_restaurant.pkl'
-    print('training reviews length', len(train_reviews))
-
-    with open(train_reviews_file, 'wb') as write_file:
-        pickle.dump(train_reviews, write_file, pickle.HIGHEST_PROTOCOL)
-
 
 
 
@@ -208,7 +188,6 @@ start = time.time()
 # main_libfm()
 # main_evaluate()
 super_main()
-# tmp_function()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)

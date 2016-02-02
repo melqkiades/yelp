@@ -6,7 +6,8 @@ import cPickle as pickle
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
 
-__author__ = 'Osman Baskaya & fpena'
+# Based on the code created by Osman Baskaya
+__author__ = 'fpena'
 
 
 class TopNEvaluator:
@@ -42,6 +43,7 @@ class TopNEvaluator:
         self.user_ids = extractor.get_groupby_list(self.records, 'user_id')
         self.item_ids = extractor.get_groupby_list(self.records, 'business_id')
         print('total users', len(self.user_ids))
+        print('total items', len(self.item_ids))
 
         # self.user_item_map = {}
         #
@@ -62,8 +64,8 @@ class TopNEvaluator:
         # dataset = self.item_type
         # my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
         # output_file = my_folder + 'generated2/' + dataset + '_user_item_map.pkl'
-        # # with open(output_file + '.pkl', 'wb') as write_file:
-        # #     pickle.dump(self.user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
+        # with open(output_file + '.pkl', 'wb') as write_file:
+        #     pickle.dump(self.user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
         #
         # with open(output_file, 'rb') as read_file:
         #     self.user_item_map = pickle.load(read_file)
