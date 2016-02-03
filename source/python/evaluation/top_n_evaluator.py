@@ -12,6 +12,12 @@ __author__ = 'fpena'
 
 class TopNEvaluator:
 
+    USER_ID_FIELD = 'user_id'
+    ITEM_ID_FIELD = 'item_id'
+    RATING_FIELD = 'rating'
+    # ITEM_ID_FIELD = 'business_id'
+    # RATING_FIELD = 'stars'
+
     def __init__(self, records, test_records, item_type, N=10, I=1000,
                  test_reviews=None):
 
@@ -40,8 +46,8 @@ class TopNEvaluator:
         self.reviews_to_predict = None
 
     def initialize(self, user_item_map):
-        self.user_ids = extractor.get_groupby_list(self.records, 'user_id')
-        self.item_ids = extractor.get_groupby_list(self.records, 'business_id')
+        self.user_ids = extractor.get_groupby_list(self.records, self.USER_ID_FIELD)
+        self.item_ids = extractor.get_groupby_list(self.records, self.ITEM_ID_FIELD)
         print('total users', len(self.user_ids))
         print('total items', len(self.item_ids))
 
@@ -82,7 +88,7 @@ class TopNEvaluator:
     def calculate_important_items(self):
         self.important_records = [
             record for record in self.test_records
-            if record['stars'] == 5]  # userItem is 5 rated film
+            if record[self.RATING_FIELD] == 5]  # userItem is 5 rated film
         if self.test_reviews is not None:
             self.important_reviews = [
                 review for review in self.test_reviews
@@ -138,8 +144,8 @@ class TopNEvaluator:
             if self.important_reviews is not None:
                 review = self.important_reviews[i]
 
-            user_id = record['user_id']
-            item_id = record['business_id']
+            user_id = record[self.USER_ID_FIELD]
+            item_id = record[self.ITEM_ID_FIELD]
             # return I many of items
             irrelevant_items = self.get_irrelevant_items(user_id)[:self.I]
 
@@ -154,7 +160,7 @@ class TopNEvaluator:
 
                 for irrelevant_item in irrelevant_items:
                     generated_record = record.copy()
-                    generated_record['business_id'] = irrelevant_item
+                    generated_record[self.ITEM_ID_FIELD] = irrelevant_item
                     all_records_to_predict.append(generated_record)
 
                     if review is not None:
@@ -210,8 +216,8 @@ class TopNEvaluator:
         # self.important_items = self.calculate_important_items(self.test_set)
 
         for record in self.important_records:
-            user_id = record['user_id']
-            item_id = record['business_id']
+            user_id = record[self.USER_ID_FIELD]
+            item_id = record[self.ITEM_ID_FIELD]
             user_item_key = user_id + '|' + item_id
 
             item_rating_map = {}

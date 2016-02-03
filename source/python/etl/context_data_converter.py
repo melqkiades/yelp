@@ -2,6 +2,7 @@ import time
 
 from etl import ETLUtils
 from etl import libfm_converter
+from evaluation.top_n_evaluator import TopNEvaluator
 from topicmodeling.context.lda_based_context import LdaBasedContext
 
 __author__ = 'fpena'
@@ -91,7 +92,7 @@ class ContextDataConverter:
             # specific_contextual_test_set, generic_contextual_test_set
 
     def build_headers(self):
-        self.headers = ['stars', 'user_id', 'business_id']
+        self.headers = [TopNEvaluator.RATING_FIELD, TopNEvaluator.USER_ID_FIELD, TopNEvaluator.ITEM_ID_FIELD]
         # if other_rated_items:
         #     for item_id in self.item_ids:
         #         self.headers.append('rated_' + item_id)
@@ -155,31 +156,6 @@ class ContextDataConverter:
             suffix='.context.libfm')
 
         print('Exported LibFM files: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-
-    # def add_other_rated_items_info(self, records):
-    #
-    #     user_items_map = {}
-    #     for user_id in self.user_ids:
-    #         user_items_map[user_id] = get_rated_items(records, user_id)
-    #
-    #     for record in records:
-    #         for item_id in self.item_ids:
-    #             record['rated_' + item_id] = 0.0
-    #         user_id = record['user_id']
-    #         rated_items = user_items_map[user_id]
-    #         fraction = 1.0/len(rated_items)
-    #
-    #         for rated_item in rated_items:
-    #             record['rated_' + rated_item] = fraction
-    #
-    #     return records
-
-
-def get_rated_items(records, user):
-
-    return [
-        record['business_id']
-        for record in records if record['user_id'] == user]
 
 
 # start = time.time()
