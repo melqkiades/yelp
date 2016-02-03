@@ -1,9 +1,6 @@
 import json
-import time
-import cPickle as pickle
-from etl import ETLUtils
+
 from topicmodeling.context.review import Review
-from tripadvisor.fourcity import extractor
 
 __author__ = 'fpena'
 
@@ -125,10 +122,10 @@ def get_user_ids(reviews):
 
 
 def get_item_ids(reviews):
-    user_ids = set()
+    item_ids = set()
     for review in reviews:
-        user_ids.add(review.user_id)
-    return user_ids
+        item_ids.add(review.item_id)
+    return item_ids
 
 
 
@@ -141,13 +138,13 @@ RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
                DATASET + 's_shuffled_tagged.json'
 # REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + DATASET + '_shuffled.pkl'
 
-start = time.time()
-my_reviews = load_reviews(REVIEWS_FILE)
-print(my_reviews[0].tagged_words[0])
-print(my_reviews[0].tagged_words[0][0])
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# my_reviews = load_reviews(REVIEWS_FILE)
+# print(my_reviews[0].tagged_words[0])
+# print(my_reviews[0].tagged_words[0][0])
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
 
 # start = time.time()
 # my_records = ETLUtils.load_json_file(RECORDS_FILE)
