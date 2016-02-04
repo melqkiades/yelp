@@ -21,7 +21,7 @@ class ContextDataConverter:
         self.lda_based_context = None
 
     def full_cycle(
-            self, train_records, test_records, train_reviews, test_reviews):
+            self, train_records, test_records):
 
         # self.user_ids = extractor.get_groupby_list(records, 'user_id')
         # self.item_ids = extractor.get_groupby_list(records, 'business_id')
@@ -55,16 +55,16 @@ class ContextDataConverter:
 
         print('Filtered data: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        self.lda_based_context = LdaBasedContext(train_records, train_reviews)
+        self.lda_based_context = LdaBasedContext(train_records)
         self.lda_based_context.get_context_rich_topics()
 
         print('Trained LDA Model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         contextual_train_set =\
             self.lda_based_context.find_contextual_topics(
-                train_records, train_reviews)
+                train_records)
         contextual_test_set = self.lda_based_context.find_contextual_topics(
-            test_records, test_reviews)
+            test_records)
 
         print('contextual test set size: %d' % len(contextual_test_set))
 
@@ -100,16 +100,14 @@ class ContextDataConverter:
             topic_id = 'topic' + str(i[0])
             self.headers.append(topic_id)
 
-    def run(self, dataset, output_folder, train_records, test_records,
-            train_reviews=None, test_reviews=None):
+    def run(self, dataset, output_folder, train_records, test_records):
 
         # other_items = False
 
         contextual_train_set, contextual_test_set,\
             specific_contextual_test_set, generic_contextual_test_set =\
             self.full_cycle(
-                train_records, test_records,
-                train_reviews, test_reviews)
+                train_records, test_records)
 
         print('Prepared data: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 

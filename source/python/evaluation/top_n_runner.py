@@ -10,12 +10,12 @@ from evaluation.top_n_evaluator import TopNEvaluator
 __author__ = 'fpena'
 
 
-# my_i = 270
-# SPLIT_PERCENTAGE = '80'
-# ITEM_TYPE = 'hotel'
-my_i = 1000
-SPLIT_PERCENTAGE = '98'
-ITEM_TYPE = 'restaurant'
+my_i = 270
+SPLIT_PERCENTAGE = '80'
+ITEM_TYPE = 'hotel'
+# my_i = 1000
+# SPLIT_PERCENTAGE = '98'
+# ITEM_TYPE = 'restaurant'
 # REVIEW_TYPE = ''
 # REVIEW_TYPE = 'specific_'
 # REVIEW_TYPE = 'generic_'
@@ -28,8 +28,8 @@ LIBFM_FOLDER = '/Users/fpena/tmp/libfm-1.42.src/bin/'
 # GENERATED_FOLDER = DATASET_FOLDER + 'generated/'
 GENERATED_FOLDER = DATASET_FOLDER + 'generated_plain/'
 
-# RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
-RECORDS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
+RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
+# RECORDS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
 
 TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
 TEST_RECORDS_FILE = RECORDS_FILE + '_test'
@@ -207,13 +207,17 @@ def tmp_function():
     print(len(records1))
     print(len(records2))
 
-    for record1, record2 in zip(records1, records2):
-        if record1['user_id'] != record2['user_id']:
-            print('There is a problem with the user ID')
-        if record1['business_id'] != record2['item_id']:
-            print('There is a problem with the item ID')
-        if record1['stars'] != record2['rating']:
-            print('There is a problem with the rating')
+    print(records2[0])
+    tagged_words = records2[0]['tagged_words']
+    print(tagged_words[0][1])
+
+    # for record1, record2 in zip(records1, records2):
+    #     if record1['user_id'] != record2['user_id']:
+    #         print('There is a problem with the user ID')
+    #     if record1['business_id'] != record2['item_id']:
+    #         print('There is a problem with the item ID')
+    #     if record1['stars'] != record2['rating']:
+    #         print('There is a problem with the rating')
 
 
 start = time.time()
@@ -223,8 +227,8 @@ start = time.time()
 # main_converter()
 # main_libfm()
 # main_evaluate()
-super_main()
-# tmp_function()
+# super_main()
+tmp_function()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)

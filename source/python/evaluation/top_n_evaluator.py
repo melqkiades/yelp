@@ -1,5 +1,3 @@
-import copy
-import os
 import random
 import cPickle as pickle
 
@@ -18,8 +16,7 @@ class TopNEvaluator:
     # ITEM_ID_FIELD = 'business_id'
     # RATING_FIELD = 'stars'
 
-    def __init__(self, records, test_records, item_type, N=10, I=1000,
-                 test_reviews=None):
+    def __init__(self, records, test_records, item_type, N=10, I=1000):
 
         self.item_ids = None
         self.user_ids = None
@@ -40,10 +37,6 @@ class TopNEvaluator:
         self.items_to_predict = None
         self.records_to_predict = None
         self.user_item_map = None
-
-        self.test_reviews = test_reviews
-        self.important_reviews = None
-        self.reviews_to_predict = None
 
     def initialize(self, user_item_map):
         self.user_ids = extractor.get_groupby_list(self.records, self.USER_ID_FIELD)
@@ -89,10 +82,6 @@ class TopNEvaluator:
         self.important_records = [
             record for record in self.test_records
             if record[self.RATING_FIELD] == 5]  # userItem is 5 rated film
-        if self.test_reviews is not None:
-            self.important_reviews = [
-                review for review in self.test_reviews
-                if review.rating == 5]
 
     @staticmethod
     def create_top_n_list(rating_list, n):
@@ -132,17 +121,12 @@ class TopNEvaluator:
 
         all_items_to_predict = {}
         all_records_to_predict = []
-        all_reviews_to_predict = []
 
         # print(self.important_items)
 
         # for record in self.important_items:
         for i in range(len(self.important_records)):
             record = self.important_records[i]
-
-            review = None
-            if self.important_reviews is not None:
-                review = self.important_reviews[i]
 
             user_id = record[self.USER_ID_FIELD]
             item_id = record[self.ITEM_ID_FIELD]
@@ -163,36 +147,22 @@ class TopNEvaluator:
                     generated_record[self.ITEM_ID_FIELD] = irrelevant_item
                     all_records_to_predict.append(generated_record)
 
-                    if review is not None:
-                        generated_review = copy.copy(review)
-                        generated_review.item_id = irrelevant_item
-                        all_reviews_to_predict.append(generated_review)
-
         self.items_to_predict = all_items_to_predict
         self.records_to_predict = all_records_to_predict
 
-        if self.important_reviews is not None:
-            self.reviews_to_predict = all_reviews_to_predict
-
         return all_records_to_predict
 
-    def export_records_to_predict(self, records_file, reviews_file=None):
+    def export_records_to_predict(self, records_file):
         if self.records_to_predict is None:
             self.records_to_predict = self.get_records_to_predict()
         ETLUtils.save_json_file(records_file, self.records_to_predict)
         with open(records_file + '.pkl', 'wb') as write_file:
             pickle.dump(self.items_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
-        if reviews_file is not None:
-            with open(reviews_file, 'wb') as write_file:
-                pickle.dump(self.reviews_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
 
-    def load_records_to_predict(self, records_file, reviews_file=None):
+    def load_records_to_predict(self, records_file):
         self.records_to_predict = ETLUtils.load_json_file(records_file)
         with open(records_file + '.pkl', 'rb') as read_file:
             self.items_to_predict = pickle.load(read_file)
-        if reviews_file is not None:
-            with open(reviews_file, 'rb') as read_file:
-                self.reviews_to_predict = pickle.load(read_file)
 
     # def load_predictions(self, predictions_file):
     #     self.predictions =\

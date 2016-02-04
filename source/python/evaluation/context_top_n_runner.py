@@ -31,12 +31,12 @@ GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 
 # Main Files
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
-RECORDS_FILE = DATASET_FOLDER + REVIEW_TYPE + 'yelp_training_set_review_' +\
-               ITEM_TYPE + 's_shuffled_tagged.json'
-# RECORDS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
-# TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
-TRAIN_RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
-               ITEM_TYPE + 's_shuffled_tagged.json_train'
+# RECORDS_FILE = DATASET_FOLDER + REVIEW_TYPE + 'yelp_training_set_review_' +\
+#                ITEM_TYPE + 's_shuffled_tagged.json'
+RECORDS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
+TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
+# TRAIN_RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
+#                ITEM_TYPE + 's_shuffled_tagged.json_train'
 TEST_RECORDS_FILE = RECORDS_FILE + '_test'
 TAGGED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE + '_reviews.json'
 TAGGED_REVIEWS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE + '_reviews.pkl'
@@ -50,12 +50,12 @@ REVIEWS_TO_PREDICT_FILE = GENERATED_FOLDER +\
 # Cache files
 USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_' +\
                      REVIEW_TYPE + 'user_item_map.pkl'
-TRAIN_REVIEWS_FILE = CACHE_FOLDER +\
-                     'train_reviews_' + ITEM_TYPE + '.pkl'
+# TRAIN_REVIEWS_FILE = CACHE_FOLDER +\
+#                      'train_reviews_' + ITEM_TYPE + '.pkl'
 # TRAIN_REVIEWS_FILE = CACHE_FOLDER + REVIEW_TYPE +\
 #                      'train_reviews_' + DATASET + '.pkl'
-TEST_REVIEWS_FILE = CACHE_FOLDER + REVIEW_TYPE +\
-                    'test_reviews_' + ITEM_TYPE + '.pkl'
+# TEST_REVIEWS_FILE = CACHE_FOLDER + REVIEW_TYPE +\
+#                     'test_reviews_' + ITEM_TYPE + '.pkl'
 
 
 def main_split():
@@ -111,14 +111,14 @@ def main_context_export():
 
     with open(USER_ITEM_MAP_FILE, 'rb') as read_file:
         user_item_map = pickle.load(read_file)
-    with open(TEST_REVIEWS_FILE, 'rb') as read_file:
-        test_reviews = pickle.load(read_file)
+    # with open(TEST_REVIEWS_FILE, 'rb') as read_file:
+    #     test_reviews = pickle.load(read_file)
 
     top_n_evaluator =\
-        TopNEvaluator(records, test_records, ITEM_TYPE, 10, I, test_reviews)
+        TopNEvaluator(records, test_records, ITEM_TYPE, 10, I)
     top_n_evaluator.initialize(user_item_map)
     top_n_evaluator.export_records_to_predict(
-        RECORDS_TO_PREDICT_FILE, REVIEWS_TO_PREDICT_FILE)
+        RECORDS_TO_PREDICT_FILE)
 
 
 def main_lda():
@@ -139,20 +139,19 @@ def main_lda():
     # train_reviews = review_metrics_extractor.build_reviews(train_records)
     # with open(TRAIN_REVIEWS_FILE, 'wb') as write_file:
     #     pickle.dump(train_reviews, write_file, pickle.HIGHEST_PROTOCOL)
-    with open(TRAIN_REVIEWS_FILE, 'rb') as read_file:
-        train_reviews = pickle.load(read_file)
+    # with open(TRAIN_REVIEWS_FILE, 'rb') as read_file:
+    #     train_reviews = pickle.load(read_file)
 
     # reviews_to_predict =\
     #     review_metrics_extractor.build_reviews(records_to_predict)
-    with open(REVIEWS_TO_PREDICT_FILE, 'rb') as read_file:
-        reviews_to_predict = pickle.load(read_file)
+    # with open(REVIEWS_TO_PREDICT_FILE, 'rb') as read_file:
+    #     reviews_to_predict = pickle.load(read_file)
 
     # with open(REVIEWS_TO_PREDICT_FILE, 'wb') as write_file:
     #     pickle.dump(reviews_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
 
     my_data_preparer.run(
-        ITEM_TYPE, GENERATED_FOLDER, train_records, records_to_predict,
-        train_reviews, reviews_to_predict
+        ITEM_TYPE, GENERATED_FOLDER, train_records, records_to_predict
     )
 
 
@@ -301,7 +300,7 @@ def main_context_evaluate():
 def super_main_lda():
 
     total_recall = 0.0
-    num_iterations = 10
+    num_iterations = 1
 
     for i in range(num_iterations):
         print('\nCycle: %d' % i)
@@ -309,7 +308,7 @@ def super_main_lda():
         print('main split: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         # main_split()
         print('main export: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        main_context_export()
+        # main_context_export()
         print('main converter: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         main_lda()
         print('main libfm: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
