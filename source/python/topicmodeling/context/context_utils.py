@@ -200,15 +200,15 @@ def is_group_in_review(group, review):
 
 def get_text_from_reviews(reviews):
     """
-    Receives a list[dict] and extracts the text contained in each review.
+    Receives a list[Review] and extracts the text contained in each review.
     Returns a list[str].
 
-    :type reviews: list[dict]
+    :type reviews: list[Review]
     :param reviews:
     """
     text_reviews = []
     for review in reviews:
-        text_reviews.append(review['text'])
+        text_reviews.append(review.text)
 
     return text_reviews
 

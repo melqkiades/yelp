@@ -3,7 +3,7 @@ from topicmodeling.context import review_utils
 __author__ = 'fpena'
 
 
-class Review(object):
+class Review:
 
     def __init__(self, text=None):
         self.id = None

@@ -14,48 +14,45 @@ __author__ = 'fpena'
 
 my_i = 270
 SPLIT_PERCENTAGE = '80'
-ITEM_TYPE = 'hotel'
+DATASET = 'hotel'
 # my_i = 1000
 # SPLIT_PERCENTAGE = '98'
-# ITEM_TYPE = 'restaurant'
+# DATASET = 'restaurant'
 REVIEW_TYPE = ''
 # REVIEW_TYPE = 'specific_'
 # REVIEW_TYPE = 'generic_'
 
 # Folders
 DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/'
-# DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/2nd_generation/'
-
 LIBFM_FOLDER = '/Users/fpena/tmp/libfm-1.42.src/bin/'
 GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 
 # Main Files
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
-# RECORDS_FILE = DATASET_FOLDER + REVIEW_TYPE + 'yelp_training_set_review_' +\
-#                ITEM_TYPE + 's_shuffled_tagged.json'
-RECORDS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
-TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
-# TRAIN_RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
-#                ITEM_TYPE + 's_shuffled_tagged.json_train'
+RECORDS_FILE = DATASET_FOLDER + REVIEW_TYPE + 'yelp_training_set_review_' +\
+               DATASET + 's_shuffled_tagged.json'
+# TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
+TRAIN_RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
+               DATASET + 's_shuffled_tagged.json_train'
 TEST_RECORDS_FILE = RECORDS_FILE + '_test'
-TAGGED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE + '_reviews.json'
-TAGGED_REVIEWS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE + '_reviews.pkl'
+TAGGED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + DATASET + '_reviews.json'
+TAGGED_REVIEWS_FILE = DATASET_FOLDER + 'classified_' + DATASET + '_reviews.pkl'
 
 # Generated files
 RECORDS_TO_PREDICT_FILE = GENERATED_FOLDER +\
-                          'records_to_predict_' + ITEM_TYPE + '.json'
+                          'records_to_predict_' + DATASET + '.json'
 REVIEWS_TO_PREDICT_FILE = GENERATED_FOLDER +\
-                          'reviews_to_predict_' + ITEM_TYPE + '.pkl'
+                          'reviews_to_predict_' + DATASET + '.pkl'
 
 # Cache files
-USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_' +\
+USER_ITEM_MAP_FILE = CACHE_FOLDER + DATASET + '_' +\
                      REVIEW_TYPE + 'user_item_map.pkl'
-# TRAIN_REVIEWS_FILE = CACHE_FOLDER +\
-#                      'train_reviews_' + ITEM_TYPE + '.pkl'
+TRAIN_REVIEWS_FILE = CACHE_FOLDER +\
+                     'train_reviews_' + DATASET + '.pkl'
 # TRAIN_REVIEWS_FILE = CACHE_FOLDER + REVIEW_TYPE +\
 #                      'train_reviews_' + DATASET + '.pkl'
-# TEST_REVIEWS_FILE = CACHE_FOLDER + REVIEW_TYPE +\
-#                     'test_reviews_' + ITEM_TYPE + '.pkl'
+TEST_REVIEWS_FILE = CACHE_FOLDER + REVIEW_TYPE +\
+                    'test_reviews_' + DATASET + '.pkl'
 
 
 def main_split():
@@ -111,14 +108,14 @@ def main_context_export():
 
     with open(USER_ITEM_MAP_FILE, 'rb') as read_file:
         user_item_map = pickle.load(read_file)
-    # with open(TEST_REVIEWS_FILE, 'rb') as read_file:
-    #     test_reviews = pickle.load(read_file)
+    with open(TEST_REVIEWS_FILE, 'rb') as read_file:
+        test_reviews = pickle.load(read_file)
 
     top_n_evaluator =\
-        TopNEvaluator(records, test_records, ITEM_TYPE, 10, I)
+        TopNEvaluator(records, test_records, DATASET, 10, I, test_reviews)
     top_n_evaluator.initialize(user_item_map)
     top_n_evaluator.export_records_to_predict(
-        RECORDS_TO_PREDICT_FILE)
+        RECORDS_TO_PREDICT_FILE, REVIEWS_TO_PREDICT_FILE)
 
 
 def main_lda():
@@ -139,36 +136,37 @@ def main_lda():
     # train_reviews = review_metrics_extractor.build_reviews(train_records)
     # with open(TRAIN_REVIEWS_FILE, 'wb') as write_file:
     #     pickle.dump(train_reviews, write_file, pickle.HIGHEST_PROTOCOL)
-    # with open(TRAIN_REVIEWS_FILE, 'rb') as read_file:
-    #     train_reviews = pickle.load(read_file)
+    with open(TRAIN_REVIEWS_FILE, 'rb') as read_file:
+        train_reviews = pickle.load(read_file)
 
     # reviews_to_predict =\
     #     review_metrics_extractor.build_reviews(records_to_predict)
-    # with open(REVIEWS_TO_PREDICT_FILE, 'rb') as read_file:
-    #     reviews_to_predict = pickle.load(read_file)
+    with open(REVIEWS_TO_PREDICT_FILE, 'rb') as read_file:
+        reviews_to_predict = pickle.load(read_file)
 
     # with open(REVIEWS_TO_PREDICT_FILE, 'wb') as write_file:
     #     pickle.dump(reviews_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
 
     my_data_preparer.run(
-        ITEM_TYPE, GENERATED_FOLDER, train_records, records_to_predict
+        DATASET, GENERATED_FOLDER, train_records, records_to_predict,
+        train_reviews, reviews_to_predict
     )
 
 
 def main_context_libfm():
 
-    no_context_train_file = GENERATED_FOLDER + 'yelp_' + ITEM_TYPE + '_context_shuffled_train5.csv.no_context.libfm'
-    no_context_test_file = GENERATED_FOLDER + 'yelp_' + ITEM_TYPE + '_context_shuffled_test5.csv.no_context.libfm'
-    no_context_predictions_file = GENERATED_FOLDER + 'predictions_' + ITEM_TYPE + '_no_context.txt'
-    no_context_log_file = GENERATED_FOLDER + ITEM_TYPE + '_no_context.log'
+    no_context_train_file = GENERATED_FOLDER + 'yelp_' + DATASET + '_context_shuffled_train5.csv.no_context.libfm'
+    no_context_test_file = GENERATED_FOLDER + 'yelp_' + DATASET + '_context_shuffled_test5.csv.no_context.libfm'
+    no_context_predictions_file = GENERATED_FOLDER + 'predictions_' + DATASET + '_no_context.txt'
+    no_context_log_file = GENERATED_FOLDER + DATASET + '_no_context.log'
     run_libfm(
         no_context_train_file, no_context_test_file,
         no_context_predictions_file, no_context_log_file)
 
-    context_train_file = GENERATED_FOLDER + 'yelp_' + ITEM_TYPE + '_context_shuffled_train5.csv.context.libfm'
-    context_test_file = GENERATED_FOLDER + 'yelp_' + ITEM_TYPE + '_context_shuffled_test5.csv.context.libfm'
-    context_predictions_file = GENERATED_FOLDER + 'predictions_' + ITEM_TYPE + '_context.txt'
-    context_log_file = GENERATED_FOLDER + ITEM_TYPE + '_context.log'
+    context_train_file = GENERATED_FOLDER + 'yelp_' + DATASET + '_context_shuffled_train5.csv.context.libfm'
+    context_test_file = GENERATED_FOLDER + 'yelp_' + DATASET + '_context_shuffled_test5.csv.context.libfm'
+    context_predictions_file = GENERATED_FOLDER + 'predictions_' + DATASET + '_context.txt'
+    context_log_file = GENERATED_FOLDER + DATASET + '_context.log'
     run_libfm(
         context_train_file, context_test_file, context_predictions_file,
         context_log_file)
@@ -237,21 +235,21 @@ def main_context_evaluate():
     test_file = RECORDS_FILE + '_test'
     test_records = ETLUtils.load_json_file(test_file)
 
-    top_n_evaluator = TopNEvaluator(records, test_records, ITEM_TYPE, 10, I)
+    top_n_evaluator = TopNEvaluator(records, test_records, DATASET, 10, I)
     top_n_evaluator.calculate_important_items()
     # top_n_evaluator.initialize()
 
     # records_to_predict_file = DATASET_FOLDER + 'generated/records_to_predict_' + DATASET + '.json'
     top_n_evaluator.load_records_to_predict(RECORDS_TO_PREDICT_FILE)
 
-    predictions_file = GENERATED_FOLDER + 'predictions_' + ITEM_TYPE + '_no_context.txt'
+    predictions_file = GENERATED_FOLDER + 'predictions_' + DATASET + '_no_context.txt'
     predictions = rmse_calculator.read_targets_from_txt(predictions_file)
     # print('total predictions', len(predictions))
     top_n_evaluator.evaluate(predictions)
     # print('precision', top_n_evaluator.precision)
     print('No context recall: %f' % top_n_evaluator.recall)
 
-    predictions_file = GENERATED_FOLDER + 'predictions_' + ITEM_TYPE + '_context.txt'
+    predictions_file = GENERATED_FOLDER + 'predictions_' + DATASET + '_context.txt'
     predictions = rmse_calculator.read_targets_from_txt(predictions_file)
     # print('total predictions', len(predictions))
     top_n_evaluator.evaluate(predictions)
@@ -308,7 +306,7 @@ def super_main_lda():
         print('main split: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         # main_split()
         print('main export: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        # main_context_export()
+        main_context_export()
         print('main converter: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         main_lda()
         print('main libfm: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -323,8 +321,8 @@ def super_main_lda():
 
 def experiment():
 
-    reviews_file = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
-    records_file = DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
+    reviews_file = DATASET_FOLDER + 'reviews_' + DATASET + '_shuffled.pkl'
+    records_file = DATASET_FOLDER + 'yelp_training_set_review_' + DATASET + 's_shuffled_tagged.json'
     with open(reviews_file, 'rb') as read_file:
         reviews = pickle.load(read_file)
 
@@ -353,10 +351,10 @@ def experiment():
     print('generic reviews length', len(generic_reviews))
     print('generic records length', len(generic_reviews))
 
-    specific_records_file = DATASET_FOLDER + 'specific_yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
-    generic_records_file = DATASET_FOLDER + 'generic_yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
-    specific_reviews_file = DATASET_FOLDER + 'specific_reviews_' + ITEM_TYPE + '_shuffled.pkl'
-    generic_reviews_file = DATASET_FOLDER + 'generic_reviews_' + ITEM_TYPE + '_shuffled.pkl'
+    specific_records_file = DATASET_FOLDER + 'specific_yelp_training_set_review_' + DATASET + 's_shuffled_tagged.json'
+    generic_records_file = DATASET_FOLDER + 'generic_yelp_training_set_review_' + DATASET + 's_shuffled_tagged.json'
+    specific_reviews_file = DATASET_FOLDER + 'specific_reviews_' + DATASET + '_shuffled.pkl'
+    generic_reviews_file = DATASET_FOLDER + 'generic_reviews_' + DATASET + '_shuffled.pkl'
     with open(specific_reviews_file, 'wb') as write_file:
         pickle.dump(specific_reviews, write_file, pickle.HIGHEST_PROTOCOL)
     with open(generic_reviews_file, 'wb') as write_file:
@@ -416,7 +414,7 @@ def tmp_function():
 
     print(TRAIN_REVIEWS_FILE)
 
-    reviews_file = DATASET_FOLDER + REVIEW_TYPE + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
+    reviews_file = DATASET_FOLDER + REVIEW_TYPE + 'reviews_' + DATASET + '_shuffled.pkl'
     print(reviews_file)
 
     with open(reviews_file, 'rb') as read_file:

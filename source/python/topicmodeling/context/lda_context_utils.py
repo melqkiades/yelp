@@ -19,7 +19,7 @@ def update_reviews_with_topics(topic_model, corpus_list, reviews):
     # print('reviews length', len(reviews))
 
     for review, corpus in zip(reviews, corpus_list):
-        review['topics'] = topic_model.get_document_topics(corpus)
+        review.topics = topic_model.get_document_topics(corpus)
 
 
 def calculate_topic_weighted_frequency(topic, reviews):
@@ -34,7 +34,7 @@ def calculate_topic_weighted_frequency(topic, reviews):
     num_reviews = 0.0
 
     for review in reviews:
-        for review_topic in review['topics']:
+        for review_topic in review.topics:
             if topic == review_topic[0]:
                 num_reviews += 1
 

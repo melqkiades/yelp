@@ -12,40 +12,24 @@ __author__ = 'fpena'
 
 my_i = 270
 SPLIT_PERCENTAGE = '80'
-ITEM_TYPE = 'hotel'
+DATASET = 'hotel'
 # my_i = 1000
 # SPLIT_PERCENTAGE = '98'
-# ITEM_TYPE = 'restaurant'
-# REVIEW_TYPE = ''
+# DATASET = 'restaurant'
+REVIEW_TYPE = ''
 # REVIEW_TYPE = 'specific_'
 # REVIEW_TYPE = 'generic_'
 
-# DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/2nd_generation/'
 DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/'
-
 LIBFM_FOLDER = '/Users/fpena/tmp/libfm-1.42.src/bin/'
-
-# GENERATED_FOLDER = DATASET_FOLDER + 'generated/'
 GENERATED_FOLDER = DATASET_FOLDER + 'generated_plain/'
-
-RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
-# RECORDS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
-
+RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' + DATASET + 's_shuffled_tagged.json'
 TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
 TEST_RECORDS_FILE = RECORDS_FILE + '_test'
-RECORDS_TO_PREDICT_FILE = GENERATED_FOLDER + 'records_to_predict_' + ITEM_TYPE + '.json'
+RECORDS_TO_PREDICT_FILE = GENERATED_FOLDER + 'records_to_predict_' + DATASET + '.json'
 
-# CACHE_FOLDER = DATASET_FOLDER + 'cache/'
 CACHE_FOLDER = DATASET_FOLDER + 'cache_plain/'
-
-USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_user_item_map.pkl'
-
-FIELDS = [
-    TopNEvaluator.RATING_FIELD,
-    TopNEvaluator.USER_ID_FIELD,
-    TopNEvaluator.ITEM_ID_FIELD
-]
-
+USER_ITEM_MAP_FILE = CACHE_FOLDER + DATASET + '_user_item_map.pkl'
 
 
 def main_split():
@@ -67,10 +51,8 @@ def main_export():
 
     records = ETLUtils.load_json_file(RECORDS_FILE)
     print('num_records', len(records))
-    records = ETLUtils.select_fields(FIELDS, records)
 
     test_records = ETLUtils.load_json_file(TEST_RECORDS_FILE)
-    test_records = ETLUtils.select_fields(FIELDS, test_records)
     # test_reviews = review_metrics_extractor.build_reviews(test_records)
     # with open(TEST_REVIEWS_FILE, 'wb') as write_file:
     #     pickle.dump(test_reviews, write_file, pickle.HIGHEST_PROTOCOL)
@@ -82,7 +64,7 @@ def main_export():
     with open(USER_ITEM_MAP_FILE, 'rb') as read_file:
         user_item_map = pickle.load(read_file)
 
-    top_n_evaluator = TopNEvaluator(records, test_records, ITEM_TYPE, 10, I)
+    top_n_evaluator = TopNEvaluator(records, test_records, DATASET, 10, I)
     top_n_evaluator.initialize(user_item_map)
 
     top_n_evaluator.export_records_to_predict(RECORDS_TO_PREDICT_FILE)
@@ -92,21 +74,19 @@ def main_evaluate():
     I = my_i
 
     records = ETLUtils.load_json_file(RECORDS_FILE)
-    records = ETLUtils.select_fields(FIELDS, records)
     # print('num_records', len(records))
 
     test_file = RECORDS_FILE + '_test'
     test_records = ETLUtils.load_json_file(test_file)
-    test_records = ETLUtils.select_fields(FIELDS, test_records)
 
-    top_n_evaluator = TopNEvaluator(records, test_records, ITEM_TYPE, 10, I)
+    top_n_evaluator = TopNEvaluator(records, test_records, DATASET, 10, I)
     top_n_evaluator.calculate_important_items()
     # top_n_evaluator.initialize()
 
     # records_to_predict_file = DATASET_FOLDER + 'generated/records_to_predict_' + DATASET + '.json'
     top_n_evaluator.load_records_to_predict(RECORDS_TO_PREDICT_FILE)
 
-    predictions_file = GENERATED_FOLDER + 'predictions_' + ITEM_TYPE + '.txt'
+    predictions_file = GENERATED_FOLDER + 'predictions_' + DATASET + '.txt'
     predictions = rmse_calculator.read_targets_from_txt(predictions_file)
 
     # print('total predictions', len(predictions))
@@ -119,13 +99,13 @@ def main_evaluate():
 
 def main_converter():
 
-    csv_train_file = GENERATED_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_train.csv'
-    csv_test_file = GENERATED_FOLDER + 'records_to_predict_' + ITEM_TYPE + '.csv'
+    csv_train_file = GENERATED_FOLDER + 'yelp_training_set_review_' + DATASET + 's_shuffled_train.csv'
+    csv_test_file = GENERATED_FOLDER + 'records_to_predict_' + DATASET + '.csv'
 
     # ETLUtils.json_to_csv(TRAIN_RECORDS_FILE, csv_train_file, 'user_id', 'business_id', 'stars', False, True)
     # ETLUtils.json_to_csv(RECORDS_TO_PREDICT_FILE, csv_test_file, 'user_id', 'business_id', 'stars', False, True)
 
-    headers = FIELDS
+    headers = ['stars', 'user_id', 'business_id']
     train_records = ETLUtils.load_json_file(TRAIN_RECORDS_FILE)
     records_to_predict = ETLUtils.load_json_file(RECORDS_TO_PREDICT_FILE)
     train_records = ETLUtils.select_fields(headers, train_records)
@@ -144,10 +124,10 @@ def main_converter():
 
 def main_libfm():
 
-    train_file = GENERATED_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_train.csv.libfm'
-    test_file = GENERATED_FOLDER + 'records_to_predict_' + ITEM_TYPE + '.csv.libfm'
-    predictions_file = GENERATED_FOLDER + 'predictions_' + ITEM_TYPE + '.txt'
-    log_file = GENERATED_FOLDER + ITEM_TYPE + '.log'
+    train_file = GENERATED_FOLDER + 'yelp_training_set_review_' + DATASET + 's_shuffled_train.csv.libfm'
+    test_file = GENERATED_FOLDER + 'records_to_predict_' + DATASET + '.csv.libfm'
+    predictions_file = GENERATED_FOLDER + 'predictions_' + DATASET + '.txt'
+    log_file = GENERATED_FOLDER + DATASET + '.log'
 
     run_libfm(train_file, test_file, predictions_file, log_file)
 
@@ -160,15 +140,15 @@ def super_main():
     for i in range(num_iterations):
         print('\nCycle: %d' % i)
 
-        print('%s: main split' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('main split')
         main_split()
-        print('%s: main export' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('main export')
         main_export()
-        print('%s: main converter' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('main converter')
         main_converter()
-        print('%s: main libfm' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('main libfm')
         main_libfm()
-        print('%s: main evaluate' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('main evaluate')
         total_recall += main_evaluate()
 
     average_recall = total_recall / num_iterations
@@ -197,27 +177,7 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
     call(command, stdout=f)
 
 
-def tmp_function():
-    RECORDS_FILE1 = DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's_shuffled_tagged.json'
-    RECORDS_FILE2 = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.json'
 
-    records1 = ETLUtils.load_json_file(RECORDS_FILE1)
-    records2 = ETLUtils.load_json_file(RECORDS_FILE2)
-
-    print(len(records1))
-    print(len(records2))
-
-    print(records2[0])
-    tagged_words = records2[0]['tagged_words']
-    print(tagged_words[0][1])
-
-    # for record1, record2 in zip(records1, records2):
-    #     if record1['user_id'] != record2['user_id']:
-    #         print('There is a problem with the user ID')
-    #     if record1['business_id'] != record2['item_id']:
-    #         print('There is a problem with the item ID')
-    #     if record1['stars'] != record2['rating']:
-    #         print('There is a problem with the rating')
 
 
 start = time.time()
@@ -227,8 +187,7 @@ start = time.time()
 # main_converter()
 # main_libfm()
 # main_evaluate()
-# super_main()
-tmp_function()
+super_main()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)
