@@ -9,6 +9,7 @@ import numpy as np
 import time
 from topicmodeling.context.senses_group import SenseGroup
 from topicmodeling.context.review import Review
+from utils import constants
 
 __author__ = 'fpena'
 
@@ -203,12 +204,12 @@ def get_text_from_reviews(reviews):
     Receives a list[Review] and extracts the text contained in each review.
     Returns a list[str].
 
-    :type reviews: list[Review]
+    :type reviews: list[dict]
     :param reviews:
     """
     text_reviews = []
     for review in reviews:
-        text_reviews.append(review.text)
+        text_reviews.append(review[constants.TEXT_FIELD])
 
     return text_reviews
 

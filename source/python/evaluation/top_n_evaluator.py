@@ -1,5 +1,4 @@
 import copy
-import os
 import random
 import cPickle as pickle
 
@@ -7,13 +6,14 @@ from etl import ETLUtils
 from tripadvisor.fourcity import extractor
 
 # Based on the code created by Osman Baskaya
+from utils import constants
+
 __author__ = 'fpena'
 
 
 class TopNEvaluator:
 
-    def __init__(self, records, test_records, item_type, N=10, I=1000,
-                 test_reviews=None):
+    def __init__(self, records, test_records, item_type, N=10, I=1000):
 
         self.item_ids = None
         self.user_ids = None
@@ -35,43 +35,16 @@ class TopNEvaluator:
         self.records_to_predict = None
         self.user_item_map = None
 
-        self.test_reviews = test_reviews
-        self.important_reviews = None
-        self.reviews_to_predict = None
-
     def initialize(self, user_item_map):
-        self.user_ids = extractor.get_groupby_list(self.records, 'user_id')
-        self.item_ids = extractor.get_groupby_list(self.records, 'business_id')
+        self.user_ids =\
+            extractor.get_groupby_list(self.records, constants.USER_ID_FIELD)
+        self.item_ids =\
+            extractor.get_groupby_list(self.records, constants.ITEM_ID_FIELD)
         print('total users', len(self.user_ids))
         print('total items', len(self.item_ids))
-
-        # self.user_item_map = {}
-        #
-
-        # user_count = 0
-        #
-        # for user_id in self.user_ids:
-        #     user_records =\
-        #         ETLUtils.filter_records(self.dataset, 'user_id', [user_id])
-        #     user_items = extractor.get_groupby_list(user_records, 'business_id')
-        #     self.user_item_map[user_id] = user_items
-        #     user_count += 1
-        #
-        #     # print("user count %d" % user_count),
-        #     print 'user count: {0}\r'.format(user_count),
-        #
-        # print
-        # dataset = self.item_type
-        # my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-        # output_file = my_folder + 'generated2/' + dataset + '_user_item_map.pkl'
-        # with open(output_file + '.pkl', 'wb') as write_file:
-        #     pickle.dump(self.user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
-        #
-        # with open(output_file, 'rb') as read_file:
-        #     self.user_item_map = pickle.load(read_file)
         self.user_item_map = user_item_map
 
-        self.calculate_important_items()
+        self.find_important_records()
 
     def get_irrelevant_items(self, user_id):
         user_items = self.user_item_map[user_id]
@@ -79,28 +52,17 @@ class TopNEvaluator:
         random.shuffle(diff_items)
         return diff_items
 
-    def calculate_important_items(self):
+    def find_important_records(self):
         self.important_records = [
             record for record in self.test_records
-            if record['stars'] == 5]  # userItem is 5 rated film
-        if self.test_reviews is not None:
-            self.important_reviews = [
-                review for review in self.test_reviews
-                if review.rating == 5]
+            if record[constants.RATING_FIELD] == 5]  # userItem is 5 rated film
 
     @staticmethod
     def create_top_n_list(rating_list, n):
         sorted_list = sorted(
             rating_list, key=rating_list.get, reverse=True)
-        # sorted_list = sorted(
-        #     rating_list, key=operator.itemgetter('stars'), reverse=True)
 
         return sorted_list[:n]
-
-        # rating_array = numpy.array(rating_list)
-        # I = numpy.argsort(rating_array[:, 1])
-        # top_n_list = rating_array[I, :]
-        # return top_n_list[-n:]  # negative. This is asc. We need high values
 
     def calculate_precision(self):
         return self.calculate_recall() / self.N
@@ -126,25 +88,18 @@ class TopNEvaluator:
 
         all_items_to_predict = {}
         all_records_to_predict = []
-        all_reviews_to_predict = []
 
-        # print(self.important_items)
-
-        # for record in self.important_items:
         for i in range(len(self.important_records)):
             record = self.important_records[i]
 
-            review = None
-            if self.important_reviews is not None:
-                review = self.important_reviews[i]
-
-            user_id = record['user_id']
-            item_id = record['business_id']
+            user_id = record[constants.USER_ID_FIELD]
+            item_id = record[constants.ITEM_ID_FIELD]
             # return I many of items
             irrelevant_items = self.get_irrelevant_items(user_id)[:self.I]
 
             if len(irrelevant_items) != self.I:
-                print('Irrelevant items size is', len(irrelevant_items), user_id, item_id)
+                print('Irrelevant items size is',
+                      len(irrelevant_items), user_id, item_id)
 
             if irrelevant_items is not None:
                 # add our relevant item for prediction
@@ -154,39 +109,26 @@ class TopNEvaluator:
 
                 for irrelevant_item in irrelevant_items:
                     generated_record = record.copy()
-                    generated_record['business_id'] = irrelevant_item
+                    generated_record[constants.ITEM_ID_FIELD] = irrelevant_item
                     all_records_to_predict.append(generated_record)
-
-                    if review is not None:
-                        generated_review = copy.copy(review)
-                        generated_review.item_id = irrelevant_item
-                        all_reviews_to_predict.append(generated_review)
 
         self.items_to_predict = all_items_to_predict
         self.records_to_predict = all_records_to_predict
 
-        if self.important_reviews is not None:
-            self.reviews_to_predict = all_reviews_to_predict
-
         return all_records_to_predict
 
-    def export_records_to_predict(self, records_file, reviews_file=None):
+    def export_records_to_predict(self, records_file):
         if self.records_to_predict is None:
             self.records_to_predict = self.get_records_to_predict()
         ETLUtils.save_json_file(records_file, self.records_to_predict)
         with open(records_file + '.pkl', 'wb') as write_file:
-            pickle.dump(self.items_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
-        if reviews_file is not None:
-            with open(reviews_file, 'wb') as write_file:
-                pickle.dump(self.reviews_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(
+                self.items_to_predict, write_file, pickle.HIGHEST_PROTOCOL)
 
-    def load_records_to_predict(self, records_file, reviews_file=None):
+    def load_records_to_predict(self, records_file):
         self.records_to_predict = ETLUtils.load_json_file(records_file)
         with open(records_file + '.pkl', 'rb') as read_file:
             self.items_to_predict = pickle.load(read_file)
-        if reviews_file is not None:
-            with open(reviews_file, 'rb') as read_file:
-                self.reviews_to_predict = pickle.load(read_file)
 
     # def load_predictions(self, predictions_file):
     #     self.predictions =\
@@ -194,24 +136,16 @@ class TopNEvaluator:
 
     def evaluate(self, predictions):
 
-        # print('num_items', len(self.item_ids))
         print('num_important_items', len(self.important_records))
         print('num_predictions', len(predictions))
         print('I', self.I)
         assert len(predictions) == len(self.important_records) * (self.I + 1)
 
-        # for record in self.important_items:
-        #     print(record['user_id'], record['business_id'], record['stars'])
-
-        # if self.items_to_predict is None:
-        #     self.get_records_to_predict()
-
         index = 0
-        # self.important_items = self.calculate_important_items(self.test_set)
 
         for record in self.important_records:
-            user_id = record['user_id']
-            item_id = record['business_id']
+            user_id = record[constants.USER_ID_FIELD]
+            item_id = record[constants.ITEM_ID_FIELD]
             user_item_key = user_id + '|' + item_id
 
             item_rating_map = {}
@@ -219,7 +153,6 @@ class TopNEvaluator:
 
             assert len(irrelevant_items) == self.I + 1
             for irrelevant_item in irrelevant_items:
-                # key = str(user_id) + '|' + str(item_id)
                 rating = predictions[index]
                 item_rating_map[irrelevant_item] = rating
 

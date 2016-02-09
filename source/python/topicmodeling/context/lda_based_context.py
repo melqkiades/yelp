@@ -1,6 +1,5 @@
 from gensim.models import ldamodel
 
-import time
 import operator
 from gensim import corpora
 import cPickle as pickle
@@ -8,19 +7,15 @@ import numpy
 from etl import ETLUtils
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
-from topicmodeling.context import reviews_clusterer
-from topicmodeling.context.review import Review
-from topicmodeling.context.reviews_classifier import ReviewsClassifier
-from topicmodeling.context import review_metrics_extractor
+from utils import constants
 
 __author__ = 'fpena'
 
 
 class LdaBasedContext:
 
-    def __init__(self, records, reviews=None):
+    def __init__(self, records):
         self.records = records
-        self.reviews = reviews
         self.alpha = 0.005
         self.beta = 1.0
         self.epsilon = 0.01
@@ -37,75 +32,32 @@ class LdaBasedContext:
         # self.training_reviews_file = None
         self.context_rich_topics = None
 
-        self.init_reviews()
+        # self.init_reviews()
 
-    def init_reviews(self):
-        if not self.reviews:
-            self.init_from_records(self.records)
-
-    def init_from_records(self, records):
-        self.reviews = []
-
-        index = 0
-        print('num_reviews', len(self.records))
-        for record in self.records:
-            self.reviews.append(Review(record['text']))
-            print('index', index)
-            index += 1
+    # def init_reviews(self):
+    #     if not self.reviews:
+    #         self.init_from_records(self.records)
+    #
+    # def init_from_records(self, records):
+    #     self.reviews = []
+    #
+    #     index = 0
+    #     print('num_reviews', len(self.records))
+    #     for record in self.records:
+    #         self.reviews.append(Review(record[constants.TEXT_FIELD]))
+    #         print('index', index)
+    #         index += 1
 
     def separate_reviews(self):
-        """
-        Separates the reviews into specific and generic. The separation is done
-        by clustering
-
-        """
-        # print('separating reviews', time.strftime("%H:%M:%S"))
-
-        cluster_labels = reviews_clusterer.cluster_reviews(self.reviews)
-        review_clusters =\
-            reviews_clusterer.split_list_by_labels(self.reviews, cluster_labels)
-
-        self.specific_reviews = review_clusters[0]
-        self.generic_reviews = review_clusters[1]
-
-        # print('specific reviews', len(self.specific_reviews))
-        # print('generic reviews', len(self.generic_reviews))
-        # print('finished separating reviews', time.strftime("%H:%M:%S"))
-
-    # def separate_reviews_by_classifier(self):
-    #
-    #     reviews_classifier = ReviewsClassifier()
-    #     train_records = ETLUtils.load_json_file(self.training_set_file)
-    #     train_reviews = None
-    #     if self.training_reviews_file is None:
-    #         with open(self.training_reviews_file, 'rb') as read_file:
-    #             train_reviews = pickle.load(read_file)
-    #     reviews_classifier.train(train_records, train_reviews)
-    #
-    #     metrics = numpy.zeros((len(self.reviews), 2))
-    #
-    #     for index in range(len(self.reviews)):
-    #         metrics[index] =\
-    #             review_metrics_extractor.get_review_metrics(self.reviews[index])
-    #
-    #     predictions = reviews_classifier.predict(metrics)
-    #
-    #     review_clusters =\
-    #         reviews_clusterer.split_list_by_labels(self.reviews, predictions)
-    #
-    #     self.specific_reviews = review_clusters[1]
-    #     self.generic_reviews = review_clusters[0]
-
-    def separate_reviews2(self):
 
         self.specific_reviews = []
         self.generic_reviews = []
 
-        for record, review in zip(self.records, self.reviews):
-            if record['predicted_class'] == 'specific':
-                self.specific_reviews.append(review)
-            if record['predicted_class'] == 'generic':
-                self.generic_reviews.append(review)
+        for record in self.records:
+            if record[constants.PREDICTED_CLASS_FIELD] == 'specific':
+                self.specific_reviews.append(record)
+            if record[constants.PREDICTED_CLASS_FIELD] == 'generic':
+                self.generic_reviews.append(record)
 
     def get_context_rich_topics(self):
         """
@@ -117,19 +69,15 @@ class LdaBasedContext:
         the topic and the second position indicates the specific/generic
         frequency ratio
         """
-        # self.separate_reviews()
-        # self.separate_reviews_by_classifier()
-        self.separate_reviews2()
+        self.separate_reviews()
 
         specific_reviews_text =\
             context_utils.get_text_from_reviews(self.specific_reviews)
         generic_reviews_text =\
             context_utils.get_text_from_reviews(self.generic_reviews)
 
-        self.words = lda_context_utils.create_bag_of_words(
+        specific_bow = lda_context_utils.create_bag_of_words(
             specific_reviews_text)
-        specific_bow = \
-            self.words
         generic_bow =\
             lda_context_utils.create_bag_of_words(generic_reviews_text)
 
@@ -143,6 +91,7 @@ class LdaBasedContext:
         generic_corpus =\
             [generic_dictionary.doc2bow(text) for text in generic_bow]
 
+        # numpy.random.seed(0)
         self.topic_model = ldamodel.LdaModel(
             specific_corpus, id2word=specific_dictionary,
             # num_topics=self.num_topics, minimum_probability=self.epsilon)
@@ -160,7 +109,7 @@ class LdaBasedContext:
 
         for topic in range(self.num_topics):
             weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
-                topic, self.reviews)
+                topic, self.records)
             specific_weighted_frq = \
                 lda_context_utils.calculate_topic_weighted_frequency(
                     topic, self.specific_reviews)
@@ -196,17 +145,13 @@ class LdaBasedContext:
 
         return sorted_topics
 
-    def find_contextual_topics(self, records, reviews=None):
+    def find_contextual_topics(self, records):
 
-        if reviews is None:
-            reviews = []
-            for record in records:
-                reviews.append(Review(record['text']))
-
-        print('lda num_reviews', len(reviews))
-        # print(self.context_rich_topics)
-        # print('total_topics', len(self.context_rich_topics))
-        headers = ['stars', 'user_id', 'business_id']
+        headers = [
+            constants.RATING_FIELD,
+            constants.USER_ID_FIELD,
+            constants.ITEM_ID_FIELD
+        ]
         for i in self.context_rich_topics:
             topic_id = 'topic' + str(i[0])
             headers.append(topic_id)
@@ -214,9 +159,11 @@ class LdaBasedContext:
         # output_records = []
 
         for record in records:
+            # numpy.random.seed(0)
             topic_distribution =\
                 lda_context_utils.get_topic_distribution(
                     record['text'], self.topic_model)
+            record[constants.TOPICS_FIELD] = topic_distribution
 
             # output_record = {}
             # record['user_id'] = record['user_id']
@@ -243,13 +190,7 @@ class LdaBasedContext:
         # reviews_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_restaurants_shuffled.json"
         # binary_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_restaurant_shuffled.pkl'
         records = ETLUtils.load_json_file(records_file)
-        reviews = None
-
-        if binary_reviews_file is not None:
-            with open(binary_reviews_file, 'rb') as read_file:
-                reviews = pickle.load(read_file)
-
-        output_records, headers = self.find_contextual_topics(records, reviews)
+        output_records, headers = self.find_contextual_topics(records)
 
         # json_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_restaurant_context_shuffled.json"
         # csv_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_restaurant_context_shuffled.csv"

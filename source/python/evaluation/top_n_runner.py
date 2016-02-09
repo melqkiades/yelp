@@ -80,7 +80,7 @@ def main_evaluate():
     test_records = ETLUtils.load_json_file(test_file)
 
     top_n_evaluator = TopNEvaluator(records, test_records, DATASET, 10, I)
-    top_n_evaluator.calculate_important_items()
+    top_n_evaluator.find_important_records()
     # top_n_evaluator.initialize()
 
     # records_to_predict_file = DATASET_FOLDER + 'generated/records_to_predict_' + DATASET + '.json'
