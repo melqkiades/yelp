@@ -1,6 +1,12 @@
+from multiprocessing import Pool
+import os
+import random
 from subprocess import call
+import tempfile
 import time
 import cPickle as pickle
+import traceback
+import uuid
 from etl import ETLUtils
 from etl import libfm_converter
 from evaluation import rmse_calculator
@@ -13,7 +19,7 @@ __author__ = 'fpena'
 
 
 my_i = 270
-SPLIT_PERCENTAGE = '80'
+SPLIT_PERCENTAGE = 80
 DATASET = 'hotel'
 # my_i = 1000
 # SPLIT_PERCENTAGE = '98'
@@ -31,18 +37,6 @@ GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
 RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
                DATASET + 's_shuffled_tagged.json'
-# TRAIN_RECORDS_FILE = RECORDS_FILE + '_train'
-TRAIN_RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
-               DATASET + 's_shuffled_tagged.json_train'
-TEST_RECORDS_FILE = RECORDS_FILE + '_test'
-
-# Generated files
-RECORDS_TO_PREDICT_FILE = GENERATED_FOLDER +\
-                          'records_to_predict_' + DATASET + '.json'
-NO_CONTEXT_PREDICTIONS_FILE = GENERATED_FOLDER + 'predictions_' +\
-            DATASET + '_no_context.txt'
-CONTEXT_PREDICTIONS_FILE =\
-            GENERATED_FOLDER + 'predictions_' + DATASET + '_context.txt'
 
 # Cache files
 USER_ITEM_MAP_FILE = CACHE_FOLDER + DATASET + '_' + 'user_item_map.pkl'
@@ -134,31 +128,87 @@ class ContextTopNRunner(object):
         self.headers = None
         self.important_records = None
         self.context_rich_topics = None
+        self.csv_train_file = None
+        self.csv_test_file = None
+        self.context_predictions_file = None
+        self.context_train_file = None
+        self.context_test_file = None
+        self.context_log_file = None
+        self.no_context_predictions_file = None
+        self.no_context_train_file = None
+        self.no_context_test_file = None
+        self.no_context_log_file = None
 
-    @staticmethod
-    def split():
+    def clear(self):
+        print('clear: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        print('main split: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        self.records = None
+        self.train_records = None
+        self.test_records = None
+        self.records_to_predict = None
+        self.top_n_evaluator = None
+        self.headers = None
+        self.important_records = None
+        self.context_rich_topics = None
 
-        split_command = DATASET_FOLDER + 'split_file.sh'
+        os.remove(self.csv_train_file)
+        os.remove(self.csv_test_file)
+        os.remove(self.context_predictions_file)
+        os.remove(self.context_train_file)
+        os.remove(self.context_test_file)
+        os.remove(self.context_log_file)
+        os.remove(self.no_context_predictions_file)
+        os.remove(self.no_context_train_file)
+        os.remove(self.no_context_test_file)
+        os.remove(self.no_context_log_file)
 
-        command = [
-            split_command,
-            RECORDS_FILE,
-            RECORDS_FILE,
-            SPLIT_PERCENTAGE
-        ]
+        self.csv_train_file = None
+        self.csv_test_file = None
+        self.context_predictions_file = None
+        self.context_train_file = None
+        self.context_test_file = None
+        self.context_log_file = None
+        self.no_context_predictions_file = None
+        self.no_context_train_file = None
+        self.no_context_test_file = None
+        self.no_context_log_file = None
 
-        call(command)
+    def create_tmp_file_names(self):
+        
+        unique_id = uuid.uuid4().hex
+        prefix = GENERATED_FOLDER + unique_id + '_' + DATASET
+        
+        self.csv_train_file = prefix + '_context_train.csv'
+        self.csv_test_file = prefix + '_context_test.csv'
+        self.context_predictions_file = prefix + '_context_predictions.txt'
+        self.context_train_file = self.csv_train_file + '.context.libfm'
+        self.context_test_file = self.csv_test_file + '.context.libfm'
+        self.context_log_file = prefix + '_context.log'
+        self.no_context_predictions_file =\
+            prefix + '_no_context_predictions.txt'
+        self.no_context_train_file = self.csv_train_file + '.no_context.libfm'
+        self.no_context_test_file = self.csv_test_file + '.no_context.libfm'
+        self.no_context_log_file = prefix + '_no_context.log'
+
+    def load(self):
+        print('load: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        self.records = ETLUtils.load_json_file(RECORDS_FILE)
+        print('num_records', len(self.records))
+
+    def shuffle(self):
+        print('shuffle: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        random.shuffle(self.records)
+
+    def split(self):
+        print('split: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        num_records = len(self.records)
+        num_split_records = int(float(SPLIT_PERCENTAGE)/100*num_records)
+        self.train_records = self.records[:num_split_records]
+        self.test_records = self.records[num_split_records:]
 
     def export(self):
         print('export: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         I = my_i
-
-        self.records = ETLUtils.load_json_file(RECORDS_FILE)
-        print('num_records', len(self.records))
-
-        self.test_records = ETLUtils.load_json_file(TEST_RECORDS_FILE)
 
         if REVIEW_TYPE:
             self.records = ETLUtils.filter_records(
@@ -167,35 +217,31 @@ class ContextTopNRunner(object):
                 self.test_records, constants.PREDICTED_CLASS_FIELD,
                 [REVIEW_TYPE])
 
-        user_item_map = create_user_item_map(self.records)
-
-        with open(USER_ITEM_MAP_FILE, 'wb') as write_file:
-            pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
-
         with open(USER_ITEM_MAP_FILE, 'rb') as read_file:
             user_item_map = pickle.load(read_file)
 
         self.top_n_evaluator = TopNEvaluator(
             self.records, self.test_records, DATASET, 10, I)
         self.top_n_evaluator.initialize(user_item_map)
-        self.top_n_evaluator.export_records_to_predict(RECORDS_TO_PREDICT_FILE)
+        self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
+        # self.top_n_evaluator.export_records_to_predict(RECORDS_TO_PREDICT_FILE)
         self.important_records = self.top_n_evaluator.important_records
 
     def train_topic_model(self):
         print('train topic model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        self.train_records = ETLUtils.load_json_file(TRAIN_RECORDS_FILE)
+        # self.train_records = ETLUtils.load_json_file(TRAIN_RECORDS_FILE)
         lda_based_context = LdaBasedContext(self.train_records)
         lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
 
         print('Trained LDA Model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        #
+
         # with open(TOPIC_MODEL_FILE, 'wb') as write_file:
         #     pickle.dump(lda_based_context, write_file, pickle.HIGHEST_PROTOCOL)
 
         # with open(TOPIC_MODEL_FILE, 'rb') as read_file:
         #     lda_based_context = pickle.load(read_file)
-        #
+
         self.context_rich_topics = lda_based_context.context_rich_topics
 
         return lda_based_context
@@ -203,21 +249,22 @@ class ContextTopNRunner(object):
     def find_reviews_topics(self, lda_based_context):
         print('find topics: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        self.records_to_predict =\
-            ETLUtils.load_json_file(RECORDS_TO_PREDICT_FILE)
+        # self.records_to_predict =\
+        #     ETLUtils.load_json_file(RECORDS_TO_PREDICT_FILE)
         lda_based_context.find_contextual_topics(self.train_records)
+        lda_based_context.find_contextual_topics(self.records_to_predict)
 
-        topics_map = {}
-        lda_based_context.find_contextual_topics(self.important_records)
-        for record in self.important_records:
-            topics_map[record[constants.REVIEW_ID_FIELD]] =\
-                record[constants.TOPICS_FIELD]
-
-        for record in self.records_to_predict:
-            topic_distribution = topics_map[record[constants.REVIEW_ID_FIELD]]
-            for i in self.context_rich_topics:
-                topic_id = 'topic' + str(i[0])
-                record[topic_id] = topic_distribution[i[0]]
+        # topics_map = {}
+        # lda_based_context.find_contextual_topics(self.important_records)
+        # for record in self.important_records:
+        #     topics_map[record[constants.REVIEW_ID_FIELD]] =\
+        #         record[constants.TOPICS_FIELD]
+        #
+        # for record in self.records_to_predict:
+        #     topic_distribution = topics_map[record[constants.REVIEW_ID_FIELD]]
+        #     for i in self.context_rich_topics:
+        #         topic_id = 'topic' + str(i[0])
+        #         record[topic_id] = topic_distribution[i[0]]
 
         print('contextual test set size: %d' % len(self.records_to_predict))
 
@@ -236,21 +283,17 @@ class ContextTopNRunner(object):
         contextual_test_set =\
             ETLUtils.select_fields(self.headers, self.records_to_predict)
 
-        csv_train_file = GENERATED_FOLDER + 'yelp_' + \
-            DATASET + '_context_shuffled_train5.csv'
-        csv_test_file = GENERATED_FOLDER + 'yelp_' +\
-            DATASET + '_context_shuffled_test5.csv'
-
         ETLUtils.save_csv_file(
-            csv_train_file, contextual_train_set, self.headers)
-        ETLUtils.save_csv_file(csv_test_file, contextual_test_set, self.headers)
+            self.csv_train_file, contextual_train_set, self.headers)
+        ETLUtils.save_csv_file(
+            self.csv_test_file, contextual_test_set, self.headers)
 
         print('Exported CSV and JSON files: %s'
               % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         csv_files = [
-            csv_train_file,
-            csv_test_file
+            self.csv_train_file,
+            self.csv_test_file
         ]
 
         num_cols = len(self.headers)
@@ -267,41 +310,26 @@ class ContextTopNRunner(object):
 
         print('Exported LibFM files: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-    @staticmethod
-    def predict():
+    def predict(self):
         print('predict: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        no_context_train_file = GENERATED_FOLDER + 'yelp_' + DATASET +\
-            '_context_shuffled_train5.csv.no_context.libfm'
-        no_context_test_file = GENERATED_FOLDER + 'yelp_' + DATASET +\
-            '_context_shuffled_test5.csv.no_context.libfm'
-
-        no_context_log_file = GENERATED_FOLDER + DATASET + '_no_context.log'
         run_libfm(
-            no_context_train_file, no_context_test_file,
-            NO_CONTEXT_PREDICTIONS_FILE, no_context_log_file)
-
-        context_train_file = GENERATED_FOLDER + 'yelp_' + DATASET +\
-            '_context_shuffled_train5.csv.context.libfm'
-        context_test_file = GENERATED_FOLDER + 'yelp_' + DATASET +\
-            '_context_shuffled_test5.csv.context.libfm'
-        context_log_file = GENERATED_FOLDER + DATASET + '_context.log'
+            self.no_context_train_file, self.no_context_test_file,
+            self.no_context_predictions_file, self.no_context_log_file)
         run_libfm(
-            context_train_file, context_test_file, CONTEXT_PREDICTIONS_FILE,
-            context_log_file)
+            self.context_train_file, self.context_test_file,
+            self.context_predictions_file, self.context_log_file)
 
     def evaluate(self):
         print('evaluate: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        self.top_n_evaluator.load_records_to_predict(RECORDS_TO_PREDICT_FILE)
-
-        predictions =\
-            rmse_calculator.read_targets_from_txt(NO_CONTEXT_PREDICTIONS_FILE)
+        predictions = rmse_calculator.read_targets_from_txt(
+            self.no_context_predictions_file)
         self.top_n_evaluator.evaluate(predictions)
         no_context_recall = self.top_n_evaluator.recall
 
-        predictions =\
-            rmse_calculator.read_targets_from_txt(CONTEXT_PREDICTIONS_FILE)
+        predictions = rmse_calculator.read_targets_from_txt(
+            self.context_predictions_file)
         self.top_n_evaluator.evaluate(predictions)
         context_recall = self.top_n_evaluator.recall
 
@@ -315,8 +343,9 @@ class ContextTopNRunner(object):
         total_context_recall = 0.0
         total_no_context_recall = 0.0
         total_cycle_time = 0.0
-        num_iterations = 1
+        num_iterations = 10
 
+        self.load()
         self.split()
         self.export()
 
@@ -348,18 +377,59 @@ class ContextTopNRunner(object):
         print('average cycle time', average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
+
+def full_cycle(ignore):
+    context_top_n_runner = ContextTopNRunner()
+    context_top_n_runner.create_tmp_file_names()
+    context_top_n_runner.load()
+    context_top_n_runner.shuffle()
+    context_top_n_runner.split()
+    context_top_n_runner.export()
+    lda_based_context = context_top_n_runner.train_topic_model()
+    context_top_n_runner.find_reviews_topics(lda_based_context)
+    context_top_n_runner.prepare()
+    context_top_n_runner.predict()
+    result = context_top_n_runner.evaluate()
+    context_top_n_runner.clear()
+    return result
+
+
+def full_cycle_wrapper(args):
+    try:
+        return full_cycle(args)
+    except Exception as e:
+        print('Caught exception in worker thread')
+
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        print()
+        raise e
+
+
+def parallel_context_top_n():
+
+    if not os.path.exists(USER_ITEM_MAP_FILE):
+        records = ETLUtils.load_json_file(RECORDS_FILE)
+        user_item_map = create_user_item_map(records)
+        with open(USER_ITEM_MAP_FILE, 'wb') as write_file:
+            pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
+
+    pool = Pool()
+    print('Total CPUs: %d' % pool._processes)
+
+    results_list = pool.map(full_cycle_wrapper, range(4))
+    pool.close()
+    pool.join()
+    print(results_list)
+
+
 start = time.time()
-# main()
-# split()
-# export()
-# main_lda()
-# predict()
-# evaluate()
-# super_main_lda()
-# experiment()
-# split_binary_reviews()
-context_top_n_runner = ContextTopNRunner()
-context_top_n_runner.super_main_lda()
+# context_top_n_runner = ContextTopNRunner()
+# context_top_n_runner.super_main_lda()
+# full_cycle(None)
+parallel_context_top_n()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)
