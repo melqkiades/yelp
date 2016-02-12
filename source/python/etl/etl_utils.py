@@ -279,16 +279,16 @@ class ETLUtils:
 # ]
 # ETLUtils.save_csv_file('/Users/fpena/tmp/test.csv', records, headers, delimiter='|')
 
-my_input_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-my_input_file = my_input_folder + 'yelp_training_set_review_hotels.json'
-my_fields = ['user_id', 'business_id', 'stars']
-my_records = ETLUtils.load_json_file(my_input_file)
-my_records = ETLUtils.select_fields(my_fields, my_records)
-random.shuffle(my_records)
+# my_input_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
+# my_input_file = my_input_folder + 'yelp_training_set_review_hotels.json'
+# my_fields = ['user_id', 'business_id', 'stars']
+# my_records = ETLUtils.load_json_file(my_input_file)
+# my_records = ETLUtils.select_fields(my_fields, my_records)
+# random.shuffle(my_records)
 
-my_export_folder = '/Users/fpena/tmp/libfm-1.42.src/scripts/'
+# my_export_folder = '/Users/fpena/tmp/libfm-1.42.src/scripts/'
 # my_export_file = my_export_folder + 'yelp_training_set_review_hotels_shuffled.csv'
-my_export_file = my_export_folder + 'yelp.csv'
+# my_export_file = my_export_folder + 'yelp.csv'
 # ETLUtils.save_csv_file(my_export_file, my_records, my_fields, '\t', False)
 
 # my_new_records = ETLUtils.transform_ids(my_records, 'user_id', 'business_id', 'stars')
