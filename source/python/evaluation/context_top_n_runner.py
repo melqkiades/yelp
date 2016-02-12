@@ -7,6 +7,7 @@ import time
 import cPickle as pickle
 import traceback
 import uuid
+import sys
 from etl import ETLUtils
 from etl import libfm_converter
 from evaluation import rmse_calculator
@@ -379,6 +380,8 @@ class ContextTopNRunner(object):
 
 
 def full_cycle(ignore):
+    cycle_start = time.time()
+
     context_top_n_runner = ContextTopNRunner()
     context_top_n_runner.create_tmp_file_names()
     context_top_n_runner.load()
@@ -391,6 +394,11 @@ def full_cycle(ignore):
     context_top_n_runner.predict()
     result = context_top_n_runner.evaluate()
     context_top_n_runner.clear()
+
+    cycle_end = time.time()
+    total_cycle_time = cycle_end - cycle_start
+    print("Total time = %f seconds" % total_cycle_time)
+
     return result
 
 
@@ -416,13 +424,39 @@ def parallel_context_top_n():
         with open(USER_ITEM_MAP_FILE, 'wb') as write_file:
             pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
+    pool_start_time = time.time()
     pool = Pool()
     print('Total CPUs: %d' % pool._processes)
 
-    results_list = pool.map(full_cycle_wrapper, range(4))
+    num_iterations = 6
+    # results_list = pool.map(full_cycle_wrapper, range(num_iterations))
+    results_list = []
+    for i, result in enumerate(
+            pool.imap_unordered(full_cycle_wrapper, range(num_iterations)), 1):
+        results_list.append(result)
+        # sys.stderr.write('\rdone {0:%}'.format(float(i)/num_iterations))
+        print('Progress: %2.1f%% (%d/%d)' %
+              (float(i)/num_iterations*100, i, num_iterations))
     pool.close()
     pool.join()
-    print(results_list)
+
+    pool_end_time = time.time()
+    total_context_recall = 0.0
+    total_no_context_recall = 0.0
+    total_pool_time = pool_end_time - pool_start_time
+    for context_recall, no_context_recall in results_list:
+        total_context_recall += context_recall
+        total_no_context_recall += no_context_recall
+
+    average_context_recall = total_context_recall / num_iterations
+    average_no_context_recall = total_no_context_recall / num_iterations
+    average_cycle_time = total_pool_time / num_iterations
+    improvement =\
+        (average_context_recall / average_no_context_recall - 1) * 100
+    print('average no context recall: %f' % average_no_context_recall)
+    print('average context recall: %f' % average_context_recall)
+    print('average improvement: %f2.3%%' % improvement)
+    print('average cycle time: %d seconds' % average_cycle_time)
 
 
 start = time.time()
