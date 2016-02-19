@@ -142,6 +142,8 @@ class TopNEvaluator:
         assert len(predictions) == len(self.important_records) * (self.I + 1)
 
         index = 0
+        self.n_hit = 0
+        self.n_miss = 0
 
         for record in self.important_records:
             user_id = record[constants.USER_ID_FIELD]
