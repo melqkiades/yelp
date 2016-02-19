@@ -2,11 +2,11 @@
 
 __author__ = 'fpena'
 
-import sys
-sys.path.append('/Users/fpena/UCC/Thesis/projects/yelp/source/python')
+# import sys
+# sys.path.append('/Users/fpena/UCC/Thesis/projects/yelp/source/python')
 
 
-from topicmodeling.hiddenfactortopics.topic_corpus import TopicCorpus
+# from topicmodeling.hiddenfactortopics.topic_corpus import TopicCorpus
 
 # latent_reg = 0
 # lambda_param = 0.1
