@@ -94,9 +94,12 @@ class LdaBasedContext:
         # numpy.random.seed(0)
         self.topic_model = ldamodel.LdaModel(
             specific_corpus, id2word=specific_dictionary,
-            # num_topics=self.num_topics, minimum_probability=self.epsilon)
-            num_topics=self.num_topics, minimum_probability=self.epsilon,
-            passes=10, iterations=500)
+            num_topics=self.num_topics, minimum_probability=self.epsilon)
+            # num_topics=self.num_topics, minimum_probability=self.epsilon,
+            # passes=10, iterations=500)
+        # self.topic_model = LdaMulticore(
+        #     specific_corpus, id2word=specific_dictionary,
+        #     num_topics=self.num_topics, passes=10, iterations=500)
         # print('super trained')
 
         lda_context_utils.update_reviews_with_topics(
@@ -147,14 +150,14 @@ class LdaBasedContext:
 
     def find_contextual_topics(self, records):
 
-        headers = [
-            constants.RATING_FIELD,
-            constants.USER_ID_FIELD,
-            constants.ITEM_ID_FIELD
-        ]
-        for i in self.context_rich_topics:
-            topic_id = 'topic' + str(i[0])
-            headers.append(topic_id)
+        # headers = [
+        #     constants.RATING_FIELD,
+        #     constants.USER_ID_FIELD,
+        #     constants.ITEM_ID_FIELD
+        # ]
+        # for i in self.context_rich_topics:
+        #     topic_id = 'topic' + str(i[0])
+        #     headers.append(topic_id)
 
         # output_records = []
 
@@ -170,9 +173,12 @@ class LdaBasedContext:
             # output_record['item_id'] = record['business_id']
             # output_record['rating'] = record['stars']
 
+            topics_map = {}
             for i in self.context_rich_topics:
                 topic_id = 'topic' + str(i[0])
-                record[topic_id] = topic_distribution[i[0]]
+                topics_map[topic_id] = topic_distribution[i[0]]
+
+            record[constants.CONTEXT_TOPICS_FIELD] = topics_map
 
             # print(output_record)
             # output_records.append(output_record)
