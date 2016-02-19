@@ -1,0 +1,9 @@
+# Properties for the recommender system
+business_type: hotel
+split_percentage: 80
+review_type: 
+topn_n: 10
+topn_num_items: 45
+random_seed: 0
+numpy_random_seed: 0
+
