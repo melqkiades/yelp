@@ -37,6 +37,13 @@ TOPN_N = _properties['topn_n']
 TOPN_NUM_ITEMS = _properties['topn_num_items']
 RANDOM_SEED = _properties['random_seed']
 NUMPY_RANDOM_SEED = _properties['numpy_random_seed']
+NUM_CYCLES = _properties['num_cycles']
+LDA_ALPHA = _properties['lda_alpha']
+LDA_BETA = _properties['lda_beta']
+LDA_EPSILON = _properties['lda_epsilon']
+LDA_NUM_TOPICS = _properties['lda_num_topics']
+LDA_MODEL_PASSES = _properties['lda_model_passes']
+LDA_MODEL_ITERATIONS = _properties['lda_model_iterations']
 
 # Main Files
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'

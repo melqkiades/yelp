@@ -2,9 +2,6 @@ from gensim.models import ldamodel
 
 import operator
 from gensim import corpora
-import cPickle as pickle
-import numpy
-from etl import ETLUtils
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
 from utils import constants
@@ -16,37 +13,19 @@ class LdaBasedContext:
 
     def __init__(self, records):
         self.records = records
-        self.alpha = 0.005
-        self.beta = 1.0
-        self.epsilon = 0.01
+        self.alpha = constants.LDA_ALPHA
+        self.beta = constants.LDA_BETA
+        self.epsilon = constants.LDA_EPSILON
         self.specific_reviews = None
         self.generic_reviews = None
         self.all_nouns = None
         self.all_senses = None
         self.sense_groups = None
         self.review_topics_list = None
-        self.num_topics = 150
+        self.num_topics = constants.LDA_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
-        # self.training_set_file = None
-        # self.training_reviews_file = None
         self.context_rich_topics = None
-
-        # self.init_reviews()
-
-    # def init_reviews(self):
-    #     if not self.reviews:
-    #         self.init_from_records(self.records)
-    #
-    # def init_from_records(self, records):
-    #     self.reviews = []
-    #
-    #     index = 0
-    #     print('num_reviews', len(self.records))
-    #     for record in self.records:
-    #         self.reviews.append(Review(record[constants.TEXT_FIELD]))
-    #         print('index', index)
-    #         index += 1
 
     def separate_reviews(self):
 
@@ -94,9 +73,10 @@ class LdaBasedContext:
         # numpy.random.seed(0)
         self.topic_model = ldamodel.LdaModel(
             specific_corpus, id2word=specific_dictionary,
-            num_topics=self.num_topics, minimum_probability=self.epsilon)
-            # num_topics=self.num_topics, minimum_probability=self.epsilon,
-            # passes=10, iterations=500)
+            # num_topics=self.num_topics, minimum_probability=self.epsilon)
+            num_topics=self.num_topics,
+            passes=constants.LDA_MODEL_PASSES,
+            iterations=constants.LDA_MODEL_ITERATIONS)
         # self.topic_model = LdaMulticore(
         #     specific_corpus, id2word=specific_dictionary,
         #     num_topics=self.num_topics, passes=10, iterations=500)
@@ -123,9 +103,6 @@ class LdaBasedContext:
             if weighted_frq < self.alpha:
                 continue
 
-            # print('specific_weighted_frq', specific_weighted_frq)
-            # print('generic_weighted_frq', generic_weighted_frq)
-
             ratio = (specific_weighted_frq + 1) / (generic_weighted_frq + 1)
 
             if ratio < self.beta:
@@ -149,29 +126,11 @@ class LdaBasedContext:
         return sorted_topics
 
     def find_contextual_topics(self, records):
-
-        # headers = [
-        #     constants.RATING_FIELD,
-        #     constants.USER_ID_FIELD,
-        #     constants.ITEM_ID_FIELD
-        # ]
-        # for i in self.context_rich_topics:
-        #     topic_id = 'topic' + str(i[0])
-        #     headers.append(topic_id)
-
-        # output_records = []
-
         for record in records:
             # numpy.random.seed(0)
-            topic_distribution =\
-                lda_context_utils.get_topic_distribution(
-                    record['text'], self.topic_model)
+            topic_distribution = lda_context_utils.get_topic_distribution(
+                record[constants.TEXT_FIELD], self.topic_model, self.epsilon)
             record[constants.TOPICS_FIELD] = topic_distribution
-
-            # output_record = {}
-            # record['user_id'] = record['user_id']
-            # output_record['item_id'] = record['business_id']
-            # output_record['rating'] = record['stars']
 
             topics_map = {}
             for i in self.context_rich_topics:
@@ -180,116 +139,14 @@ class LdaBasedContext:
 
             record[constants.CONTEXT_TOPICS_FIELD] = topics_map
 
-            # print(output_record)
-            # output_records.append(output_record)
-
         print(self.context_rich_topics)
         print('total_topics', len(self.context_rich_topics))
-        # print(headers)
 
         return records
 
-    def export_contextual_records(
-            self, records_file, binary_reviews_file=None, json_file=None,
-            csv_file=None):
-
-        # reviews_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_restaurants_shuffled.json"
-        # binary_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_restaurant_shuffled.pkl'
-        records = ETLUtils.load_json_file(records_file)
-        output_records, headers = self.find_contextual_topics(records)
-
-        # json_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_restaurant_context_shuffled.json"
-        # csv_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_restaurant_context_shuffled.csv"
-        if json_file is not None:
-            ETLUtils.save_json_file(json_file, output_records)
-        if csv_file is not None:
-            ETLUtils.save_csv_file(csv_file, output_records, headers)
-
-
-def test_reviews_classfier():
-    records_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_hotel_shuffled.json"
-    binary_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_hotel_shuffled.pkl'
-    training_records_file = '/Users/fpena/UCC/Thesis/datasets/context/classified_hotel_reviews.json'
-    training_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/classified_hotel_reviews.pkl'
-
-    records = ETLUtils.load_json_file(records_file)
-
-    with open(binary_reviews_file, 'rb') as read_file:
-        my_binary_reviews = pickle.load(read_file)
-
-    lda_based_context = LdaBasedContext(records)
-    lda_based_context.training_set_file = training_records_file
-    lda_based_context.training_reviews_file = training_reviews_file
-    lda_based_context.reviews = my_binary_reviews
-    lda_based_context.init_reviews()
-    # lda_based_context.separate_reviews_by_classifier()
-
-    print('\n\n\n\n\nSpecific reviews')
-    for review in lda_based_context.specific_reviews[:10]:
-        print(review.text, '***')
-
-    print('\n\n\nGeneric reviews')
-    for review in lda_based_context.generic_reviews[:10]:
-        print(review.text, '***')
-
 
 def main():
-
-    dataset = 'hotel'
-    # dataset = 'restaurant'
-
-    my_training_records_file = '/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_' + dataset + 's_shuffled_tagged.json'
-    my_training_records = ETLUtils.load_json_file(my_training_records_file)
-    my_training_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/reviews_' + dataset + '_shuffled.pkl'
-    # my_reviews = context_utils.load_reviews(reviews_file)
-    # print("reviews:", len(my_reviews))
-    #
-    # my_reviews = None
-    # my_file = '/Users/fpena/tmp/reviews_restaurant_shuffled.pkl'
-    # my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
-    # my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
-    # my_file = '/Users/fpena/tmp/reviews_spa.pkl'
-
-    # with open(my_file, 'wb') as write_file:
-    #     pickle.dump(self.reviews, write_file, pickle.HIGHEST_PROTOCOL)
-    # training_records_file = '/Users/fpena/UCC/Thesis/datasets/context/classified_' + dataset + '_reviews.json'
-    # training_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/classified_' + dataset + '_reviews.pkl'
-
-    with open(my_training_reviews_file, 'rb') as read_file:
-        my_training_reviews = pickle.load(read_file)
-
-    print('lda num_reviews', len(my_training_reviews))
-    # lda_context_utils.discover_topics(my_reviews, 150)
-    lda_based_context = LdaBasedContext(my_training_records, my_training_reviews)
-    # lda_based_context.training_set_file = training_records_file
-    # lda_based_context.training_reviews_file = training_reviews_file
-    lda_based_context.init_reviews()
-    # lda_based_context.separate_reviews()
-
-    # my_specific_reviews = []
-    # for review in lda_based_context.specific_reviews:
-    #     my_specific_reviews.append({'review': '*\t' + review.text.encode('utf-8')})
-    #
-    # ETLUtils.save_csv_file('/Users/fpena/tmp/specific_reviews.csv', my_specific_reviews, ['review'], '|')
-    #
-    # my_generic_reviews = []
-    # for review in lda_based_context.generic_reviews:
-    #     my_generic_reviews.append({'review': '*\t' + review.text.encode('utf-8')})
-    #
-    # ETLUtils.save_csv_file('/Users/fpena/tmp/generic_reviews.csv', my_generic_reviews, ['review'], '|')
-
-    my_topics = lda_based_context.get_context_rich_topics()
-    print(my_topics)
-    print('total_topics', len(my_topics))
-
-    my_records_file = '/Users/fpena/UCC/Thesis/datasets/context/classified_' + dataset + '_reviews.json'
-    my_reviews_file = '/Users/fpena/UCC/Thesis/datasets/context/classified_' + dataset + '_reviews.pkl'
-    json_file = '/Users/fpena/UCC/Thesis/datasets/context/yelp_' + dataset + '_context_shuffled4.json'
-    csv_file = '/Users/fpena/UCC/Thesis/datasets/context/yelp_' + dataset + '_context_shuffled4.csv'
-    lda_based_context.export_contextual_records(my_records_file, my_reviews_file, json_file, csv_file)
-
-    # ETLUtils.save_json_file(json_file, output_records)
-    # ETLUtils.save_csv_file(csv_file, output_records, headers)
+    pass
 
 # numpy.random.seed(0)
 #

@@ -6,4 +6,10 @@ topn_n: 10
 topn_num_items: 45
 random_seed: 0
 numpy_random_seed: 0
-
+num_cycles: 2
+lda_alpha: 0.005
+lda_beta: 1.0
+lda_epsilon: 0.01
+lda_num_topics: 150
+lda_model_passes: 1
+lda_model_iterations: 50

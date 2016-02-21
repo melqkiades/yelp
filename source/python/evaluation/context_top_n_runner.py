@@ -127,16 +127,16 @@ class ContextTopNRunner(object):
         self.important_records = None
         self.context_rich_topics = None
 
-        # os.remove(self.csv_train_file)
-        # os.remove(self.csv_test_file)
-        # os.remove(self.context_predictions_file)
-        # os.remove(self.context_train_file)
-        # os.remove(self.context_test_file)
-        # os.remove(self.context_log_file)
-        # os.remove(self.no_context_predictions_file)
-        # os.remove(self.no_context_train_file)
-        # os.remove(self.no_context_test_file)
-        # os.remove(self.no_context_log_file)
+        os.remove(self.csv_train_file)
+        os.remove(self.csv_test_file)
+        os.remove(self.context_predictions_file)
+        os.remove(self.context_train_file)
+        os.remove(self.context_test_file)
+        os.remove(self.context_log_file)
+        os.remove(self.no_context_predictions_file)
+        os.remove(self.no_context_train_file)
+        os.remove(self.no_context_test_file)
+        os.remove(self.no_context_log_file)
 
         self.csv_train_file = None
         self.csv_test_file = None
@@ -151,10 +151,10 @@ class ContextTopNRunner(object):
 
     def create_tmp_file_names(self):
 
-        # unique_id = uuid.uuid4().hex
-        # prefix = constants.GENERATED_FOLDER + unique_id + '_' +\
-        #     constants.ITEM_TYPE
-        prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
+        unique_id = uuid.uuid4().hex
+        prefix = constants.GENERATED_FOLDER + unique_id + '_' +\
+            constants.ITEM_TYPE
+        # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
 
         # print('unique id: %s' % unique_id)
         
@@ -333,7 +333,7 @@ class ContextTopNRunner(object):
         total_context_recall = 0.0
         total_no_context_recall = 0.0
         total_cycle_time = 0.0
-        num_iterations = 2
+        num_iterations = constants.NUM_CYCLES
 
         if not os.path.exists(constants.USER_ITEM_MAP_FILE):
             records = ETLUtils.load_json_file(constants.RECORDS_FILE)
@@ -346,7 +346,7 @@ class ContextTopNRunner(object):
         for i in range(num_iterations):
 
             cycle_start = time.time()
-            print('\nCycle: %d/%d' % (i, num_iterations))
+            print('\nCycle: %d/%d' % ((i+1), num_iterations))
 
             self.load()
             self.split()
@@ -362,7 +362,7 @@ class ContextTopNRunner(object):
             cycle_end = time.time()
             cycle_time = cycle_end - cycle_start
             total_cycle_time += cycle_time
-            print("Total cycle %d time = %f seconds" % (i, cycle_time))
+            print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
 
         average_context_recall = total_context_recall / num_iterations
         average_no_context_recall = total_no_context_recall / num_iterations
@@ -425,7 +425,7 @@ def parallel_context_top_n():
     pool = Pool()
     print('Total CPUs: %d' % pool._processes)
 
-    num_iterations = 6
+    num_iterations = constants.NUM_CYCLES
     # results_list = pool.map(full_cycle_wrapper, range(num_iterations))
     results_list = []
     for i, result in enumerate(

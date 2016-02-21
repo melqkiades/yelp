@@ -133,15 +133,17 @@ def get_user_item_contexts(records, lda_model, user_id, apply_filter=False):
     return items_reviews
 
 
-def get_topic_distribution(review_text, lda_model):
+def get_topic_distribution(review_text, lda_model, minimum_probability):
         """
 
         :type review_text: str
+        :type lda_model: LdaModel
         """
         review_bow = create_bag_of_words([review_text])
         dictionary = corpora.Dictionary(review_bow)
         corpus = dictionary.doc2bow(review_bow[0])
-        lda_corpus = lda_model.get_document_topics(corpus)
+        lda_corpus = lda_model.get_document_topics(
+            corpus, minimum_probability=minimum_probability)
 
         topic_distribution = numpy.zeros(lda_model.num_topics)
         for pair in lda_corpus:
