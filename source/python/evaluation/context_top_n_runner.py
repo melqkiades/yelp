@@ -114,7 +114,6 @@ class ContextTopNRunner(object):
         self.no_context_train_file = None
         self.no_context_test_file = None
         self.no_context_log_file = None
-        self.cycle = 0
 
     def clear(self):
         print('clear: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -343,16 +342,15 @@ class ContextTopNRunner(object):
                 pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
         context_top_n_runner.create_tmp_file_names()
-        self.load()
-        self.split()
-        self.export()
 
         for i in range(num_iterations):
 
             cycle_start = time.time()
-            print('\nCycle: %d' % i)
-            self.cycle = i
+            print('\nCycle: %d/%d' % (i, num_iterations))
 
+            self.load()
+            self.split()
+            self.export()
             lda_based_context = self.train_topic_model()
             self.find_reviews_topics(lda_based_context)
             self.prepare()
