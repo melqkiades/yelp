@@ -55,8 +55,8 @@ LIBFM_SEED = _properties['libfm_seed']
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
 RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
                ITEM_TYPE + 's_shuffled_tagged.json'
-GIT_REVISION_HASH =\
-    strip(subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']))
+GIT_REVISION_HASH = strip(subprocess.check_output(
+    ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
 _properties['git_revision_hash'] = GIT_REVISION_HASH
 OS_NAME = platform.system() + ' ' + platform.release()
 _properties['os_name'] = OS_NAME
