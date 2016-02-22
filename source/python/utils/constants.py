@@ -1,4 +1,8 @@
+import platform
+from string import strip
+
 import yaml
+import subprocess
 
 __author__ = 'fpena'
 
@@ -44,17 +48,23 @@ LDA_EPSILON = _properties['lda_epsilon']
 LDA_NUM_TOPICS = _properties['lda_num_topics']
 LDA_MODEL_PASSES = _properties['lda_model_passes']
 LDA_MODEL_ITERATIONS = _properties['lda_model_iterations']
+LDA_MULTICORE = _properties['lda_multicore']
+LIBFM_SEED = _properties['libfm_seed']
 
 # Main Files
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
 RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
                ITEM_TYPE + 's_shuffled_tagged.json'
-
+GIT_REVISION_HASH =\
+    strip(subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']))
+_properties['git_revision_hash'] = GIT_REVISION_HASH
+OS_NAME = platform.system() + ' ' + platform.release()
+_properties['os_name'] = OS_NAME
 # Cache files
 USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_' + 'user_item_map.pkl'
 TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' + ITEM_TYPE + '.pkl'
 
 #
-# print(_properties)
-# print(TOPIC_MODEL_FILE)
+print(_properties)
+# print(GIT_REVISION_HASH)
 

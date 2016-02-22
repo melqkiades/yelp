@@ -13,3 +13,5 @@ lda_epsilon: 0.01
 lda_num_topics: 150
 lda_model_passes: 1
 lda_model_iterations: 50
+lda_multicore: False
+libfm_seed: 0

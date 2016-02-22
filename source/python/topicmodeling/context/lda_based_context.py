@@ -1,4 +1,4 @@
-from gensim.models import ldamodel
+from gensim.models import ldamodel, LdaMulticore
 
 import operator
 from gensim import corpora
@@ -71,16 +71,20 @@ class LdaBasedContext:
             [generic_dictionary.doc2bow(text) for text in generic_bow]
 
         # numpy.random.seed(0)
-        self.topic_model = ldamodel.LdaModel(
-            specific_corpus, id2word=specific_dictionary,
-            # num_topics=self.num_topics, minimum_probability=self.epsilon)
-            num_topics=self.num_topics,
-            passes=constants.LDA_MODEL_PASSES,
-            iterations=constants.LDA_MODEL_ITERATIONS)
-        # self.topic_model = LdaMulticore(
-        #     specific_corpus, id2word=specific_dictionary,
-        #     num_topics=self.num_topics, passes=10, iterations=500)
-        # print('super trained')
+        if constants.LDA_MULTICORE:
+            self.topic_model = LdaMulticore(
+                specific_corpus, id2word=specific_dictionary,
+                num_topics=self.num_topics,
+                passes=constants.LDA_MODEL_PASSES,
+                iterations=constants.LDA_MODEL_ITERATIONS)
+            print('lda multicore')
+        else:
+            self.topic_model = ldamodel.LdaModel(
+                specific_corpus, id2word=specific_dictionary,
+                num_topics=self.num_topics,
+                passes=constants.LDA_MODEL_PASSES,
+                iterations=constants.LDA_MODEL_ITERATIONS)
+            print('lda monocore')
 
         lda_context_utils.update_reviews_with_topics(
             self.topic_model, specific_corpus, self.specific_reviews)
