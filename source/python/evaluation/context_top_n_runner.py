@@ -67,10 +67,11 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         '-dim',
         '1,1,8',
         '-out',
-        predictions_file,
-        '-seed',
-        '0'
+        predictions_file
     ]
+
+    if constants.LIBFM_SEED is not None:
+        command.extend(['-seed', str(constants.LIBFM_SEED)])
 
     f = open(log_file, "w")
     call(command, stdout=f)
@@ -97,6 +98,7 @@ class ContextTopNRunner(object):
 
     def __init__(self):
         self.records = None
+        self.original_records = None
         self.train_records = None
         self.test_records = None
         self.records_to_predict = None
@@ -172,8 +174,8 @@ class ContextTopNRunner(object):
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        self.records = ETLUtils.load_json_file(constants.RECORDS_FILE)
-        print('num_records', len(self.records))
+        self.original_records = ETLUtils.load_json_file(constants.RECORDS_FILE)
+        print('num_records', len(self.original_records))
 
     def shuffle(self):
         print('shuffle: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -215,14 +217,7 @@ class ContextTopNRunner(object):
         lda_based_context = LdaBasedContext(self.train_records)
         lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
-
         print('Trained LDA Model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-
-        # with open(TOPIC_MODEL_FILE, 'wb') as write_file:
-        #     pickle.dump(lda_based_context, write_file, pickle.HIGHEST_PROTOCOL)
-
-        # with open(TOPIC_MODEL_FILE, 'rb') as read_file:
-        #     lda_based_context = pickle.load(read_file)
 
         self.context_rich_topics = lda_based_context.context_rich_topics
 
@@ -231,22 +226,24 @@ class ContextTopNRunner(object):
     def find_reviews_topics(self, lda_based_context):
         print('find topics: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        # self.records_to_predict =\
-        #     ETLUtils.load_json_file(RECORDS_TO_PREDICT_FILE)
         lda_based_context.find_contextual_topics(self.train_records)
-        lda_based_context.find_contextual_topics(self.records_to_predict)
+        # lda_based_context.find_contextual_topics(self.records_to_predict)
 
-        # topics_map = {}
-        # lda_based_context.find_contextual_topics(self.important_records)
-        # for record in self.important_records:
-        #     topics_map[record[constants.REVIEW_ID_FIELD]] =\
-        #         record[constants.TOPICS_FIELD]
-        #
-        # for record in self.records_to_predict:
-        #     topic_distribution = topics_map[record[constants.REVIEW_ID_FIELD]]
-        #     for i in self.context_rich_topics:
-        #         topic_id = 'topic' + str(i[0])
-        #         record[topic_id] = topic_distribution[i[0]]
+        topics_map = {}
+        lda_based_context.find_contextual_topics(self.important_records)
+        for record in self.important_records:
+            topics_map[record[constants.REVIEW_ID_FIELD]] =\
+                record[constants.TOPICS_FIELD]
+
+        for record in self.records_to_predict:
+            topic_distribution = topics_map[record[constants.REVIEW_ID_FIELD]]
+
+            context_topics = {}
+            for i in self.context_rich_topics:
+                topic_id = 'topic' + str(i[0])
+                context_topics[topic_id] = topic_distribution[i[0]]
+
+            record[constants.CONTEXT_TOPICS_FIELD] = context_topics
 
         print('contextual test set size: %d' % len(self.records_to_predict))
 
@@ -271,7 +268,7 @@ class ContextTopNRunner(object):
         contextual_test_set = ETLUtils.select_fields(self.headers, contextual_test_set)
 
         ETLUtils.drop_fields([constants.TOPICS_FIELD], self.train_records)
-        ETLUtils.drop_fields([constants.TOPICS_FIELD], self.records_to_predict)
+        # ETLUtils.drop_fields([constants.TOPICS_FIELD], self.records_to_predict)
 
         ETLUtils.save_csv_file(
             self.csv_train_file, contextual_train_set, self.headers)
@@ -342,13 +339,15 @@ class ContextTopNRunner(object):
                 pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
         context_top_n_runner.create_tmp_file_names()
+        self.load()
 
         for i in range(num_iterations):
 
             cycle_start = time.time()
             print('\nCycle: %d/%d' % ((i+1), num_iterations))
 
-            self.load()
+            self.records = copy.deepcopy(self.original_records)
+            self.shuffle()
             self.split()
             self.export()
             lda_based_context = self.train_topic_model()
