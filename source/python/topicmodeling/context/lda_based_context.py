@@ -4,7 +4,7 @@ import operator
 from gensim import corpora
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
-from utils import constants
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -13,16 +13,16 @@ class LdaBasedContext:
 
     def __init__(self, records):
         self.records = records
-        self.alpha = constants.LDA_ALPHA
-        self.beta = constants.LDA_BETA
-        self.epsilon = constants.LDA_EPSILON
+        self.alpha = Constants.LDA_ALPHA
+        self.beta = Constants.LDA_BETA
+        self.epsilon = Constants.LDA_EPSILON
         self.specific_reviews = None
         self.generic_reviews = None
         self.all_nouns = None
         self.all_senses = None
         self.sense_groups = None
         self.review_topics_list = None
-        self.num_topics = constants.LDA_NUM_TOPICS
+        self.num_topics = Constants.LDA_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
         self.context_rich_topics = None
@@ -33,9 +33,9 @@ class LdaBasedContext:
         self.generic_reviews = []
 
         for record in self.records:
-            if record[constants.PREDICTED_CLASS_FIELD] == 'specific':
+            if record[Constants.PREDICTED_CLASS_FIELD] == 'specific':
                 self.specific_reviews.append(record)
-            if record[constants.PREDICTED_CLASS_FIELD] == 'generic':
+            if record[Constants.PREDICTED_CLASS_FIELD] == 'generic':
                 self.generic_reviews.append(record)
 
     def get_context_rich_topics(self):
@@ -71,19 +71,19 @@ class LdaBasedContext:
             [generic_dictionary.doc2bow(text) for text in generic_bow]
 
         # numpy.random.seed(0)
-        if constants.LDA_MULTICORE:
+        if Constants.LDA_MULTICORE:
             self.topic_model = LdaMulticore(
                 specific_corpus, id2word=specific_dictionary,
                 num_topics=self.num_topics,
-                passes=constants.LDA_MODEL_PASSES,
-                iterations=constants.LDA_MODEL_ITERATIONS)
+                passes=Constants.LDA_MODEL_PASSES,
+                iterations=Constants.LDA_MODEL_ITERATIONS)
             print('lda multicore')
         else:
             self.topic_model = ldamodel.LdaModel(
                 specific_corpus, id2word=specific_dictionary,
                 num_topics=self.num_topics,
-                passes=constants.LDA_MODEL_PASSES,
-                iterations=constants.LDA_MODEL_ITERATIONS)
+                passes=Constants.LDA_MODEL_PASSES,
+                iterations=Constants.LDA_MODEL_ITERATIONS)
             print('lda monocore')
 
         lda_context_utils.update_reviews_with_topics(
@@ -133,15 +133,15 @@ class LdaBasedContext:
         for record in records:
             # numpy.random.seed(0)
             topic_distribution = lda_context_utils.get_topic_distribution(
-                record[constants.TEXT_FIELD], self.topic_model, self.epsilon)
-            record[constants.TOPICS_FIELD] = topic_distribution
+                record[Constants.TEXT_FIELD], self.topic_model, self.epsilon)
+            record[Constants.TOPICS_FIELD] = topic_distribution
 
             topics_map = {}
             for i in self.context_rich_topics:
                 topic_id = 'topic' + str(i[0])
                 topics_map[topic_id] = topic_distribution[i[0]]
 
-            record[constants.CONTEXT_TOPICS_FIELD] = topics_map
+            record[Constants.CONTEXT_TOPICS_FIELD] = topics_map
 
         print(self.context_rich_topics)
         print('total_topics', len(self.context_rich_topics))

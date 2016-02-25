@@ -6,7 +6,7 @@ from etl import ETLUtils
 from tripadvisor.fourcity import extractor
 
 # Based on the code created by Osman Baskaya
-from utils import constants
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -37,9 +37,9 @@ class TopNEvaluator:
 
     def initialize(self, user_item_map):
         self.user_ids =\
-            extractor.get_groupby_list(self.records, constants.USER_ID_FIELD)
+            extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
         self.item_ids =\
-            extractor.get_groupby_list(self.records, constants.ITEM_ID_FIELD)
+            extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
         print('total users', len(self.user_ids))
         print('total items', len(self.item_ids))
         self.user_item_map = user_item_map
@@ -55,7 +55,7 @@ class TopNEvaluator:
     def find_important_records(self):
         self.important_records = [
             record for record in self.test_records
-            if record[constants.RATING_FIELD] == 5]  # userItem is 5 rated film
+            if record[Constants.RATING_FIELD] == 5]  # userItem is 5 rated film
 
     @staticmethod
     def create_top_n_list(rating_list, n):
@@ -92,8 +92,8 @@ class TopNEvaluator:
         for i in range(len(self.important_records)):
             record = self.important_records[i]
 
-            user_id = record[constants.USER_ID_FIELD]
-            item_id = record[constants.ITEM_ID_FIELD]
+            user_id = record[Constants.USER_ID_FIELD]
+            item_id = record[Constants.ITEM_ID_FIELD]
             # return I many of items
             irrelevant_items = self.get_irrelevant_items(user_id)[:self.I]
 
@@ -109,7 +109,7 @@ class TopNEvaluator:
 
                 for irrelevant_item in irrelevant_items:
                     generated_record = record.copy()
-                    generated_record[constants.ITEM_ID_FIELD] = irrelevant_item
+                    generated_record[Constants.ITEM_ID_FIELD] = irrelevant_item
                     all_records_to_predict.append(generated_record)
 
         self.items_to_predict = all_items_to_predict
@@ -146,8 +146,8 @@ class TopNEvaluator:
         self.n_miss = 0
 
         for record in self.important_records:
-            user_id = record[constants.USER_ID_FIELD]
-            item_id = record[constants.ITEM_ID_FIELD]
+            user_id = record[Constants.USER_ID_FIELD]
+            item_id = record[Constants.ITEM_ID_FIELD]
             user_item_key = user_id + '|' + item_id
 
             item_rating_map = {}

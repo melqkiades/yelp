@@ -4,7 +4,7 @@ from nltk import RegexpTokenizer
 from nltk.corpus import stopwords
 import numpy
 from etl import ETLUtils
-from utils import constants
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -20,7 +20,7 @@ def update_reviews_with_topics(topic_model, corpus_list, reviews):
     # print('reviews length', len(reviews))
 
     for review, corpus in zip(reviews, corpus_list):
-        review[constants.TOPICS_FIELD] = topic_model.get_document_topics(corpus)
+        review[Constants.TOPICS_FIELD] = topic_model.get_document_topics(corpus)
 
 
 def calculate_topic_weighted_frequency(topic, reviews):
@@ -35,7 +35,7 @@ def calculate_topic_weighted_frequency(topic, reviews):
     num_reviews = 0.0
 
     for review in reviews:
-        for review_topic in review[constants.TOPICS_FIELD]:
+        for review_topic in review[Constants.TOPICS_FIELD]:
             if topic == review_topic[0]:
                 num_reviews += 1
 

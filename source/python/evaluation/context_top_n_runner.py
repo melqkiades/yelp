@@ -1,4 +1,5 @@
 import copy
+import csv
 from multiprocessing import Pool
 import os
 import random
@@ -14,16 +15,16 @@ from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
-from utils import constants
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
 
 def build_headers(context_rich_topics):
     headers = [
-        constants.RATING_FIELD,
-        constants.USER_ID_FIELD,
-        constants.ITEM_ID_FIELD
+        Constants.RATING_FIELD,
+        Constants.USER_ID_FIELD,
+        Constants.ITEM_ID_FIELD
     ]
     for topic in context_rich_topics:
         topic_id = 'topic' + str(topic[0])
@@ -32,15 +33,15 @@ def build_headers(context_rich_topics):
 
 
 def create_user_item_map(records):
-    user_ids = extractor.get_groupby_list(records, constants.USER_ID_FIELD)
+    user_ids = extractor.get_groupby_list(records, Constants.USER_ID_FIELD)
     user_item_map = {}
     user_count = 0
 
     for user_id in user_ids:
         user_records =\
-            ETLUtils.filter_records(records, constants.USER_ID_FIELD, [user_id])
+            ETLUtils.filter_records(records, Constants.USER_ID_FIELD, [user_id])
         user_items =\
-            extractor.get_groupby_list(user_records, constants.ITEM_ID_FIELD)
+            extractor.get_groupby_list(user_records, Constants.ITEM_ID_FIELD)
         user_item_map[user_id] = user_items
         user_count += 1
 
@@ -54,7 +55,7 @@ def create_user_item_map(records):
 
 def run_libfm(train_file, test_file, predictions_file, log_file):
 
-    libfm_command = constants.LIBFM_FOLDER + 'libFM'
+    libfm_command = Constants.LIBFM_FOLDER + 'libFM'
 
     command = [
         libfm_command,
@@ -70,8 +71,8 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         predictions_file
     ]
 
-    if constants.LIBFM_SEED is not None:
-        command.extend(['-seed', str(constants.LIBFM_SEED)])
+    if Constants.LIBFM_SEED is not None:
+        command.extend(['-seed', str(Constants.LIBFM_SEED)])
 
     f = open(log_file, "w")
     call(command, stdout=f)
@@ -87,7 +88,7 @@ def filter_reviews(records, reviews, review_type):
     filtered_reviews = []
 
     for record, review in zip(records, reviews):
-        if record[constants.PREDICTED_CLASS_FIELD] == review_type:
+        if record[Constants.PREDICTED_CLASS_FIELD] == review_type:
             filtered_records.append(record)
             filtered_reviews.append(review)
 
@@ -105,7 +106,7 @@ class ContextTopNRunner(object):
         self.top_n_evaluator = None
         self.headers = None
         self.important_records = None
-        self.context_rich_topics = None
+        self.context_rich_topics = []
         self.csv_train_file = None
         self.csv_test_file = None
         self.context_predictions_file = None
@@ -116,6 +117,7 @@ class ContextTopNRunner(object):
         self.no_context_train_file = None
         self.no_context_test_file = None
         self.no_context_log_file = None
+        self.use_context = None
 
     def clear(self):
         print('clear: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -154,8 +156,8 @@ class ContextTopNRunner(object):
     def create_tmp_file_names(self):
 
         unique_id = uuid.uuid4().hex
-        prefix = constants.GENERATED_FOLDER + unique_id + '_' +\
-            constants.ITEM_TYPE
+        prefix = Constants.GENERATED_FOLDER + unique_id + '_' + \
+                 Constants.ITEM_TYPE
         # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
 
         # print('unique id: %s' % unique_id)
@@ -174,13 +176,13 @@ class ContextTopNRunner(object):
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        self.original_records = ETLUtils.load_json_file(constants.RECORDS_FILE)
+        self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
         print('num_records', len(self.original_records))
 
-        if not os.path.exists(constants.USER_ITEM_MAP_FILE):
-            records = ETLUtils.load_json_file(constants.RECORDS_FILE)
+        if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
+            records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
             user_item_map = create_user_item_map(records)
-            with open(constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
+            with open(Constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
                 pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
     def shuffle(self):
@@ -191,27 +193,27 @@ class ContextTopNRunner(object):
         print('split: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         num_records = len(self.records)
         num_split_records =\
-            int(float(constants.SPLIT_PERCENTAGE)/100*num_records)
+            int(float(Constants.SPLIT_PERCENTAGE) / 100 * num_records)
         self.train_records = self.records[:num_split_records]
         self.test_records = self.records[num_split_records:]
 
     def export(self):
         print('export: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        if constants.REVIEW_TYPE:
+        if Constants.REVIEW_TYPE:
             self.records = ETLUtils.filter_records(
-                self.records, constants.PREDICTED_CLASS_FIELD,
-                [constants.REVIEW_TYPE])
+                self.records, Constants.PREDICTED_CLASS_FIELD,
+                [Constants.REVIEW_TYPE])
             self.test_records = ETLUtils.filter_records(
-                self.test_records, constants.PREDICTED_CLASS_FIELD,
-                [constants.REVIEW_TYPE])
+                self.test_records, Constants.PREDICTED_CLASS_FIELD,
+                [Constants.REVIEW_TYPE])
 
-        with open(constants.USER_ITEM_MAP_FILE, 'rb') as read_file:
+        with open(Constants.USER_ITEM_MAP_FILE, 'rb') as read_file:
             user_item_map = pickle.load(read_file)
 
         self.top_n_evaluator = TopNEvaluator(
-            self.records, self.test_records, constants.ITEM_TYPE, 10,
-            constants.TOPN_NUM_ITEMS)
+            self.records, self.test_records, Constants.ITEM_TYPE, 10,
+            Constants.TOPN_NUM_ITEMS)
         self.top_n_evaluator.initialize(user_item_map)
         self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
         # self.top_n_evaluator.export_records_to_predict(RECORDS_TO_PREDICT_FILE)
@@ -238,23 +240,20 @@ class ContextTopNRunner(object):
         topics_map = {}
         lda_based_context.find_contextual_topics(self.important_records)
         for record in self.important_records:
-            topics_map[record[constants.REVIEW_ID_FIELD]] =\
-                record[constants.TOPICS_FIELD]
+            topics_map[record[Constants.REVIEW_ID_FIELD]] =\
+                record[Constants.TOPICS_FIELD]
 
         for record in self.records_to_predict:
-            topic_distribution = topics_map[record[constants.REVIEW_ID_FIELD]]
+            topic_distribution = topics_map[record[Constants.REVIEW_ID_FIELD]]
 
             context_topics = {}
             for i in self.context_rich_topics:
                 topic_id = 'topic' + str(i[0])
                 context_topics[topic_id] = topic_distribution[i[0]]
 
-            record[constants.CONTEXT_TOPICS_FIELD] = context_topics
+            record[Constants.CONTEXT_TOPICS_FIELD] = context_topics
 
         print('contextual test set size: %d' % len(self.records_to_predict))
-
-        self.headers = build_headers(self.context_rich_topics)
-
         print('Exported contextual topics: %s' %
               time.strftime("%Y/%d/%m-%H:%M:%S"))
 
@@ -263,18 +262,23 @@ class ContextTopNRunner(object):
     def prepare(self):
         print('prepare: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
+        self.headers = build_headers(self.context_rich_topics)
+
         contextual_train_set = copy.deepcopy(self.train_records)
-        for record in contextual_train_set:
-            record.update(record[constants.CONTEXT_TOPICS_FIELD])
-        contextual_train_set = ETLUtils.select_fields(self.headers, contextual_train_set)
-
         contextual_test_set = copy.deepcopy(self.records_to_predict)
-        for record in contextual_test_set:
-            record.update(record[constants.CONTEXT_TOPICS_FIELD])
-        contextual_test_set = ETLUtils.select_fields(self.headers, contextual_test_set)
 
-        ETLUtils.drop_fields([constants.TOPICS_FIELD], self.train_records)
-        # ETLUtils.drop_fields([constants.TOPICS_FIELD], self.records_to_predict)
+        if self.use_context is True:
+            for record in contextual_train_set:
+                record.update(record[Constants.CONTEXT_TOPICS_FIELD])
+
+            for record in contextual_test_set:
+                record.update(record[Constants.CONTEXT_TOPICS_FIELD])
+
+            ETLUtils.drop_fields([Constants.TOPICS_FIELD], self.train_records)
+            # ETLUtils.drop_fields([constants.TOPICS_FIELD], self.records_to_predict)
+
+        contextual_train_set = ETLUtils.select_fields(self.headers, contextual_train_set)
+        contextual_test_set = ETLUtils.select_fields(self.headers, contextual_test_set)
 
         ETLUtils.save_csv_file(
             self.csv_train_file, contextual_train_set, self.headers)
@@ -336,7 +340,7 @@ class ContextTopNRunner(object):
         total_context_recall = 0.0
         total_no_context_recall = 0.0
         total_cycle_time = 0.0
-        num_iterations = constants.NUM_CYCLES
+        num_iterations = Constants.NUM_CYCLES
 
         context_top_n_runner.create_tmp_file_names()
         self.load()
@@ -379,7 +383,7 @@ class ContextTopNRunner(object):
         total_context_recall = 0.0
         total_no_context_recall = 0.0
         total_cycle_time = 0.0
-        num_folds = constants.CROSS_VALIDATION_NUM_FOLDS
+        num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
         split = 1 - (1/float(num_folds))
 
         self.use_context = True
@@ -415,13 +419,29 @@ class ContextTopNRunner(object):
         average_context_recall = total_context_recall / num_folds
         average_no_context_recall = total_no_context_recall / num_folds
         average_cycle_time = total_cycle_time / num_folds
-        improvement =\
-            (average_context_recall / average_no_context_recall - 1) * 100
+        improvement = (average_context_recall / average_no_context_recall - 1)
+        improvement_percentage = improvement * 100
         print('average no context recall', average_no_context_recall)
         print('average context recall', average_context_recall)
-        print('average improvement: %f2.3%%' % improvement)
+        print('average improvement: %f2.3%%' % improvement_percentage)
         print('average cycle time', average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
+        results = copy.deepcopy(Constants._properties)
+        results['context_recall'] = average_context_recall
+        results['no_context_recall'] = average_context_recall
+        results['improvement'] = improvement
+        results['cycle_time'] = average_cycle_time
+
+        if not os.path.exists(Constants.RESULTS_FILE):
+            with open(Constants.RESULTS_FILE, 'wb') as f:
+                w = csv.DictWriter(f, results.keys())
+                w.writeheader()
+                w.writerow(results)
+        else:
+            with open(Constants.RESULTS_FILE, 'a') as f:
+                w = csv.DictWriter(f, results.keys())
+                w.writerow(results)
 
 
 def full_cycle(ignore):
@@ -463,17 +483,17 @@ def full_cycle_wrapper(args):
 
 def parallel_context_top_n():
 
-    if not os.path.exists(constants.USER_ITEM_MAP_FILE):
-        records = ETLUtils.load_json_file(constants.RECORDS_FILE)
+    if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
+        records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
         user_item_map = create_user_item_map(records)
-        with open(constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
+        with open(Constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
             pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
     pool_start_time = time.time()
     pool = Pool()
     print('Total CPUs: %d' % pool._processes)
 
-    num_iterations = constants.NUM_CYCLES
+    num_iterations = Constants.NUM_CYCLES
     # results_list = pool.map(full_cycle_wrapper, range(num_iterations))
     results_list = []
     for i, result in enumerate(
@@ -505,12 +525,12 @@ def parallel_context_top_n():
 
 
 start = time.time()
-if constants.RANDOM_SEED is not None:
-    print('random seed: %d' % constants.RANDOM_SEED)
-    random.seed(constants.RANDOM_SEED)
-if constants.NUMPY_RANDOM_SEED is not None:
-    print('numpy random seed: %d' % constants.NUMPY_RANDOM_SEED)
-    numpy.random.seed(constants.NUMPY_RANDOM_SEED)
+if Constants.RANDOM_SEED is not None:
+    print('random seed: %d' % Constants.RANDOM_SEED)
+    random.seed(Constants.RANDOM_SEED)
+if Constants.NUMPY_RANDOM_SEED is not None:
+    print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
+    numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 context_top_n_runner = ContextTopNRunner()
 # context_top_n_runner.super_main_lda()

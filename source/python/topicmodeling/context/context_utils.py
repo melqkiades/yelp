@@ -15,7 +15,7 @@ import time
 import scipy.misc
 from topicmodeling.context.senses_group import SenseGroup
 from topicmodeling.context.review import Review
-from utils import constants
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -221,7 +221,7 @@ def get_text_from_reviews(reviews):
     """
     text_reviews = []
     for review in reviews:
-        text_reviews.append(review[constants.TEXT_FIELD])
+        text_reviews.append(review[Constants.TEXT_FIELD])
 
     return text_reviews
 
@@ -407,8 +407,8 @@ def main():
 
 
 
-    base_dir = constants.DATASET_FOLDER
-    dataset = constants.ITEM_TYPE
+    base_dir = Constants.DATASET_FOLDER
+    dataset = Constants.ITEM_TYPE
     # dataset = 'restaurant'
     reviews_file = base_dir + 'reviews_' + dataset + '_shuffled.pkl'
     similarity_matrix_file = base_dir + dataset + '_sense_similarity_matrix.pkl'
