@@ -413,14 +413,12 @@ def main():
 
     with open(reviews_file, 'rb') as read_file:
         reviews = pickle.load(read_file)
-        reviews = reviews[:10]
 
     all_senses = list(generate_all_senses(reviews))
     print('num senses: %d' % len(all_senses))
     similarity_matrix = build_sense_similarity_matrix(all_senses)
     with open(similarity_matrix_file, 'wb') as write_file:
         pickle.dump(similarity_matrix, write_file, pickle.HIGHEST_PROTOCOL)
-
 
 
 # start = time.time()
