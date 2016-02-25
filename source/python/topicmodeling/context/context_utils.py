@@ -140,10 +140,12 @@ def build_sense_similarity_matrix(senses):
     index = 1
     num_senses = len(senses)
     for sense1 in senses:
+        similarity_matrix[sense1.name()][sense1.name()] = 1.0
         for sense2 in senses[index:]:
             similarity = sense1.wup_similarity(sense2)
             similarity_matrix[sense1.name()][sense2.name()] = similarity
             similarity_matrix[sense2.name()][sense1.name()] = similarity
+
         if not index % 100:
             print('%s: completed %d/%d senses' %
                   (time.strftime("%Y/%d/%m-%H:%M:%S"), index, num_senses))
