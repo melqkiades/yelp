@@ -177,6 +177,12 @@ class ContextTopNRunner(object):
         self.original_records = ETLUtils.load_json_file(constants.RECORDS_FILE)
         print('num_records', len(self.original_records))
 
+        if not os.path.exists(constants.USER_ITEM_MAP_FILE):
+            records = ETLUtils.load_json_file(constants.RECORDS_FILE)
+            user_item_map = create_user_item_map(records)
+            with open(constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
+                pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
+
     def shuffle(self):
         print('shuffle: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         random.shuffle(self.records)
@@ -331,12 +337,6 @@ class ContextTopNRunner(object):
         total_no_context_recall = 0.0
         total_cycle_time = 0.0
         num_iterations = constants.NUM_CYCLES
-
-        if not os.path.exists(constants.USER_ITEM_MAP_FILE):
-            records = ETLUtils.load_json_file(constants.RECORDS_FILE)
-            user_item_map = create_user_item_map(records)
-            with open(constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
-                pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
         context_top_n_runner.create_tmp_file_names()
         self.load()
