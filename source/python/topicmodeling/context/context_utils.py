@@ -1,12 +1,18 @@
 from collections import Counter
+import cPickle as pickle
 import json
 import math
 import random
+import itertools
+import networkx
+from networkx.algorithms.approximation import dominating_set
+from networkx.algorithms.approximation import vertex_cover
 import nltk
 from nltk.corpus import wordnet
 from nltk.corpus.reader import Synset
 import numpy as np
 import time
+import scipy.misc
 from topicmodeling.context.senses_group import SenseGroup
 from topicmodeling.context.review import Review
 from utils import constants
@@ -129,14 +135,18 @@ def build_sense_similarity_matrix(senses):
     similarity_matrix = {}
 
     for sense in senses:
-        similarity_matrix[sense] = {}
+        similarity_matrix[sense.name()] = {}
 
     index = 1
+    num_senses = len(senses)
     for sense1 in senses:
         for sense2 in senses[index:]:
             similarity = sense1.wup_similarity(sense2)
-            similarity_matrix[sense1][sense2] = similarity
-            similarity_matrix[sense2][sense1] = similarity
+            similarity_matrix[sense1.name()][sense2.name()] = similarity
+            similarity_matrix[sense2.name()][sense1.name()] = similarity
+        if not index % 100:
+            print('%s: completed %d/%d senses' %
+                  (time.strftime("%Y/%d/%m-%H:%M:%S"), index, num_senses))
         index += 1
 
     print('finished senses similarity matrix', time.strftime("%H:%M:%S"))
@@ -233,18 +243,6 @@ def get_context_similarity(context1, context2, topic_indices):
     return 1 / (1 + np.linalg.norm(filtered_context1-filtered_context2))
 
 
-def main():
-    # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-short.json"
-    reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-mid.json"
-    reviews = load_reviews(reviews_file)
-
-# start = time.time()
-# main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
-
-
 def choose_pivot(list1, list2):
 
     index = random.randint(0, len(list1) + len(list2) - 1)
@@ -323,3 +321,110 @@ def stat_reviews(reviews):
     print('Average past verbs:', stats[2])
     print('Average verbs:', stats[3])
     print('Average past verbs ratio:', stats[4])
+
+
+def create_graph(reviews_file, graph_file):
+
+    print('%s: start' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
+    with open(reviews_file, 'rb') as read_file:
+        reviews = pickle.load(read_file)
+    reviews = reviews[:13]
+
+    print('num reviews: %d' % len(reviews))
+    print('%s: loaded reviews' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
+    all_nouns = list(get_all_nouns(reviews))
+    print('num nouns: %d' % len(all_nouns))
+    print('%s: obtained nouns' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
+    all_senses = generate_all_senses(reviews)
+    total_possible_vertices = scipy.misc.comb(len(all_senses), 2, exact=True)
+    print('num senses: %d' % len(all_senses))
+    print('total possible senses: %d' % total_possible_vertices)
+    print('%s: obtained senses' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
+    graph = networkx.Graph()
+
+    for sense in all_senses:
+        graph.add_node(sense.name())
+    print('%s: created graph' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+    print('num nodes: %d' % len(graph.nodes()))
+
+    cycle = 0
+    for synset1, synset2 in itertools.combinations(all_senses, 2):
+        cycle += 1
+        if not cycle % 100000:
+            print('sense cycle: %d/%d\r' % (cycle, total_possible_vertices)),
+        if synset1.wup_similarity(synset2) >= 0.7:
+            graph.add_edge(synset1.name(), synset2.name())
+    print('%s: added vertices' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+    print('num edges: %d' % len(graph.edges()))
+
+    with open(graph_file, 'wb') as write_file:
+        pickle.dump(graph, write_file, pickle.HIGHEST_PROTOCOL)
+
+    with open(graph_file, 'rb') as read_file:
+        graph = pickle.load(read_file)
+
+    print('num nodes: %d' % len(graph.nodes()))
+    print('num edges: %d' % len(graph.edges()))
+
+    my_dominating_set = dominating_set.min_weighted_dominating_set(graph)
+    print('%s found dominating set' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+    print('dominating set length: %d' % len(my_dominating_set))
+    my_vertex_cover = vertex_cover.min_weighted_vertex_cover(graph)
+    print('%s found vertex cover' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+    print('vertex cover length: %d' % len(my_vertex_cover))
+
+
+
+
+def main():
+
+    # base_dir = '/Users/fpena/UCC/Thesis/datasets/context/'
+    # dataset = 'hotel'
+    # # dataset = 'restaurant'
+    # reviews_file = base_dir + 'reviews_' + dataset + '_shuffled.pkl'
+    #
+    # with open(reviews_file, 'rb') as read_file:
+    #     reviews = pickle.load(read_file)
+    # reviews = reviews[:1]
+    #
+    # all_senses = set()
+    #
+    # for review in reviews:
+    #     for noun in review.nouns:
+    #         all_senses |= set(wordnet.synsets(noun, pos='n'))
+    #         # all_senses |= set(noun)
+    #
+    # data = [sense.name() for sense in all_senses]
+    #
+    # with open('/Users/fpena/tmp/empty_list.pkl', 'wb') as write_file:
+    #     pickle.dump(data, write_file, pickle.HIGHEST_PROTOCOL)
+
+
+
+    base_dir = constants.DATASET_FOLDER
+    dataset = 'hotel'
+    # dataset = 'restaurant'
+    reviews_file = base_dir + 'reviews_' + dataset + '_shuffled.pkl'
+    similarity_matrix_file = base_dir + dataset + '_sense_similarity_matrix.pkl'
+
+    with open(reviews_file, 'rb') as read_file:
+        reviews = pickle.load(read_file)
+        reviews = reviews[:10]
+
+    all_senses = list(generate_all_senses(reviews))
+    print('num senses: %d' % len(all_senses))
+    similarity_matrix = build_sense_similarity_matrix(all_senses)
+    with open(similarity_matrix_file, 'wb') as write_file:
+        pickle.dump(similarity_matrix, write_file, pickle.HIGHEST_PROTOCOL)
+
+
+
+start = time.time()
+main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
