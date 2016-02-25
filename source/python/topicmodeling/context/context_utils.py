@@ -406,7 +406,7 @@ def main():
 
 
     base_dir = constants.DATASET_FOLDER
-    dataset = 'hotel'
+    dataset = constants.ITEM_TYPE
     # dataset = 'restaurant'
     reviews_file = base_dir + 'reviews_' + dataset + '_shuffled.pkl'
     similarity_matrix_file = base_dir + dataset + '_sense_similarity_matrix.pkl'
@@ -423,8 +423,8 @@ def main():
 
 
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
