@@ -50,6 +50,7 @@ LDA_MODEL_PASSES = _properties['lda_model_passes']
 LDA_MODEL_ITERATIONS = _properties['lda_model_iterations']
 LDA_MULTICORE = _properties['lda_multicore']
 LIBFM_SEED = _properties['libfm_seed']
+CROSS_VALIDATION_NUM_FOLDS = _properties['cross_validation_num_folds']
 
 # Main Files
 CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'

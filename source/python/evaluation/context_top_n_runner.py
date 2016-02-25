@@ -374,6 +374,55 @@ class ContextTopNRunner(object):
         print('average cycle time', average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
+    def super_main_lda_cross_validation(self):
+
+        total_context_recall = 0.0
+        total_no_context_recall = 0.0
+        total_cycle_time = 0.0
+        num_folds = constants.CROSS_VALIDATION_NUM_FOLDS
+        split = 1 - (1/float(num_folds))
+
+        self.use_context = True
+
+        context_top_n_runner.create_tmp_file_names()
+        self.load()
+        self.records = copy.deepcopy(self.original_records)
+        # self.shuffle()
+
+        for i in range(0, num_folds):
+
+            cycle_start = time.time()
+            cv_start = float(i) / num_folds
+            print('\nCycle: %d/%d' % ((i+1), num_folds))
+
+            self.train_records, self.test_records = ETLUtils.split_train_test(
+                self.records, split=split, shuffle_data=True, start=cv_start)
+            self.export()
+            if self.use_context:
+                lda_based_context = self.train_topic_model()
+                self.find_reviews_topics(lda_based_context)
+            self.prepare()
+            self.predict()
+            context_recall, no_context_recall = self.evaluate()
+            total_context_recall += context_recall
+            total_no_context_recall += no_context_recall
+
+            cycle_end = time.time()
+            cycle_time = cycle_end - cycle_start
+            total_cycle_time += cycle_time
+            print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
+
+        average_context_recall = total_context_recall / num_folds
+        average_no_context_recall = total_no_context_recall / num_folds
+        average_cycle_time = total_cycle_time / num_folds
+        improvement =\
+            (average_context_recall / average_no_context_recall - 1) * 100
+        print('average no context recall', average_no_context_recall)
+        print('average context recall', average_context_recall)
+        print('average improvement: %f2.3%%' % improvement)
+        print('average cycle time', average_cycle_time)
+        print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+
 
 def full_cycle(ignore):
     cycle_start = time.time()
@@ -464,7 +513,8 @@ if constants.NUMPY_RANDOM_SEED is not None:
     numpy.random.seed(constants.NUMPY_RANDOM_SEED)
 
 context_top_n_runner = ContextTopNRunner()
-context_top_n_runner.super_main_lda()
+# context_top_n_runner.super_main_lda()
+context_top_n_runner.super_main_lda_cross_validation()
 # full_cycle(None)
 # parallel_context_top_n()
 end = time.time()
