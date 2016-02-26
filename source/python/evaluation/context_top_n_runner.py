@@ -319,39 +319,48 @@ class ContextTopNRunner(object):
 
         total_recall = 0.0
         total_cycle_time = 0.0
+        num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+        total_iterations = num_cycles * num_folds
         split = 1 - (1/float(num_folds))
 
         self.create_tmp_file_names()
         self.load()
-        self.records = copy.deepcopy(self.original_records)
-        if Constants.SHUFFLE_DATA:
-            self.shuffle()
 
-        for i in range(0, num_folds):
+        for i in range(num_cycles):
 
-            cycle_start = time.time()
-            cv_start = float(i) / num_folds
-            print('\nCycle: %d/%d' % ((i+1), num_folds))
+            print('\n\nCycle: %d/%d' % ((i+1), num_cycles))
 
-            self.train_records, self.test_records = ETLUtils.split_train_test(
-                self.records, split=split, shuffle_data=False, start=cv_start)
-            self.export()
-            if Constants.USE_CONTEXT:
-                lda_based_context = self.train_topic_model()
-                self.find_reviews_topics(lda_based_context)
-            self.prepare()
-            self.predict()
-            recall = self.evaluate()
-            total_recall += recall
+            self.records = copy.deepcopy(self.original_records)
+            if Constants.SHUFFLE_DATA:
+                self.shuffle()
 
-            cycle_end = time.time()
-            cycle_time = cycle_end - cycle_start
-            total_cycle_time += cycle_time
-            print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
+            for j in range(num_folds):
 
-        average_recall = total_recall / num_folds
-        average_cycle_time = total_cycle_time / num_folds
+                cycle_start = time.time()
+                cv_start = float(j) / num_folds
+                print('\nFold: %d/%d' % ((j+1), num_folds))
+
+                self.train_records, self.test_records =\
+                    ETLUtils.split_train_test(
+                        self.records, split=split, shuffle_data=False,
+                        start=cv_start)
+                self.export()
+                if Constants.USE_CONTEXT:
+                    lda_based_context = self.train_topic_model()
+                    self.find_reviews_topics(lda_based_context)
+                self.prepare()
+                self.predict()
+                recall = self.evaluate()
+                total_recall += recall
+
+                cycle_end = time.time()
+                cycle_time = cycle_end - cycle_start
+                total_cycle_time += cycle_time
+                print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
+
+        average_recall = total_recall / total_iterations
+        average_cycle_time = total_cycle_time / total_iterations
         print('average recall: %f' % average_recall)
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -359,6 +368,7 @@ class ContextTopNRunner(object):
         results = copy.deepcopy(Constants._properties)
         results['recall'] = average_recall
         results['cycle_time'] = average_cycle_time
+        results['timestamp'] = time.strftime("%Y/%d/%m-%H:%M:%S")
 
         if not os.path.exists(Constants.RESULTS_FILE):
             with open(Constants.RESULTS_FILE, 'wb') as f:
