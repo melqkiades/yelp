@@ -8,6 +8,7 @@ import time
 import cPickle as pickle
 import traceback
 import uuid
+import itertools
 import numpy
 from etl import ETLUtils
 from etl import libfm_converter
@@ -342,7 +343,7 @@ class ContextTopNRunner(object):
         total_cycle_time = 0.0
         num_iterations = Constants.NUM_CYCLES
 
-        context_top_n_runner.create_tmp_file_names()
+        self.create_tmp_file_names()
         self.load()
 
         for i in range(num_iterations):
@@ -388,10 +389,10 @@ class ContextTopNRunner(object):
 
         self.use_context = True
 
-        context_top_n_runner.create_tmp_file_names()
+        self.create_tmp_file_names()
         self.load()
         self.records = copy.deepcopy(self.original_records)
-        # self.shuffle()
+        self.shuffle()
 
         for i in range(0, num_folds):
 
@@ -442,6 +443,115 @@ class ContextTopNRunner(object):
             with open(Constants.RESULTS_FILE, 'a') as f:
                 w = csv.DictWriter(f, results.keys())
                 w.writerow(results)
+
+
+def run_tests():
+    business_type_list = ['hotel']
+    split_percentage_list = [80]
+    topn_n_list = [10]
+    topn_num_items_list = [45]
+    lda_alpha_list = [0.005]
+    lda_beta_list = [1.0]
+    lda_epsilon_list = [0.01]
+    # lda_num_topics_list = [50, 150, 450]
+    lda_num_topics_list = [50, 150, 450]
+    # lda_model_passes_list = [1, 10]
+    lda_model_passes_list = [1]
+    # lda_model_iterations_list = [50, 500]
+    lda_model_iterations_list = [50]
+    lda_multicore_list = [False, True]
+    cross_validation_num_folds_list = [5]
+
+    combined_properties = combine_parameters(
+        business_type_list,
+        split_percentage_list,
+        topn_n_list,
+        topn_num_items_list,
+        lda_alpha_list,
+        lda_beta_list,
+        lda_epsilon_list,
+        lda_num_topics_list,
+        lda_model_passes_list,
+        lda_model_iterations_list,
+        lda_multicore_list,
+        cross_validation_num_folds_list
+    )
+
+    test_cycle = 1
+    num_tests = len(combined_properties)
+    for properties in combined_properties:
+        Constants.update_properties(properties)
+        context_top_n_runner = ContextTopNRunner()
+        # context_top_n_runner.super_main_lda()
+
+        print('\n\n******************\nTest %d/%d\n******************\n' %
+              (test_cycle, num_tests))
+
+        context_top_n_runner.super_main_lda_cross_validation()
+        test_cycle += 1
+
+
+def combine_parameters(
+        business_type_list,
+        split_percentage_list,
+        topn_n_list,
+        topn_num_items_list,
+        lda_alpha_list,
+        lda_beta_list,
+        lda_epsilon_list,
+        lda_num_topics_list,
+        lda_model_passes_list,
+        lda_model_iterations_list,
+        lda_multicore_list,
+        cross_validation_num_folds_list
+        ):
+
+    combined_properties = []
+
+    for business_type,\
+        split_percentage,\
+        topn_n,\
+        topn_num_items,\
+        lda_alpha,\
+        lda_beta,\
+        lda_epsilon,\
+        lda_num_topics,\
+        lda_model_passes,\
+        lda_model_iterations,\
+        lda_multicore,\
+        cross_validation_num_folds\
+        in itertools.product(
+            business_type_list,
+            split_percentage_list,
+            topn_n_list,
+            topn_num_items_list,
+            lda_alpha_list,
+            lda_beta_list,
+            lda_epsilon_list,
+            lda_num_topics_list,
+            lda_model_passes_list,
+            lda_model_iterations_list,
+            lda_multicore_list,
+            cross_validation_num_folds_list
+            ):
+
+        properties = {
+            'business_type': business_type,
+            'split_percentage': split_percentage,
+            'topn_n': topn_n,
+            'topn_num_items': topn_num_items,
+            'lda_alpha': lda_alpha,
+            'lda_beta': lda_beta,
+            'lda_epsilon': lda_epsilon,
+            'lda_num_topics': lda_num_topics,
+            'lda_model_passes': lda_model_passes,
+            'lda_model_iterations': lda_model_iterations,
+            'lda_multicore': lda_multicore,
+            'cross_validation_num_folds': cross_validation_num_folds
+        }
+        combined_properties.append(properties)
+
+    return combined_properties
 
 
 def full_cycle(ignore):
@@ -532,10 +642,11 @@ if Constants.NUMPY_RANDOM_SEED is not None:
     print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
     numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
-context_top_n_runner = ContextTopNRunner()
-# context_top_n_runner.super_main_lda()
-context_top_n_runner.super_main_lda_cross_validation()
+my_context_top_n_runner = ContextTopNRunner()
+# my_context_top_n_runner.super_main_lda()
+my_context_top_n_runner.super_main_lda_cross_validation()
 # full_cycle(None)
+# run_tests()
 # parallel_context_top_n()
 end = time.time()
 total_time = end - start
