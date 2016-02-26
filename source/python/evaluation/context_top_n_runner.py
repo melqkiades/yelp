@@ -313,45 +313,7 @@ class ContextTopNRunner(object):
 
         return recall
 
-    def super_main_lda(self):
-
-        self.plant_seeds()
-
-        total_recall = 0.0
-        total_cycle_time = 0.0
-        num_iterations = Constants.NUM_CYCLES
-
-        self.create_tmp_file_names()
-        self.load()
-
-        for i in range(num_iterations):
-
-            cycle_start = time.time()
-            print('\nCycle: %d/%d' % ((i+1), num_iterations))
-
-            self.records = copy.deepcopy(self.original_records)
-            self.shuffle()
-            self.split()
-            self.export()
-            lda_based_context = self.train_topic_model()
-            self.find_reviews_topics(lda_based_context)
-            self.prepare()
-            self.predict()
-            recall = self.evaluate()
-            total_recall += recall
-
-            cycle_end = time.time()
-            cycle_time = cycle_end - cycle_start
-            total_cycle_time += cycle_time
-            print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
-
-        average_recall = total_recall / num_iterations
-        average_cycle_time = total_cycle_time / num_iterations
-        print('average recall: %f' % average_recall)
-        print('average cycle time: %f' % average_cycle_time)
-        print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-
-    def super_main_lda_cross_validation(self):
+    def perform_cross_validation(self):
 
         self.plant_seeds()
 
@@ -451,7 +413,7 @@ def run_tests():
         print('\n\n******************\nTest %d/%d\n******************\n' %
               (test_cycle, num_tests))
 
-        context_top_n_runner.super_main_lda_cross_validation()
+        context_top_n_runner.perform_cross_validation()
         test_cycle += 1
 
 
@@ -594,8 +556,7 @@ def parallel_context_top_n():
 start = time.time()
 
 my_context_top_n_runner = ContextTopNRunner()
-# my_context_top_n_runner.super_main_lda()
-my_context_top_n_runner.super_main_lda_cross_validation()
+my_context_top_n_runner.perform_cross_validation()
 # full_cycle(None)
 # run_tests()
 # parallel_context_top_n()
