@@ -114,7 +114,6 @@ class ContextTopNRunner(object):
         self.context_train_file = None
         self.context_test_file = None
         self.context_log_file = None
-        self.use_context = None
 
     def clear(self):
         print('clear: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -261,7 +260,7 @@ class ContextTopNRunner(object):
         contextual_train_set = copy.deepcopy(self.train_records)
         contextual_test_set = copy.deepcopy(self.records_to_predict)
 
-        if self.use_context is True:
+        if Constants.USE_CONTEXT is True:
             for record in contextual_train_set:
                 record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
@@ -361,12 +360,11 @@ class ContextTopNRunner(object):
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
         split = 1 - (1/float(num_folds))
 
-        self.use_context = True
-
         self.create_tmp_file_names()
         self.load()
         self.records = copy.deepcopy(self.original_records)
-        self.shuffle()
+        if Constants.SHUFFLE_DATA:
+            self.shuffle()
 
         for i in range(0, num_folds):
 
@@ -377,7 +375,7 @@ class ContextTopNRunner(object):
             self.train_records, self.test_records = ETLUtils.split_train_test(
                 self.records, split=split, shuffle_data=False, start=cv_start)
             self.export()
-            if self.use_context:
+            if Constants.USE_CONTEXT:
                 lda_based_context = self.train_topic_model()
                 self.find_reviews_topics(lda_based_context)
             self.prepare()

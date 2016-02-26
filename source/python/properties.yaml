@@ -16,3 +16,5 @@ lda_model_iterations: 50
 lda_multicore: False
 libfm_seed: 0
 cross_validation_num_folds: 5
+use_context: True
+shuffle_data: True

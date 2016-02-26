@@ -55,6 +55,8 @@ class Constants(object):
     LIBFM_SEED = _properties['libfm_seed']
     CROSS_VALIDATION_NUM_FOLDS =\
         _properties['cross_validation_num_folds']
+    SHUFFLE_DATA = _properties['shuffle_data']
+    USE_CONTEXT = _properties['use_context']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -100,3 +102,5 @@ class Constants(object):
         Constants.LIBFM_SEED = Constants._properties['libfm_seed']
         Constants.CROSS_VALIDATION_NUM_FOLDS =\
             Constants._properties['cross_validation_num_folds']
+        Constants.SHUFFLE_DATA = Constants._properties['shuffle_data']
+        Constants.USE_CONTEXT = Constants._properties['use_context']
