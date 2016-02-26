@@ -98,9 +98,9 @@ def build_groups(nouns):
         senses = wordnet.synsets(noun, pos='n')
         all_senses.update(senses)
         for sense in senses:
-            if sense not in sense_word_map:
-                sense_word_map[sense] = []
-            sense_word_map[sense].append(noun)
+            if sense.name() not in sense_word_map:
+                sense_word_map[sense.name()] = []
+            sense_word_map[sense.name()].append(noun)
 
     all_senses = list(all_senses)
     all_senses_names = [sense.name() for sense in all_senses]
@@ -231,7 +231,8 @@ def calculate_group_weighted_frequency(group, reviews):
     num_reviews = 0.0
 
     for review in reviews:
-        if not frozenset(review.senses).isdisjoint(frozenset(group.senses)):
+        review_senses = set([sense.name() for sense in review.senses])
+        if not frozenset(review_senses).isdisjoint(frozenset(group.senses)):
             num_reviews += 1
 
     return num_reviews / len(reviews)

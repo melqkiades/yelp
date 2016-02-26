@@ -30,7 +30,7 @@ class WordBasedContext:
         # for text_review in self.text_reviews:
         #     self.reviews.append(Review(text_review))
 
-        my_file = '/Users/fpena/tmp/reviews_hotel.pkl'
+        my_file = '/Users/fpena/UCC/Thesis/projects/yelp/source/python/topicmodeling/context/reviews_hotel.pkl'
         # my_file = '/Users/fpena/tmp/reviews_restaurant.pkl'
         # my_file = '/Users/fpena/tmp/sentences_hotel.pkl'
         # with open(my_file, 'wb') as write_file:
@@ -131,7 +131,7 @@ def main():
     # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review-short.json"
     # reviews_file = "/Users/fpena/tmp/yelp_academic_dataset_review.json"
     # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_spas.json"
-    reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_hotels.json"
+    reviews_file = "/Users/fpena/UCC/Thesis/datasets/context/yelp_training_set_review_hotels.json"
     # reviews_file = "/Users/fpena/tmp/yelp_training_set/yelp_training_set_review_restaurants.json"
     reviews = context_utils.load_reviews(reviews_file)
 
@@ -150,8 +150,8 @@ def main():
     word_context = WordBasedContext(reviews)
     word_context.calculate_sense_group_ratios()
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
