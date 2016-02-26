@@ -383,6 +383,7 @@ class ContextTopNRunner(object):
 
 def run_tests():
     business_type_list = ['hotel']
+    num_cycles_list = [3]
     split_percentage_list = [80]
     topn_n_list = [10]
     topn_num_items_list = [45]
@@ -400,6 +401,7 @@ def run_tests():
 
     combined_properties = combine_parameters(
         business_type_list,
+        num_cycles_list,
         split_percentage_list,
         topn_n_list,
         topn_num_items_list,
@@ -429,6 +431,7 @@ def run_tests():
 
 def combine_parameters(
         business_type_list,
+        num_cycles_list,
         split_percentage_list,
         topn_n_list,
         topn_num_items_list,
@@ -445,6 +448,7 @@ def combine_parameters(
     combined_properties = []
 
     for business_type,\
+        num_cycles,\
         split_percentage,\
         topn_n,\
         topn_num_items,\
@@ -458,6 +462,7 @@ def combine_parameters(
         cross_validation_num_folds\
         in itertools.product(
             business_type_list,
+            num_cycles_list,
             split_percentage_list,
             topn_n_list,
             topn_num_items_list,
@@ -473,6 +478,7 @@ def combine_parameters(
 
         properties = {
             'business_type': business_type,
+            'num_cycles': num_cycles,
             'split_percentage': split_percentage,
             'topn_n': topn_n,
             'topn_num_items': topn_num_items,
@@ -566,9 +572,9 @@ def parallel_context_top_n():
 start = time.time()
 
 my_context_top_n_runner = ContextTopNRunner()
-my_context_top_n_runner.perform_cross_validation()
+# my_context_top_n_runner.perform_cross_validation()
 # full_cycle(None)
-# run_tests()
+run_tests()
 # parallel_context_top_n()
 end = time.time()
 total_time = end - start
