@@ -114,10 +114,6 @@ class ContextTopNRunner(object):
         self.context_train_file = None
         self.context_test_file = None
         self.context_log_file = None
-        self.no_context_predictions_file = None
-        self.no_context_train_file = None
-        self.no_context_test_file = None
-        self.no_context_log_file = None
         self.use_context = None
 
     def clear(self):
@@ -138,10 +134,6 @@ class ContextTopNRunner(object):
         os.remove(self.context_train_file)
         os.remove(self.context_test_file)
         os.remove(self.context_log_file)
-        os.remove(self.no_context_predictions_file)
-        os.remove(self.no_context_train_file)
-        os.remove(self.no_context_test_file)
-        os.remove(self.no_context_log_file)
 
         self.csv_train_file = None
         self.csv_test_file = None
@@ -149,10 +141,6 @@ class ContextTopNRunner(object):
         self.context_train_file = None
         self.context_test_file = None
         self.context_log_file = None
-        self.no_context_predictions_file = None
-        self.no_context_train_file = None
-        self.no_context_test_file = None
-        self.no_context_log_file = None
 
     def create_tmp_file_names(self):
 
@@ -162,18 +150,13 @@ class ContextTopNRunner(object):
         # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
 
         # print('unique id: %s' % unique_id)
-        
-        self.csv_train_file = prefix + '_context_train.csv'
-        self.csv_test_file = prefix + '_context_test.csv'
-        self.context_predictions_file = prefix + '_context_predictions.txt'
-        self.context_train_file = self.csv_train_file + '.context.libfm'
-        self.context_test_file = self.csv_test_file + '.context.libfm'
-        self.context_log_file = prefix + '_context.log'
-        self.no_context_predictions_file =\
-            prefix + '_no_context_predictions.txt'
-        self.no_context_train_file = self.csv_train_file + '.no_context.libfm'
-        self.no_context_test_file = self.csv_test_file + '.no_context.libfm'
-        self.no_context_log_file = prefix + '_no_context.log'
+
+        self.csv_train_file = prefix + '_train.csv'
+        self.csv_test_file = prefix + '_test.csv'
+        self.context_predictions_file = prefix + '_predictions.txt'
+        self.context_train_file = self.csv_train_file + '.libfm'
+        self.context_test_file = self.csv_test_file + '.libfm'
+        self.context_log_file = prefix + '.log'
 
     @staticmethod
     def plant_seeds():
@@ -188,7 +171,7 @@ class ContextTopNRunner(object):
     def load(self):
         print('load: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
-        print('num_records', len(self.original_records))
+        print('num_records: %d' % len(self.original_records))
 
         if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
             records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
@@ -304,26 +287,17 @@ class ContextTopNRunner(object):
             self.csv_test_file
         ]
 
-        num_cols = len(self.headers)
-        context_cols = num_cols
-        print('num_cols', num_cols)
-        # print('context_cols', context_cols)
+        print('num_cols', len(self.headers))
 
         libfm_converter.csv_to_libfm(
-            csv_files, 0, [1, 2], range(3, context_cols), ',', has_header=True,
-            suffix='.no_context.libfm')
-        libfm_converter.csv_to_libfm(
             csv_files, 0, [1, 2], [], ',', has_header=True,
-            suffix='.context.libfm')
+            suffix='.libfm')
 
         print('Exported LibFM files: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
     def predict(self):
         print('predict: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        run_libfm(
-            self.no_context_train_file, self.no_context_test_file,
-            self.no_context_predictions_file, self.no_context_log_file)
         run_libfm(
             self.context_train_file, self.context_test_file,
             self.context_predictions_file, self.context_log_file)
@@ -332,26 +306,19 @@ class ContextTopNRunner(object):
         print('evaluate: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         predictions = rmse_calculator.read_targets_from_txt(
-            self.no_context_predictions_file)
-        self.top_n_evaluator.evaluate(predictions)
-        no_context_recall = self.top_n_evaluator.recall
-
-        predictions = rmse_calculator.read_targets_from_txt(
             self.context_predictions_file)
         self.top_n_evaluator.evaluate(predictions)
-        context_recall = self.top_n_evaluator.recall
+        recall = self.top_n_evaluator.recall
 
-        print('No context recall: %f' % no_context_recall)
-        print('Context recall: %f' % context_recall)
+        print('Recall: %f' % recall)
 
-        return context_recall, no_context_recall
+        return recall
 
     def super_main_lda(self):
 
         self.plant_seeds()
 
-        total_context_recall = 0.0
-        total_no_context_recall = 0.0
+        total_recall = 0.0
         total_cycle_time = 0.0
         num_iterations = Constants.NUM_CYCLES
 
@@ -371,32 +338,25 @@ class ContextTopNRunner(object):
             self.find_reviews_topics(lda_based_context)
             self.prepare()
             self.predict()
-            context_recall, no_context_recall = self.evaluate()
-            total_context_recall += context_recall
-            total_no_context_recall += no_context_recall
+            recall = self.evaluate()
+            total_recall += recall
 
             cycle_end = time.time()
             cycle_time = cycle_end - cycle_start
             total_cycle_time += cycle_time
             print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
 
-        average_context_recall = total_context_recall / num_iterations
-        average_no_context_recall = total_no_context_recall / num_iterations
+        average_recall = total_recall / num_iterations
         average_cycle_time = total_cycle_time / num_iterations
-        improvement =\
-            (average_context_recall / average_no_context_recall - 1) * 100
-        print('average no context recall', average_no_context_recall)
-        print('average context recall', average_context_recall)
-        print('average improvement: %f2.3%%' % improvement)
-        print('average cycle time', average_cycle_time)
+        print('average recall: %f' % average_recall)
+        print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
     def super_main_lda_cross_validation(self):
 
         self.plant_seeds()
 
-        total_context_recall = 0.0
-        total_no_context_recall = 0.0
+        total_recall = 0.0
         total_cycle_time = 0.0
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
         split = 1 - (1/float(num_folds))
@@ -422,30 +382,22 @@ class ContextTopNRunner(object):
                 self.find_reviews_topics(lda_based_context)
             self.prepare()
             self.predict()
-            context_recall, no_context_recall = self.evaluate()
-            total_context_recall += context_recall
-            total_no_context_recall += no_context_recall
+            recall = self.evaluate()
+            total_recall += recall
 
             cycle_end = time.time()
             cycle_time = cycle_end - cycle_start
             total_cycle_time += cycle_time
             print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
 
-        average_context_recall = total_context_recall / num_folds
-        average_no_context_recall = total_no_context_recall / num_folds
+        average_recall = total_recall / num_folds
         average_cycle_time = total_cycle_time / num_folds
-        improvement = (average_context_recall / average_no_context_recall - 1)
-        improvement_percentage = improvement * 100
-        print('average no context recall', average_no_context_recall)
-        print('average context recall', average_context_recall)
-        print('average improvement: %f2.3%%' % improvement_percentage)
-        print('average cycle time', average_cycle_time)
+        print('average recall: %f' % average_recall)
+        print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         results = copy.deepcopy(Constants._properties)
-        results['context_recall'] = average_context_recall
-        results['no_context_recall'] = average_context_recall
-        results['improvement'] = improvement
+        results['recall'] = average_recall
         results['cycle_time'] = average_cycle_time
 
         if not os.path.exists(Constants.RESULTS_FILE):
@@ -630,21 +582,14 @@ def parallel_context_top_n():
     pool.join()
 
     pool_end_time = time.time()
-    total_context_recall = 0.0
-    total_no_context_recall = 0.0
+    total_recall = 0.0
     total_pool_time = pool_end_time - pool_start_time
-    for context_recall, no_context_recall in results_list:
-        total_context_recall += context_recall
-        total_no_context_recall += no_context_recall
+    for recall in results_list:
+        total_recall += recall
 
-    average_context_recall = total_context_recall / num_iterations
-    average_no_context_recall = total_no_context_recall / num_iterations
+    average_recall = total_recall / num_iterations
     average_cycle_time = total_pool_time / num_iterations
-    improvement =\
-        (average_context_recall / average_no_context_recall - 1) * 100
-    print('average no context recall: %f' % average_no_context_recall)
-    print('average context recall: %f' % average_context_recall)
-    print('average improvement: %f%%' % improvement)
+    print('average recall: %f' % average_recall)
     print('average cycle time: %d seconds' % average_cycle_time)
 
 
