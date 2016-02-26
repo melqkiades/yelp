@@ -18,3 +18,4 @@ libfm_seed: 0
 cross_validation_num_folds: 5
 use_context: True
 shuffle_data: True
+num_cores:

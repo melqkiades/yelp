@@ -57,6 +57,7 @@ class Constants(object):
         _properties['cross_validation_num_folds']
     SHUFFLE_DATA = _properties['shuffle_data']
     USE_CONTEXT = _properties['use_context']
+    NUM_CORES = _properties['num_cores']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -104,3 +105,4 @@ class Constants(object):
             Constants._properties['cross_validation_num_folds']
         Constants.SHUFFLE_DATA = Constants._properties['shuffle_data']
         Constants.USE_CONTEXT = Constants._properties['use_context']
+        Constants.NUM_CORES = Constants._properties['num_cores']
