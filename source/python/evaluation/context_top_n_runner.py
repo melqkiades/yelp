@@ -175,6 +175,16 @@ class ContextTopNRunner(object):
         self.no_context_test_file = self.csv_test_file + '.no_context.libfm'
         self.no_context_log_file = prefix + '_no_context.log'
 
+    @staticmethod
+    def plant_seeds():
+
+        if Constants.RANDOM_SEED is not None:
+            print('random seed: %d' % Constants.RANDOM_SEED)
+            random.seed(Constants.RANDOM_SEED)
+        if Constants.NUMPY_RANDOM_SEED is not None:
+            print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
+            numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
+
     def load(self):
         print('load: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
@@ -338,6 +348,8 @@ class ContextTopNRunner(object):
 
     def super_main_lda(self):
 
+        self.plant_seeds()
+
         total_context_recall = 0.0
         total_no_context_recall = 0.0
         total_cycle_time = 0.0
@@ -380,6 +392,8 @@ class ContextTopNRunner(object):
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
     def super_main_lda_cross_validation(self):
+
+        self.plant_seeds()
 
         total_context_recall = 0.0
         total_no_context_recall = 0.0
@@ -635,12 +649,6 @@ def parallel_context_top_n():
 
 
 start = time.time()
-if Constants.RANDOM_SEED is not None:
-    print('random seed: %d' % Constants.RANDOM_SEED)
-    random.seed(Constants.RANDOM_SEED)
-if Constants.NUMPY_RANDOM_SEED is not None:
-    print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
-    numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 my_context_top_n_runner = ContextTopNRunner()
 # my_context_top_n_runner.super_main_lda()
