@@ -401,7 +401,7 @@ class ContextTopNRunner(object):
             print('\nCycle: %d/%d' % ((i+1), num_folds))
 
             self.train_records, self.test_records = ETLUtils.split_train_test(
-                self.records, split=split, shuffle_data=True, start=cv_start)
+                self.records, split=split, shuffle_data=False, start=cv_start)
             self.export()
             if self.use_context:
                 lda_based_context = self.train_topic_model()
