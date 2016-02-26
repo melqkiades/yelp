@@ -103,12 +103,13 @@ def build_groups(nouns):
             sense_word_map[sense].append(noun)
 
     all_senses = list(all_senses)
+    all_senses_names = [sense.name() for sense in all_senses]
 
     print('number of senses:', len(all_senses))
     senses_similarity_matrix = build_sense_similarity_matrix(all_senses)
 
     groups = []
-    bronk2_synset([], all_senses[:], [], groups, senses_similarity_matrix)
+    bronk2_synset([], all_senses_names, [], groups, senses_similarity_matrix)
     # bronk2_synset([], all_senses[:], [], groups, all_senses[:])
 
     sense_groups = []
