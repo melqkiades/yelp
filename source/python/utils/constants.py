@@ -106,3 +106,21 @@ class Constants(object):
         Constants.SHUFFLE_DATA = Constants._properties['shuffle_data']
         Constants.USE_CONTEXT = Constants._properties['use_context']
         Constants.NUM_CORES = Constants._properties['num_cores']
+
+        # Main Files
+        Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
+        Constants.RECORDS_FILE =\
+            Constants.DATASET_FOLDER + 'yelp_training_set_review_' +\
+            Constants.ITEM_TYPE + 's_shuffled_tagged.json'
+        Constants.RESULTS_FILE = Constants.DATASET_FOLDER +\
+            Constants.ITEM_TYPE + '_results.csv'
+        Constants.GIT_REVISION_HASH = strip(subprocess.check_output(
+            ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
+        Constants._properties['git_revision_hash'] = Constants.GIT_REVISION_HASH
+        Constants.OS_NAME = platform.system() + ' ' + platform.release()
+        Constants._properties['os_name'] = Constants.OS_NAME
+        # Cache files
+        Constants.USER_ITEM_MAP_FILE = Constants.CACHE_FOLDER +\
+                                  Constants.ITEM_TYPE + '_' + 'user_item_map.pkl'
+        Constants.TOPIC_MODEL_FILE = Constants.CACHE_FOLDER + 'topic_model_' +\
+                                Constants.ITEM_TYPE + '.pkl'
