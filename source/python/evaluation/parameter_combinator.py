@@ -169,7 +169,7 @@ def restaurant_context_parameters():
 def hotel_no_context_parameters():
     business_type = 'hotel'
     review_type = None
-    num_cycles = 2
+    num_cycles = 10
     topn_n = 10
     topn_num_items = 270
     lda_alpha_list = [None]
