@@ -126,6 +126,7 @@ class LdaBasedContext:
         # print('num_topics', len(self.topics))
         # print('ratio_topics', ratio_topics)
         self.context_rich_topics = sorted_topics
+        # print(self.context_rich_topics)
 
         return sorted_topics
 
@@ -143,8 +144,8 @@ class LdaBasedContext:
 
             record[Constants.CONTEXT_TOPICS_FIELD] = topics_map
 
-        print(self.context_rich_topics)
-        print('total_topics', len(self.context_rich_topics))
+        # print(self.context_rich_topics)
+        # print('total_topics', len(self.context_rich_topics))
 
         return records
 
