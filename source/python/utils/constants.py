@@ -31,6 +31,9 @@ class Constants(object):
     TOPICS_FIELD = 'topics'
     USER_ID_FIELD = 'user_id'
 
+    SPECIFIC = 'specific'
+    GENERIC = 'generic'
+
     # Folders
     DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
     LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
@@ -38,7 +41,6 @@ class Constants(object):
 
     _properties = load_properties()
     ITEM_TYPE = _properties['business_type']
-    SPLIT_PERCENTAGE = _properties['split_percentage']
     REVIEW_TYPE = _properties['review_type']
     TOPN_N = _properties['topn_n']
     TOPN_NUM_ITEMS = _properties['topn_num_items']
@@ -85,7 +87,6 @@ class Constants(object):
         Constants._properties.update(new_properties)
 
         Constants.ITEM_TYPE = Constants._properties['business_type']
-        Constants.SPLIT_PERCENTAGE = Constants._properties['split_percentage']
         Constants.REVIEW_TYPE = Constants._properties['review_type']
         Constants.TOPN_N = Constants._properties['topn_n']
         Constants.TOPN_NUM_ITEMS = Constants._properties['topn_num_items']

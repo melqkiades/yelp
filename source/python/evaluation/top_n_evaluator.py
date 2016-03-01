@@ -20,10 +20,20 @@ class TopNEvaluator:
         self.N = N
         self.I = I
 
-        self.n_hit = 0
-        self.n_miss = 0
+        self.num_hits = 0
+        self.num_misses = 0
         self.recall = 0
         self.precision = 0
+
+        self.num_specific_hits = 0
+        self.num_specific_misses = 0
+        self.specific_recall = 0
+        self.specific_precision = 0
+
+        self.num_generic_hits = 0
+        self.num_generic_misses = 0
+        self.generic_recall = 0
+        self.generic_precision = 0
 
         self.records = records
         self.training_set = None
@@ -65,23 +75,38 @@ class TopNEvaluator:
         return sorted_list[:n]
 
     def calculate_precision(self):
-        return self.calculate_recall() / self.N
+        self.calculate_recall()
+        self.precision = self.recall / self.N
+        self.specific_precision = self.specific_recall / self.N
+        self.generic_precision = self.generic_recall / self.N
 
     def calculate_recall(self):
-        return float(self.n_hit) / (self.n_hit + self.n_miss)
+        self.recall = float(self.num_hits) / (self.num_hits + self.num_misses)
+        self.specific_recall = float(self.num_specific_hits) /\
+            (self.num_specific_hits + self.num_specific_misses)
+        self.generic_recall = float(self.num_generic_hits) /\
+            (self.num_generic_hits + self.num_generic_misses)
 
     def evaluate_pr(self):
         self.calculate_recall()
         self.calculate_precision()
         return self.precision, self.recall
 
-    def update_num_hits(self, top_n_list, item):
+    def update_num_hits(self, top_n_list, item, review_type):
 
         if item in top_n_list:
-            self.n_hit += 1
+            self.num_hits += 1
+            if review_type == Constants.SPECIFIC:
+                self.num_specific_hits += 1
+            elif review_type == Constants.GENERIC:
+                self.num_generic_hits += 1
             # print 'hit for item:%s\n' % item
         else:
-            self.n_miss += 1
+            self.num_misses += 1
+            if review_type == Constants.SPECIFIC:
+                self.num_specific_misses += 1
+            elif review_type == Constants.GENERIC:
+                self.num_generic_misses += 1
             # print 'miss for item:%s\n' % item
 
     def get_records_to_predict(self):
@@ -142,12 +167,17 @@ class TopNEvaluator:
         assert len(predictions) == len(self.important_records) * (self.I + 1)
 
         index = 0
-        self.n_hit = 0
-        self.n_miss = 0
+        self.num_hits = 0
+        self.num_misses = 0
+        self.num_specific_hits = 0
+        self.num_specific_misses = 0
+        self.num_generic_hits = 0
+        self.num_generic_misses = 0
 
         for record in self.important_records:
             user_id = record[Constants.USER_ID_FIELD]
             item_id = record[Constants.ITEM_ID_FIELD]
+            review_type = record[Constants.PREDICTED_CLASS_FIELD]
             user_item_key = user_id + '|' + item_id
 
             item_rating_map = {}
@@ -162,10 +192,10 @@ class TopNEvaluator:
 
             top_n_list = self.create_top_n_list(item_rating_map, self.N)
             # use this inf. for calculating PR
-            self.update_num_hits(top_n_list, item_id)
+            self.update_num_hits(top_n_list, item_id, review_type)
 
-        self.precision = self.calculate_precision()
-        self.recall = self.calculate_recall()
+        self.calculate_precision()
+        self.calculate_recall()
 
         # print('precision', self.precision)
         # print('recall', self.recall)

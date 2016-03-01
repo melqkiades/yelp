@@ -1,17 +1,15 @@
 import copy
 import csv
-from multiprocessing import Pool
 import os
 import random
 from subprocess import call
 import time
 import cPickle as pickle
-import traceback
 import uuid
-import itertools
 import numpy
 from etl import ETLUtils
 from etl import libfm_converter
+from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
 from topicmodeling.context.lda_based_context import LdaBasedContext
@@ -182,14 +180,6 @@ class ContextTopNRunner(object):
         print('shuffle: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
         random.shuffle(self.records)
 
-    def split(self):
-        print('split: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        num_records = len(self.records)
-        num_split_records =\
-            int(float(Constants.SPLIT_PERCENTAGE) / 100 * num_records)
-        self.train_records = self.records[:num_split_records]
-        self.test_records = self.records[num_split_records:]
-
     def export(self):
         print('export: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
@@ -209,12 +199,10 @@ class ContextTopNRunner(object):
             Constants.TOPN_NUM_ITEMS)
         self.top_n_evaluator.initialize(user_item_map)
         self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
-        # self.top_n_evaluator.export_records_to_predict(RECORDS_TO_PREDICT_FILE)
         self.important_records = self.top_n_evaluator.important_records
 
     def train_topic_model(self):
         print('train topic model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
-        # self.train_records = ETLUtils.load_json_file(TRAIN_RECORDS_FILE)
         lda_based_context = LdaBasedContext(self.train_records)
         lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
@@ -228,7 +216,6 @@ class ContextTopNRunner(object):
         print('find topics: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         lda_based_context.find_contextual_topics(self.train_records)
-        # lda_based_context.find_contextual_topics(self.records_to_predict)
 
         topics_map = {}
         lda_based_context.find_contextual_topics(self.important_records)
@@ -268,7 +255,6 @@ class ContextTopNRunner(object):
                 record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
             ETLUtils.drop_fields([Constants.TOPICS_FIELD], self.train_records)
-            # ETLUtils.drop_fields([constants.TOPICS_FIELD], self.records_to_predict)
 
         contextual_train_set = ETLUtils.select_fields(self.headers, contextual_train_set)
         contextual_test_set = ETLUtils.select_fields(self.headers, contextual_test_set)
@@ -318,6 +304,8 @@ class ContextTopNRunner(object):
         self.plant_seeds()
 
         total_recall = 0.0
+        total_specific_recall = 0.0
+        total_generic_recall = 0.0
         total_cycle_time = 0.0
         num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
@@ -337,7 +325,7 @@ class ContextTopNRunner(object):
 
             for j in range(num_folds):
 
-                cycle_start = time.time()
+                fold_start = time.time()
                 cv_start = float(j) / num_folds
                 print('\nFold: %d/%d' % ((j+1), num_folds))
 
@@ -351,22 +339,33 @@ class ContextTopNRunner(object):
                     self.find_reviews_topics(lda_based_context)
                 self.prepare()
                 self.predict()
-                recall = self.evaluate()
+                self.evaluate()
+                recall = self.top_n_evaluator.recall
+                specific_recall = self.top_n_evaluator.specific_recall
+                generic_recall = self.top_n_evaluator.generic_recall
                 total_recall += recall
+                total_specific_recall += specific_recall
+                total_generic_recall += generic_recall
 
-                cycle_end = time.time()
-                cycle_time = cycle_end - cycle_start
-                total_cycle_time += cycle_time
-                print("Total cycle %d time = %f seconds" % ((i+1), cycle_time))
+                fold_end = time.time()
+                fold_time = fold_end - fold_start
+                total_cycle_time += fold_time
+                print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
         average_recall = total_recall / total_iterations
+        average_specific_recall = total_specific_recall / total_iterations
+        average_generic_recall = total_generic_recall / total_iterations
         average_cycle_time = total_cycle_time / total_iterations
         print('average recall: %f' % average_recall)
+        print('average specific recall: %f' % average_specific_recall)
+        print('average generic recall: %f' % average_generic_recall)
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         results = copy.deepcopy(Constants._properties)
         results['recall'] = average_recall
+        results['specific_recall'] = average_specific_recall
+        results['generic_recall'] = average_generic_recall
         results['cycle_time'] = average_cycle_time
         results['timestamp'] = time.strftime("%Y/%d/%m-%H:%M:%S")
 
@@ -382,191 +381,20 @@ class ContextTopNRunner(object):
 
 
 def run_tests():
-    business_type_list = ['hotel']
-    num_cycles_list = [3]
-    split_percentage_list = [80]
-    topn_n_list = [10]
-    topn_num_items_list = [45]
-    lda_alpha_list = [0.005]
-    lda_beta_list = [1.0]
-    lda_epsilon_list = [0.01]
-    # lda_num_topics_list = [50, 150, 450]
-    lda_num_topics_list = [50, 150, 450]
-    # lda_model_passes_list = [1, 10]
-    lda_model_passes_list = [1]
-    # lda_model_iterations_list = [50, 500]
-    lda_model_iterations_list = [50]
-    lda_multicore_list = [False, True]
-    cross_validation_num_folds_list = [5]
 
-    combined_properties = combine_parameters(
-        business_type_list,
-        num_cycles_list,
-        split_percentage_list,
-        topn_n_list,
-        topn_num_items_list,
-        lda_alpha_list,
-        lda_beta_list,
-        lda_epsilon_list,
-        lda_num_topics_list,
-        lda_model_passes_list,
-        lda_model_iterations_list,
-        lda_multicore_list,
-        cross_validation_num_folds_list
-    )
+    combined_parameters = parameter_combinator.restaurant_no_context_parameters()
 
     test_cycle = 1
-    num_tests = len(combined_properties)
-    for properties in combined_properties:
+    num_tests = len(combined_parameters)
+    for properties in combined_parameters:
         Constants.update_properties(properties)
         context_top_n_runner = ContextTopNRunner()
-        # context_top_n_runner.super_main_lda()
 
         print('\n\n******************\nTest %d/%d\n******************\n' %
               (test_cycle, num_tests))
 
         context_top_n_runner.perform_cross_validation()
         test_cycle += 1
-
-
-def combine_parameters(
-        business_type_list,
-        num_cycles_list,
-        split_percentage_list,
-        topn_n_list,
-        topn_num_items_list,
-        lda_alpha_list,
-        lda_beta_list,
-        lda_epsilon_list,
-        lda_num_topics_list,
-        lda_model_passes_list,
-        lda_model_iterations_list,
-        lda_multicore_list,
-        cross_validation_num_folds_list
-        ):
-
-    combined_properties = []
-
-    for business_type,\
-        num_cycles,\
-        split_percentage,\
-        topn_n,\
-        topn_num_items,\
-        lda_alpha,\
-        lda_beta,\
-        lda_epsilon,\
-        lda_num_topics,\
-        lda_model_passes,\
-        lda_model_iterations,\
-        lda_multicore,\
-        cross_validation_num_folds\
-        in itertools.product(
-            business_type_list,
-            num_cycles_list,
-            split_percentage_list,
-            topn_n_list,
-            topn_num_items_list,
-            lda_alpha_list,
-            lda_beta_list,
-            lda_epsilon_list,
-            lda_num_topics_list,
-            lda_model_passes_list,
-            lda_model_iterations_list,
-            lda_multicore_list,
-            cross_validation_num_folds_list
-            ):
-
-        properties = {
-            'business_type': business_type,
-            'num_cycles': num_cycles,
-            'split_percentage': split_percentage,
-            'topn_n': topn_n,
-            'topn_num_items': topn_num_items,
-            'lda_alpha': lda_alpha,
-            'lda_beta': lda_beta,
-            'lda_epsilon': lda_epsilon,
-            'lda_num_topics': lda_num_topics,
-            'lda_model_passes': lda_model_passes,
-            'lda_model_iterations': lda_model_iterations,
-            'lda_multicore': lda_multicore,
-            'cross_validation_num_folds': cross_validation_num_folds
-        }
-        combined_properties.append(properties)
-
-    return combined_properties
-
-
-def full_cycle(ignore):
-    cycle_start = time.time()
-
-    context_top_n_runner = ContextTopNRunner()
-    context_top_n_runner.create_tmp_file_names()
-    context_top_n_runner.load()
-    context_top_n_runner.shuffle()
-    context_top_n_runner.split()
-    context_top_n_runner.export()
-    lda_based_context = context_top_n_runner.train_topic_model()
-    context_top_n_runner.find_reviews_topics(lda_based_context)
-    context_top_n_runner.prepare()
-    context_top_n_runner.predict()
-    result = context_top_n_runner.evaluate()
-    context_top_n_runner.clear()
-
-    cycle_end = time.time()
-    total_cycle_time = cycle_end - cycle_start
-    print("Total time = %f seconds" % total_cycle_time)
-
-    return result
-
-
-def full_cycle_wrapper(args):
-    try:
-        return full_cycle(args)
-    except Exception as e:
-        print('Caught exception in worker thread')
-
-        # This prints the type, value, and stack trace of the
-        # current exception being handled.
-        traceback.print_exc()
-
-        print()
-        raise e
-
-
-def parallel_context_top_n():
-
-    if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
-        records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
-        user_item_map = create_user_item_map(records)
-        with open(Constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
-            pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
-
-    pool_start_time = time.time()
-    pool = Pool()
-    print('Total CPUs: %d' % pool._processes)
-
-    num_iterations = Constants.NUM_CYCLES
-    # results_list = pool.map(full_cycle_wrapper, range(num_iterations))
-    results_list = []
-    for i, result in enumerate(
-            pool.imap_unordered(full_cycle_wrapper, range(num_iterations)), 1):
-        results_list.append(result)
-        # sys.stderr.write('\rdone {0:%}'.format(float(i)/num_iterations))
-        print('Progress: %2.1f%% (%d/%d)' %
-              (float(i)/num_iterations*100, i, num_iterations))
-    pool.close()
-    pool.join()
-
-    pool_end_time = time.time()
-    total_recall = 0.0
-    total_pool_time = pool_end_time - pool_start_time
-    for recall in results_list:
-        total_recall += recall
-
-    average_recall = total_recall / num_iterations
-    average_cycle_time = total_pool_time / num_iterations
-    print('average recall: %f' % average_recall)
-    print('average cycle time: %d seconds' % average_cycle_time)
 
 
 start = time.time()
