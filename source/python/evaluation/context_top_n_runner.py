@@ -388,6 +388,7 @@ def run_tests():
     num_tests = len(combined_parameters)
     for properties in combined_parameters:
         Constants.update_properties(properties)
+        print(Constants._properties)
         context_top_n_runner = ContextTopNRunner()
 
         print('\n\n******************\nTest %d/%d\n******************\n' %

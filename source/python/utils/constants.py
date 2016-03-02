@@ -78,10 +78,6 @@ class Constants(object):
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
                             ITEM_TYPE + '.pkl'
 
-    #
-    print(_properties)
-    # print(GIT_REVISION_HASH)
-
     @staticmethod
     def update_properties(new_properties):
         Constants._properties.update(new_properties)

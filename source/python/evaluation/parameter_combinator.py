@@ -213,7 +213,7 @@ def hotel_no_context_parameters():
 
 
 def restaurant_no_context_parameters():
-    business_type = 'hotel'
+    business_type = 'restaurant'
     review_type = None
     num_cycles = 1
     topn_n = 10
