@@ -4,6 +4,8 @@ import json
 import math
 import random
 import itertools
+
+import h5py
 import networkx
 from networkx.algorithms.approximation import dominating_set
 from networkx.algorithms.approximation import vertex_cover
@@ -13,6 +15,8 @@ from nltk.corpus.reader import Synset
 import numpy as np
 import time
 import scipy.misc
+from sklearn.cluster import AffinityPropagation
+
 from topicmodeling.context.senses_group import SenseGroup
 from topicmodeling.context.review import Review
 from utils.constants import Constants
@@ -382,6 +386,102 @@ def create_graph(reviews_file, graph_file):
     print('vertex cover length: %d' % len(my_vertex_cover))
 
 
+def build_numpy_sense_similarity_matrix(senses):
+    """
+
+    :type senses: list[Synset]
+    :param senses:
+    """
+
+    sense_index_map = {}
+
+    sense_index = 0
+    for sense in senses:
+
+        if sense in sense_index_map:
+            raise ValueError('There are repeated items in the senses iterable')
+
+        sense_index_map[sense.name()] = sense_index
+        sense_index += 1
+
+    print('building senses similarity matrix', time.strftime("%H:%M:%S"))
+
+    num_senses = len(senses)
+    similarity_matrix = np.ndarray((num_senses, num_senses))
+
+    index = 1
+    for sense1 in senses:
+        sense1_index = sense_index_map[sense1.name()]
+        similarity_matrix[sense1_index][sense1_index] = 1.0
+        for sense2 in senses[index:]:
+            similarity = sense1.wup_similarity(sense2)
+            sense2_index = sense_index_map[sense2.name()]
+            similarity_matrix[sense1_index][sense2_index] = similarity
+            similarity_matrix[sense2_index][sense1_index] = similarity
+
+        if not index % 100:
+            print('%s: completed %d/%d senses' %
+                  (time.strftime("%Y/%d/%m-%H:%M:%S"), index, num_senses))
+        index += 1
+
+    print('finished senses similarity matrix', time.strftime("%H:%M:%S"))
+
+    return similarity_matrix
+
+
+def build_hdf5_sense_similarity_matrix(senses):
+    """
+
+    :type senses: list[Synset]
+    :param senses:
+    """
+
+    num_senses = len(senses)
+
+    hdf5_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE +\
+                '_sense_similarity_matrix.hdf5'
+    f = h5py.File(hdf5_file, 'w')
+    similarity_matrix = f.create_dataset(
+        Constants.ITEM_TYPE + "_sense_similarity_matrix",
+        (num_senses, num_senses)
+    )
+
+    sense_index_map = {}
+
+    sense_index = 0
+    for sense in senses:
+
+        if sense in sense_index_map:
+            raise ValueError('There are repeated items in the senses iterable')
+
+        sense_index_map[sense.name()] = sense_index
+        sense_index += 1
+
+    print('building senses similarity matrix', time.strftime("%H:%M:%S"))
+
+    index = 1
+    for sense1 in senses:
+        sense1_index = sense_index_map[sense1.name()]
+        similarity_matrix[sense1_index, sense1_index] = 1.0
+        for sense2 in senses[index:]:
+            similarity = sense1.wup_similarity(sense2)
+            sense2_index = sense_index_map[sense2.name()]
+            similarity_matrix[sense1_index, sense2_index] = similarity
+            similarity_matrix[sense2_index, sense1_index] = similarity
+
+        if not index % 100:
+            print('%s: completed %d/%d senses' %
+                  (time.strftime("%Y/%d/%m-%H:%M:%S"), index, num_senses))
+        index += 1
+
+    print('finished senses similarity matrix', time.strftime("%H:%M:%S"))
+
+    print(similarity_matrix[1, 1])
+    print(f[Constants.ITEM_TYPE + "_sense_similarity_matrix"][0][0])
+    # print(similarity_matrix)
+
+    f.close()
+
 
 
 def main():
@@ -412,21 +512,80 @@ def main():
     base_dir = Constants.DATASET_FOLDER
     dataset = Constants.ITEM_TYPE
     # dataset = 'restaurant'
+
+    # similarity_matrix_file = base_dir + dataset + '_sense_similarity_matrix.pkl'
+    # numpy_similarity_matrix_file = base_dir + dataset + '_numpy_sense_similarity_matrix.pkl'
+    # numpy_similarity_matrix_text_file = base_dir + dataset + '_numpy_sense_similarity_matrix.txt'
+    # numpy_similarity_matrix_gz_file = base_dir + dataset + '_numpy_sense_similarity_matrix.txt.gz'
+
+    # with open(reviews_file, 'rb') as read_file:
+    #     reviews = pickle.load(read_file)
+    #     reviews = reviews[:10]
+
+    # all_senses = list(generate_all_senses(reviews))
+    # print('num senses: %d' % len(all_senses))
+    # # similarity_matrix = build_sense_similarity_matrix(all_senses)
+    # numpy_similarity_matrix = build_numpy_sense_similarity_matrix(all_senses)
+    # with open(similarity_matrix_file, 'wb') as write_file:
+        # pickle.dump(similarity_matrix, write_file, pickle.HIGHEST_PROTOCOL)
+    # with open(numpy_similarity_matrix_file, 'wb') as write_file:
+    #     pickle.dump(numpy_similarity_matrix, write_file, pickle.HIGHEST_PROTOCOL)
+
+    # np.savetxt(numpy_similarity_matrix_text_file, numpy_similarity_matrix)
+    # np.savetxt(numpy_similarity_matrix_gz_file, numpy_similarity_matrix)
+
+    print('Building %s similarity matrix' % Constants.ITEM_TYPE)
+
     reviews_file = base_dir + 'reviews_' + dataset + '_shuffled.pkl'
-    similarity_matrix_file = base_dir + dataset + '_sense_similarity_matrix.pkl'
 
     with open(reviews_file, 'rb') as read_file:
         reviews = pickle.load(read_file)
+        reviews = reviews[:10]
 
     all_senses = list(generate_all_senses(reviews))
     print('num senses: %d' % len(all_senses))
-    similarity_matrix = build_sense_similarity_matrix(all_senses)
-    with open(similarity_matrix_file, 'wb') as write_file:
-        pickle.dump(similarity_matrix, write_file, pickle.HIGHEST_PROTOCOL)
+    # similarity_matrix = build_sense_similarity_matrix(all_senses)
+    # numpy_similarity_matrix = build_numpy_sense_similarity_matrix(all_senses)
+    #
+    # hdf5_file = base_dir + dataset + '_sense_similarity_matrix.hdf5'
+    # f = h5py.File(hdf5_file, 'w')
+    # f.create_dataset(dataset + "_sense_similarity_matrix", data=numpy_similarity_matrix)
+    # f.close()
+
+    build_hdf5_sense_similarity_matrix(all_senses)
 
 
-# start = time.time()
-# main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+def read():
+
+    hdf5_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_sense_similarity_matrix.hdf5'
+
+    f = h5py.File(hdf5_file, 'r')
+    my_matrix = f[Constants.ITEM_TYPE + "_sense_similarity_matrix"]
+    print('matrix length: %d' % len(my_matrix))
+    print(my_matrix[1, 1])
+
+    # clusterer = AffinityPropagation()
+    # labels = clusterer.fit_predict(my_matrix)
+    numpy_matrix = np.array(my_matrix)
+    print(numpy_matrix)
+    # print(labels)
+    f.close()
+
+
+def mini_write_test():
+    hdf5_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_sense_similarity_matrix.hdf5'
+    f = h5py.File(hdf5_file, 'w')
+    dataset = f.create_dataset(Constants.ITEM_TYPE + "_sense_similarity_matrix", (4, 4))
+    dataset[1, 1] = 888
+    f.close()
+
+
+
+
+start = time.time()
+main()
+# mini_write_test()
+read()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
