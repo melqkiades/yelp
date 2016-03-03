@@ -1,9 +1,9 @@
+import copy
 import csv
 import json
 import random
 import nltk
-import numpy as np
-from pandas import DataFrame
+import numpy
 
 __author__ = 'franpena'
 
@@ -47,6 +47,22 @@ class ETLUtils:
         for dictionary in dictionary_list:
             for field in fields:
                 del (dictionary[field])
+
+    @staticmethod
+    def keep_fields(fields, dictionary_list):
+        """
+        Removes all but the specified fields from every dictionary in the
+        dictionary list
+
+        :rtype : void
+        :param fields: a list of strings, which contains the fields that are
+        going to be kept from every dictionary in the dictionary list
+        :param dictionary_list: a list of dictionaries
+        """
+        unwanted_fields = set(dictionary_list[0]) - set(fields)
+        for dictionary in dictionary_list:
+            for unwanted_field in unwanted_fields:
+                del dictionary[unwanted_field]
 
     @staticmethod
     def select_fields(fields, dictionary_list):
@@ -185,7 +201,34 @@ class ETLUtils:
         :returns: a tuple <Data, Data>
         """
         if shuffle_data:
-            np.random.shuffle(records)
+            numpy.random.shuffle(records)
+        length = len(records)
+        split_start = split + start
+
+        if start == 0:
+            train = records[:int(round(split*length))]
+            test = records[int(round(split*length)):]
+        elif split_start > 1:
+            train = records[int(round(start*length)):] + records[:int(round((split_start-1)*length))]
+            test = records[int(round((split_start-1)*length)):int(round(start*length))]
+        else:
+            train = records[int(round(start*length)):int(round(split_start*length))]
+            test = records[int(round(split_start*length)):] + records[:int(round(start*length))]
+
+        return train, test
+
+    @staticmethod
+    def split_train_test_copy(records, split=0.8, start=0.):
+        """
+        Splits the data in two distinct datasets: train and test by making a
+        deep copy of the records
+
+        :param split: % of training set to be used (test set size = 100-percent)
+        :type split: float
+
+        :returns: a tuple <Data, Data>
+        """
+        records = copy.deepcopy(records)
         length = len(records)
         split_start = split + start
 

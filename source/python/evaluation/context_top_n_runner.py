@@ -123,7 +123,7 @@ class ContextTopNRunner(object):
         self.top_n_evaluator = None
         self.headers = None
         self.important_records = None
-        self.context_rich_topics = None
+        self.context_rich_topics = []
 
         os.remove(self.csv_train_file)
         os.remove(self.csv_test_file)
@@ -146,7 +146,7 @@ class ContextTopNRunner(object):
                  Constants.ITEM_TYPE
         # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
 
-        # print('unique id: %s' % unique_id)
+        print('unique id: %s' % unique_id)
 
         self.csv_train_file = prefix + '_train.csv'
         self.csv_test_file = prefix + '_test.csv'
@@ -237,32 +237,27 @@ class ContextTopNRunner(object):
         print('Exported contextual topics: %s' %
               time.strftime("%Y/%d/%m-%H:%M:%S"))
 
-        return self.train_records, self.records_to_predict
-
     def prepare(self):
         print('prepare: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
 
         self.headers = build_headers(self.context_rich_topics)
 
-        contextual_train_set = copy.deepcopy(self.train_records)
-        contextual_test_set = copy.deepcopy(self.records_to_predict)
-
         if Constants.USE_CONTEXT is True:
-            for record in contextual_train_set:
+            for record in self.train_records:
                 record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
-            for record in contextual_test_set:
+            for record in self.records_to_predict:
                 record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
             ETLUtils.drop_fields([Constants.TOPICS_FIELD], self.train_records)
 
-        contextual_train_set = ETLUtils.select_fields(self.headers, contextual_train_set)
-        contextual_test_set = ETLUtils.select_fields(self.headers, contextual_test_set)
+        ETLUtils.keep_fields(self.headers, self.train_records)
+        ETLUtils.keep_fields(self.headers, self.records_to_predict)
 
         ETLUtils.save_csv_file(
-            self.csv_train_file, contextual_train_set, self.headers)
+            self.csv_train_file, self.train_records, self.headers)
         ETLUtils.save_csv_file(
-            self.csv_test_file, contextual_test_set, self.headers)
+            self.csv_test_file, self.records_to_predict, self.headers)
 
         print('Exported CSV and JSON files: %s'
               % time.strftime("%Y/%d/%m-%H:%M:%S"))
@@ -312,7 +307,6 @@ class ContextTopNRunner(object):
         total_iterations = num_cycles * num_folds
         split = 1 - (1/float(num_folds))
 
-        self.create_tmp_file_names()
         self.load()
 
         for i in range(num_cycles):
@@ -329,8 +323,9 @@ class ContextTopNRunner(object):
                 cv_start = float(j) / num_folds
                 print('\nFold: %d/%d' % ((j+1), num_folds))
 
+                self.create_tmp_file_names()
                 self.train_records, self.test_records =\
-                    ETLUtils.split_train_test(
+                    ETLUtils.split_train_test_copy(
                         self.records, split=split, shuffle_data=False,
                         start=cv_start)
                 self.export()
@@ -350,6 +345,7 @@ class ContextTopNRunner(object):
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
                 total_cycle_time += fold_time
+                self.clear()
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
         average_recall = total_recall / total_iterations
@@ -382,7 +378,7 @@ class ContextTopNRunner(object):
 
 def run_tests():
 
-    combined_parameters = parameter_combinator.restaurant_no_context_parameters()
+    combined_parameters = parameter_combinator.hotel_context_parameters()
 
     test_cycle = 1
     num_tests = len(combined_parameters)

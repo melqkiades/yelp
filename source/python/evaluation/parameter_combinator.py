@@ -81,11 +81,6 @@ def hotel_context_parameters():
     lda_num_topics_list = [450, 150, 50]
     lda_model_passes_list = [10, 1]
     lda_model_iterations_list = [500, 50]
-    # lda_beta_list = [1.0, 0.0]
-    # lda_epsilon_list = [0.01]
-    # lda_num_topics_list = [150]
-    # lda_model_passes_list = [1]
-    # lda_model_iterations_list = [50]
     lda_multicore_list = [False]
     cross_validation_num_folds = 5
     use_context = True
@@ -94,6 +89,26 @@ def hotel_context_parameters():
     libfm_seed = 0
     shuffle_data = True
     num_cores = None
+
+    # business_type = 'hotel'
+    # review_type = None
+    # num_cycles = 2
+    # topn_n = 10
+    # topn_num_items = 45
+    # lda_alpha_list = [0.005]
+    # lda_beta_list = [1.0]
+    # lda_epsilon_list = [0.01]
+    # lda_num_topics_list = [50]
+    # lda_model_passes_list = [1]
+    # lda_model_iterations_list = [50]
+    # lda_multicore_list = [False]
+    # cross_validation_num_folds = 5
+    # use_context = True
+    # random_seed = 0
+    # numpy_random_seed = 0
+    # libfm_seed = 0
+    # shuffle_data = True
+    # num_cores = None
 
     combined_parameters = combine_parameters(
         business_type,
@@ -133,7 +148,7 @@ def restaurant_context_parameters():
     lda_model_passes_list = [10, 1]
     lda_model_iterations_list = [500, 50]
     lda_multicore_list = [False]
-    cross_validation_num_folds = 50
+    cross_validation_num_folds = 20
     use_context = True
     random_seed = 0
     numpy_random_seed = 0
