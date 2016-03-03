@@ -326,8 +326,7 @@ class ContextTopNRunner(object):
                 self.create_tmp_file_names()
                 self.train_records, self.test_records =\
                     ETLUtils.split_train_test_copy(
-                        self.records, split=split, shuffle_data=False,
-                        start=cv_start)
+                        self.records, split=split, start=cv_start)
                 self.export()
                 if Constants.USE_CONTEXT:
                     lda_based_context = self.train_topic_model()

@@ -119,6 +119,8 @@ class TopNEvaluator:
 
             user_id = record[Constants.USER_ID_FIELD]
             item_id = record[Constants.ITEM_ID_FIELD]
+            review_id = record[Constants.REVIEW_ID_FIELD]
+            rating = record[Constants.RATING_FIELD]
             # return I many of items
             irrelevant_items = self.get_irrelevant_items(user_id)[:self.I]
 
@@ -133,8 +135,12 @@ class TopNEvaluator:
                 all_items_to_predict[user_item_key] = irrelevant_items
 
                 for irrelevant_item in irrelevant_items:
-                    generated_record = record.copy()
-                    generated_record[Constants.ITEM_ID_FIELD] = irrelevant_item
+                    generated_record = {
+                        Constants.REVIEW_ID_FIELD: review_id,
+                        Constants.USER_ID_FIELD: user_id,
+                        Constants.ITEM_ID_FIELD: irrelevant_item,
+                        Constants.RATING_FIELD: rating
+                    }
                     all_records_to_predict.append(generated_record)
 
         self.items_to_predict = all_items_to_predict
