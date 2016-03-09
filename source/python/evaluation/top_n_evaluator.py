@@ -2,6 +2,8 @@ import copy
 import random
 import cPickle as pickle
 
+import numpy
+
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
 
@@ -59,7 +61,7 @@ class TopNEvaluator:
     def get_irrelevant_items(self, user_id):
         user_items = self.user_item_map[user_id]
         diff_items = list(set(self.item_ids).difference(user_items))
-        random.shuffle(diff_items)
+        numpy.random.shuffle(diff_items)
         return diff_items
 
     def find_important_records(self):
