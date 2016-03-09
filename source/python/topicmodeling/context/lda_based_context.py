@@ -76,7 +76,8 @@ class LdaBasedContext:
                 specific_corpus, id2word=specific_dictionary,
                 num_topics=self.num_topics,
                 passes=Constants.LDA_MODEL_PASSES,
-                iterations=Constants.LDA_MODEL_ITERATIONS)
+                iterations=Constants.LDA_MODEL_ITERATIONS,
+                workers=Constants.NUM_CORES-1)
             print('lda multicore')
         else:
             self.topic_model = ldamodel.LdaModel(
