@@ -1,0 +1,57 @@
+
+- To execute a python file from the command line, place this two lines at the beginning of the file that is going to be executed:
+  import sys
+  sys.path.append('/Users/fpena/UCC/Thesis/projects/yelp/source/python')
+- One can also declare the PYTHONPATH variable before executing the python command:
+  PYTHONPATH='/Users/fpena/UCC/Thesis/projects/yelp/source/python' python program.py
+- To shuffle the contents of a text use
+  cat myfile | perl -MList::Util=shuffle -e 'print shuffle(<STDIN>);'
+- To run python and keep the constantly updated in a file use:
+  stdbuf -oL nohup python context_recommender_tests.py > results4.log &
+- Command to run the iPython notebook:
+  ipython notebook --pylab inline
+- To expand the memory a process can use the shmmax command
+- To download the code from the cluster use:
+  http_proxy="http://4c.ucc.ie:80" https_proxy="http://4c.ucc.ie:80" wget -c https://github.com/melqkiades/yelp/archive/master.zip
+- To install Anaconda and get everything running use:
+  bash Anaconda-2.3.0-MacOSX-x86_64.sh
+  conda update --all
+  conda install gensim
+- Set this variable in order to be able to run parallel code using the multiprocessing library in Python using Anaconda in Mac
+  export VECLIB_MAXIMUM_THREADS=1
+- To count the number of finished instances in the execution log
+  grep -o 'seconds' results46.log | wc -l  
+- To kill all the processes from a given user
+  pkill -u fpena
+- To serialize a python object into a file
+  with open(my_file, 'wb') as write_file:
+      pickle.dump(my_reviews, write_file, pickle.HIGHEST_PROTOCOL)
+- To read a serialized python object from a file
+  with open(my_file, 'rb') as read_file:
+      my_reviews = pickle.load(read_file)
+- To start an ipython notebook
+  ipython notebook --pylab inline
+  In new versions the command is
+  ipython notebook
+  and then add the following line at the begining of the notebook
+  %matplotlib inline
+  or
+  %pylab inline
+- To push using git in the command line
+  git push origin master
+- To group by in a pandas dataframe
+  data_frame = DataFrame(my_records, columns=['business_id'])
+  df_agg = data_frame.groupby(['business_id']).size()
+- To split a file by percentage
+  split -l $(echo $(( $(cat sample.csv | wc -l) * 80 / 100))) sample.csv sample.csv
+- To run python code independently from the IDE
+  stdbuf -oL nohup python python_program.py > results.log &
+- To add an ssh key for gitlab
+  1. > ssh-keygen -t rsa
+  2. Copy the contents of the generated file .ssh/id_rsa.pub
+  3. In the webpage of GitLab go to Profile-->SSH Keys and click Add SSH Key
+  4. Paste the copied content.
+  5. Now you can clone, push, pull to the desired repository
+- To update git in the server while there is other code executing
+  > git reset --hard HEAD
+  > git pull
