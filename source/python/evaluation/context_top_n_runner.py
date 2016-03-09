@@ -12,6 +12,7 @@ from etl import libfm_converter
 from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
+from topicmodeling.context import topic_model_creator
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
 from utils.constants import Constants
@@ -323,7 +324,9 @@ class ContextTopNRunner(object):
                         self.records, split=split, start=cv_start)
                 self.export()
                 if Constants.USE_CONTEXT:
-                    lda_based_context = self.train_topic_model()
+                    # lda_based_context = self.train_topic_model()
+                    lda_based_context =\
+                        topic_model_creator.load_topic_model(i, j)
                     self.find_reviews_topics(lda_based_context)
                 self.prepare()
                 self.predict()
@@ -389,10 +392,10 @@ def run_tests():
 
 start = time.time()
 
-my_context_top_n_runner = ContextTopNRunner()
-my_context_top_n_runner.perform_cross_validation()
+# my_context_top_n_runner = ContextTopNRunner()
+# my_context_top_n_runner.perform_cross_validation()
 # full_cycle(None)
-# run_tests()
+run_tests()
 # parallel_context_top_n()
 end = time.time()
 total_time = end - start
