@@ -65,10 +65,12 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         '-test',
         test_file,
         '-dim',
-        '1,1,8',
+        '1,1,' + str(Constants.LIBFM_NUM_FACTORS),
         '-out',
         predictions_file
     ]
+
+    print(command)
 
     if Constants.LIBFM_SEED is not None:
         command.extend(['-seed', str(Constants.LIBFM_SEED)])
@@ -78,7 +80,7 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
 
 
 def filter_reviews(records, reviews, review_type):
-    print('filter: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+    print('filter: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     if not review_type:
         return records, reviews
@@ -114,7 +116,7 @@ class ContextTopNRunner(object):
         self.context_log_file = None
 
     def clear(self):
-        print('clear: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('clear: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         # self.records = None
         self.train_records = None
@@ -166,7 +168,7 @@ class ContextTopNRunner(object):
             numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
     def load(self):
-        print('load: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
         print('num_records: %d' % len(self.original_records))
 
@@ -177,11 +179,11 @@ class ContextTopNRunner(object):
                 pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
     def shuffle(self):
-        print('shuffle: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('shuffle: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         random.shuffle(self.records)
 
     def export(self):
-        print('export: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('export: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         if Constants.REVIEW_TYPE:
             self.records = ETLUtils.filter_records(
@@ -202,18 +204,18 @@ class ContextTopNRunner(object):
         self.important_records = self.top_n_evaluator.important_records
 
     def train_topic_model(self):
-        print('train topic model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         lda_based_context = LdaBasedContext(self.train_records)
         lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
-        print('Trained LDA Model: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         self.context_rich_topics = lda_based_context.context_rich_topics
 
         return lda_based_context
 
     def find_reviews_topics(self, lda_based_context):
-        print('find topics: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         lda_based_context.find_contextual_topics(self.train_records)
 
@@ -235,10 +237,10 @@ class ContextTopNRunner(object):
 
         print('contextual test set size: %d' % len(self.records_to_predict))
         print('Exported contextual topics: %s' %
-              time.strftime("%Y/%d/%m-%H:%M:%S"))
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     def prepare(self):
-        print('prepare: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('prepare: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         self.headers = build_headers(self.context_rich_topics)
 
@@ -260,7 +262,7 @@ class ContextTopNRunner(object):
             self.csv_test_file, self.records_to_predict, self.headers)
 
         print('Exported CSV and JSON files: %s'
-              % time.strftime("%Y/%d/%m-%H:%M:%S"))
+              % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         csv_files = [
             self.csv_train_file,
@@ -273,17 +275,17 @@ class ContextTopNRunner(object):
             csv_files, 0, [1, 2], [], ',', has_header=True,
             suffix='.libfm')
 
-        print('Exported LibFM files: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('Exported LibFM files: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     def predict(self):
-        print('predict: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('predict: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         run_libfm(
             self.context_train_file, self.context_test_file,
             self.context_predictions_file, self.context_log_file)
 
     def evaluate(self):
-        print('evaluate: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('evaluate: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         predictions = rmse_calculator.read_targets_from_txt(
             self.context_predictions_file)
@@ -355,14 +357,14 @@ class ContextTopNRunner(object):
         print('average specific recall: %f' % average_specific_recall)
         print('average generic recall: %f' % average_generic_recall)
         print('average cycle time: %f' % average_cycle_time)
-        print('End: %s' % time.strftime("%Y/%d/%m-%H:%M:%S"))
+        print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         results = copy.deepcopy(Constants._properties)
         results['recall'] = average_recall
         results['specific_recall'] = average_specific_recall
         results['generic_recall'] = average_generic_recall
         results['cycle_time'] = average_cycle_time
-        results['timestamp'] = time.strftime("%Y/%d/%m-%H:%M:%S")
+        results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
         if not os.path.exists(Constants.RESULTS_FILE):
             with open(Constants.RESULTS_FILE, 'wb') as f:
