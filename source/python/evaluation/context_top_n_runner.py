@@ -185,14 +185,6 @@ class ContextTopNRunner(object):
     def export(self):
         print('export: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        if Constants.REVIEW_TYPE:
-            self.records = ETLUtils.filter_records(
-                self.records, Constants.PREDICTED_CLASS_FIELD,
-                [Constants.REVIEW_TYPE])
-            self.test_records = ETLUtils.filter_records(
-                self.test_records, Constants.PREDICTED_CLASS_FIELD,
-                [Constants.REVIEW_TYPE])
-
         with open(Constants.USER_ITEM_MAP_FILE, 'rb') as read_file:
             user_item_map = pickle.load(read_file)
 
@@ -315,9 +307,9 @@ class ContextTopNRunner(object):
 
             print('\n\nCycle: %d/%d' % ((i+1), num_cycles))
 
-            self.records = copy.deepcopy(self.original_records)
             if Constants.SHUFFLE_DATA:
-                self.shuffle()
+                random.shuffle(self.original_records)
+            self.records = copy.deepcopy(self.original_records)
 
             for j in range(num_folds):
 
@@ -398,9 +390,9 @@ def run_tests():
 start = time.time()
 
 my_context_top_n_runner = ContextTopNRunner()
-# my_context_top_n_runner.perform_cross_validation()
+my_context_top_n_runner.perform_cross_validation()
 # full_cycle(None)
-run_tests()
+# run_tests()
 # parallel_context_top_n()
 end = time.time()
 total_time = end - start
