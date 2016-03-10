@@ -324,9 +324,11 @@ class ContextTopNRunner(object):
                         self.records, split=split, start=cv_start)
                 self.export()
                 if Constants.USE_CONTEXT:
-                    # lda_based_context = self.train_topic_model()
-                    lda_based_context =\
-                        topic_model_creator.load_topic_model(i, j)
+                    if Constants.CACHE_TOPIC_MODEL:
+                        lda_based_context =\
+                            topic_model_creator.load_topic_model(i, j)
+                    else:
+                        lda_based_context = self.train_topic_model()
                     self.find_reviews_topics(lda_based_context)
                 self.prepare()
                 self.predict()

@@ -19,3 +19,4 @@ cross_validation_num_folds: 5
 use_context: False
 shuffle_data: True
 num_cores:
+cache_topic_model: True

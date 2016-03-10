@@ -1,4 +1,3 @@
-import copy
 import cPickle as pickle
 import os
 import random
@@ -49,10 +48,10 @@ def plant_seeds():
 
 
 def train_topic_model(records):
-    # print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
     lda_based_context = LdaBasedContext(records)
     lda_based_context.get_context_rich_topics()
-    # print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     return lda_based_context
 
@@ -66,6 +65,8 @@ def load_topic_model(cycle_index, fold_index):
 
 def create_topic_models():
 
+    print(Constants._properties)
+
     records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
 
     plant_seeds()
@@ -77,10 +78,8 @@ def create_topic_models():
 
         print('\n\nCycle: %d/%d' % ((i+1), num_cycles))
 
-        # records = copy.deepcopy(original_records)
         if Constants.SHUFFLE_DATA:
             random.shuffle(records)
-        print('*** first record: %s' % records[0][Constants.REVIEW_ID_FIELD])
 
         train_records_list = []
 
@@ -92,8 +91,6 @@ def create_topic_models():
                 ETLUtils.split_train_test(
                     records, split=split, start=cv_start, shuffle_data=False)
             train_records_list.append(train_records)
-            print('random: %f' % random.random())
-            print('first element:', train_records[0][Constants.REVIEW_ID_FIELD])
 
         args = zip(
             train_records_list,
@@ -145,20 +142,6 @@ def parallel_context_top_n(args):
 
     average_cycle_time = total_pool_time / num_iterations
     print('average cycle time: %d seconds' % average_cycle_time)
-
-
-def test():
-
-    train_records_list = ['a', 'b',  'c',  'd',  'e']
-
-    args = zip(
-        [5] * Constants.CROSS_VALIDATION_NUM_FOLDS,
-        range(Constants.CROSS_VALIDATION_NUM_FOLDS),
-        train_records_list
-    )
-
-    for arg in args:
-        print(arg)
 
 
 def main():
