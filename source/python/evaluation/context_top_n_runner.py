@@ -244,6 +244,11 @@ class ContextTopNRunner(object):
             for record in self.records_to_predict:
                 record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
+            if Constants.REVIEW_TYPE:
+                self.train_records = ETLUtils.filter_records(
+                    self.train_records, Constants.PREDICTED_CLASS_FIELD,
+                    [Constants.REVIEW_TYPE])
+
             ETLUtils.drop_fields([Constants.TOPICS_FIELD], self.train_records)
 
         ETLUtils.keep_fields(self.headers, self.train_records)
@@ -290,6 +295,8 @@ class ContextTopNRunner(object):
         return recall
 
     def perform_cross_validation(self):
+
+        print(Constants._properties)
 
         self.plant_seeds()
 
@@ -382,7 +389,6 @@ def run_tests():
     num_tests = len(combined_parameters)
     for properties in combined_parameters:
         Constants.update_properties(properties)
-        print(Constants._properties)
         context_top_n_runner = ContextTopNRunner()
 
         print('\n\n******************\nTest %d/%d\n******************\n' %
@@ -396,7 +402,6 @@ start = time.time()
 
 # my_context_top_n_runner = ContextTopNRunner()
 # my_context_top_n_runner.perform_cross_validation()
-# full_cycle(None)
 run_tests()
 # parallel_context_top_n()
 end = time.time()
