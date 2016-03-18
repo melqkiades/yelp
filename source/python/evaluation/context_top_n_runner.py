@@ -146,7 +146,7 @@ class ContextTopNRunner(object):
 
         unique_id = uuid.uuid4().hex
         prefix = Constants.GENERATED_FOLDER + unique_id + '_' + \
-                 Constants.ITEM_TYPE
+            Constants.ITEM_TYPE
         # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
 
         print('unique id: %s' % unique_id)
@@ -203,6 +203,11 @@ class ContextTopNRunner(object):
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
+        return lda_based_context
+
+    def load_topic_model(self, i, j):
+        print('load topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        lda_based_context = topic_model_creator.load_topic_model(i, j)
         self.context_rich_topics = lda_based_context.context_rich_topics
 
         return lda_based_context
@@ -332,8 +337,7 @@ class ContextTopNRunner(object):
                 self.export()
                 if Constants.USE_CONTEXT:
                     if Constants.CACHE_TOPIC_MODEL:
-                        lda_based_context =\
-                            topic_model_creator.load_topic_model(i, j)
+                        lda_based_context = self.load_topic_model(i, j)
                     else:
                         lda_based_context = self.train_topic_model()
                     self.find_reviews_topics(lda_based_context)
