@@ -1,7 +1,9 @@
+import itertools
 import numpy
 from etl import ETLUtils
 from yelp.phoenix.business_etl import BusinessETL
 from datamining.clusterer import Clusterer
+from collections import Counter
 
 __author__ = 'franpena'
 
@@ -31,6 +33,12 @@ def binary_to_categories(binary_list, categories):
 
     return category_list
 
+
+def count_categories(cluster_list):
+    counted_clusters = []
+    for cluster in cluster_list:
+        counted_clusters.append(Counter(list(itertools.chain(*cluster))))
+    return counted_clusters
 
 
 
@@ -62,22 +70,33 @@ for i in xrange(len(my_labels)):
 # Clusterer.linkage(my_matrix[:3000])
 # Clusterer.gaac(my_matrix[:500][:50])
 
-sets = []
-for cluster in clusters:
-    my_set = set()
-    for my_list in cluster:
-        for element in my_list:
-            my_set.add(element)
-    print(my_set)
-    sets.append(list(my_set))
+# counts = count_categories(clusters)
+# print(counts)
 
-print 'Size', size
-
+# sets = []
+# for cluster in clusters:
+#     my_set = set()
+#     for my_list in cluster:
+#         for element in my_list:
+#             my_set.add(element)
+#     print(my_set)
+#     sets.append(list(my_set))
+#
+# print 'Size', size
+#
 import csv
-with open('clusters.csv', 'w') as fp:
-    a = csv.writer(fp, delimiter=',')
-    a.writerows(clusters)
+# with open('clusters.csv', 'w') as fp:
+#     a = csv.writer(fp, delimiter=',')
+#     a.writerows(clusters)
+#
+# with open('sets.csv', 'w') as fp:
+#     a = csv.writer(fp, delimiter=',')
+#     a.writerows(sets)
 
-with open('sets.csv', 'w') as fp:
-    a = csv.writer(fp, delimiter=',')
-    a.writerows(sets)
+
+def export_to_txt(counts):
+    with open('counts.txt', 'w') as fp:
+        for item in counts:
+            fp.write("%s\n" % item)
+
+export_to_txt(count_categories(clusters))

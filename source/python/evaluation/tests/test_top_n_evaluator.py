@@ -37,12 +37,12 @@ class TestTopNEvaluator(TestCase):
     #         ETLUtils.split_train_test(my_records, split=0.8, shuffle_data=False)
     #     my_predictions = rmse_calculator.read_targets_from_txt(my_predictions_file)
     #     top_n_evaluator = TopNEvaluator(my_records, test_records)
-    #     top_n_evaluator.calculate_important_items()
+    #     top_n_evaluator.find_important_records()
     #     top_n_evaluator.evaluate(my_predictions)
 
     def test_calculate_important_items(self):
         actual_important_items =\
-            TopNEvaluator.calculate_important_items(ratings)
+            TopNEvaluator.find_important_records(ratings)
 
         expected_important_items = [
             {'user_id': 'U1', 'business_id': 'I1', 'stars': 5.0},
@@ -126,26 +126,26 @@ class TestTopNEvaluator(TestCase):
     def test_update_num_hits(self):
 
         top_n_evaluator = TopNEvaluator([], [])
-        self.assertEqual(0, top_n_evaluator.n_hit)
-        self.assertEqual(0, top_n_evaluator.n_miss)
+        self.assertEqual(0, top_n_evaluator.num_generic_hits)
+        self.assertEqual(0, top_n_evaluator.num_generic_misses)
 
         top_n_list = ['I1', 'I2', 'I3', 'I4', 'I5']
         item = 'I3'
         top_n_evaluator.update_num_hits(top_n_list, item)
-        self.assertEqual(1, top_n_evaluator.n_hit)
-        self.assertEqual(0, top_n_evaluator.n_miss)
+        self.assertEqual(1, top_n_evaluator.num_generic_hits)
+        self.assertEqual(0, top_n_evaluator.num_generic_misses)
 
         top_n_list = ['I1', 'I2', 'I3', 'I4', 'I5']
         item = 'I6'
         top_n_evaluator.update_num_hits(top_n_list, item)
-        self.assertEqual(1, top_n_evaluator.n_hit)
-        self.assertEqual(1, top_n_evaluator.n_miss)
+        self.assertEqual(1, top_n_evaluator.num_generic_hits)
+        self.assertEqual(1, top_n_evaluator.num_generic_misses)
 
         top_n_list = ['I1', 'I6', 'I3', 'I4', 'I5']
         item = 'I4'
         top_n_evaluator.update_num_hits(top_n_list, item)
-        self.assertEqual(2, top_n_evaluator.n_hit)
-        self.assertEqual(1, top_n_evaluator.n_miss)
+        self.assertEqual(2, top_n_evaluator.num_generic_hits)
+        self.assertEqual(1, top_n_evaluator.num_generic_misses)
 
     def test_calculate_precision(self):
         N = 5
