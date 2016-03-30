@@ -20,3 +20,4 @@ class Review:
         self.rating = None
         self.type = None  # Either specific or generic
         self.date = None
+        self.context_words = None
