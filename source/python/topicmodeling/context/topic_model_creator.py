@@ -88,8 +88,7 @@ def create_topic_models():
             cv_start = float(j) / num_folds
 
             train_records, test_records =\
-                ETLUtils.split_train_test(
-                    records, split=split, start=cv_start, shuffle_data=False)
+                ETLUtils.split_train_test(records, split=split, start=cv_start)
             train_records_list.append(train_records)
 
         args = zip(

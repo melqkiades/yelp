@@ -72,10 +72,10 @@ def perform_cross_validation(
         start = float(i) / num_folds
         cluster_labels = None
         train_records, test_records = ETLUtils.split_train_test(
-            records, split=split, shuffle_data=False, start=start)
+            records, split=split, start=start)
         if cache_reviews:
             train_reviews, test_reviews = ETLUtils.split_train_test(
-                cache_reviews, split=split, shuffle_data=False, start=start)
+                cache_reviews, split=split, start=start)
             if reviews_type is not None:
                 cluster_labels = reviews_clusterer.cluster_reviews(test_reviews)
             recommender.reviews = train_reviews

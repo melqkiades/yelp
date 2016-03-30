@@ -19,7 +19,7 @@ def calculate_top_n_precision(reviews, recommender, n, min_score, num_folds):
         print('Fold', i )
         start = float(i) / num_folds
         train, test = ETLUtils.split_train_test(
-            reviews, split=split, shuffle_data=False, start=start)
+            reviews, split=split, start=start)
         recommender.load(train)
         user_ids = recommender.user_ids
 
@@ -96,10 +96,10 @@ def calculate_recall_in_top_n(
         start = float(i) / num_folds
         cluster_labels = None
         train_records, test_records = ETLUtils.split_train_test(
-            records, split=split, shuffle_data=False, start=start)
+            records, split=split, start=start)
         if cache_reviews:
             train_reviews, test_reviews = ETLUtils.split_train_test(
-                cache_reviews, split=split, shuffle_data=False, start=start)
+                cache_reviews, split=split, start=start)
             if reviews_type is not None:
                 cluster_labels = reviews_clusterer.cluster_reviews(test_reviews)
             recommender.reviews = train_reviews

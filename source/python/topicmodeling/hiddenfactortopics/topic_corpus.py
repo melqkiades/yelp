@@ -164,9 +164,9 @@ class TopicCorpus:
 
         """
         self.train_votes, validation_test_votes = ETLUtils.split_train_test(
-            self.corpus.vote_list, split=0.8, shuffle_data=False)
+            self.corpus.vote_list, split=0.8)
         self.valid_votes, self.test_votes = ETLUtils.split_train_test(
-            validation_test_votes, split=0.5, shuffle_data=False)
+            validation_test_votes, split=0.5)
 
         for vote in self.train_votes:
             user = vote.user

@@ -189,19 +189,15 @@ class ETLUtils:
 
 
     @staticmethod
-    def split_train_test(records, split=0.8, shuffle_data=True, start=0.):
+    def split_train_test(records, split=0.8, start=0.):
         """
         Splits the data in two disjunct datasets: train and test
 
         :param split: % of training set to be used (test set size = 100-percent)
         :type split: float
-        :param shuffle_data: shuffle dataset?
-        :type shuffle_data: bool
 
         :returns: a tuple <Data, Data>
         """
-        if shuffle_data:
-            numpy.random.shuffle(records)
         length = len(records)
         split_start = split + start
 
