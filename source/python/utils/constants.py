@@ -23,6 +23,7 @@ class Constants(object):
     # with the version control system (merging)
 
     CONTEXT_TOPICS_FIELD = 'context_topics'
+    CONTEXT_WORDS_FIELD = 'context_words'
     ITEM_ID_FIELD = 'business_id'
     PREDICTED_CLASS_FIELD = 'predicted_class'
     RATING_FIELD = 'stars'
@@ -67,6 +68,7 @@ class Constants(object):
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
     RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
                    ITEM_TYPE + 's_shuffled_tagged.json'
+    REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     RESULTS_FILE = DATASET_FOLDER +\
                         ITEM_TYPE + '_results.csv'
     GIT_REVISION_HASH = strip(subprocess.check_output(
