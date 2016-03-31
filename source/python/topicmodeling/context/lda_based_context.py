@@ -108,7 +108,10 @@ class LdaBasedContext:
             if weighted_frq < self.alpha:
                 continue
 
-            ratio = (specific_weighted_frq + 1) / (generic_weighted_frq + 1)
+            ratio = (specific_weighted_frq + 0.0001) / (generic_weighted_frq + 0.0001)
+
+            # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
+            #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
 
             if ratio < self.beta:
                 continue
@@ -125,9 +128,63 @@ class LdaBasedContext:
         #     print('topic', ratio, topic_index, self.topic_model.print_topic(topic_index, topn=50))
 
         # print('num_topics', len(self.topics))
-        # print('ratio_topics', ratio_topics)
+        print('ratio_topics', ratio_topics)
         self.context_rich_topics = sorted_topics
         # print(self.context_rich_topics)
+
+        return sorted_topics
+
+    def get_all_topics(self):
+        """
+        Returns a list with all the topics after training the LDA model with all
+        the reviews (specific + generic)
+
+        :rtype: list[(int, float)]
+        :return: a list of pairs where the first position of the pair indicates
+        the topic and the second position has a 1.0 value (this is just to have
+        the results with the same format as the get_context_rich_topics()
+        method)
+        """
+
+        reviews_text =\
+            context_utils.get_text_from_reviews(self.records)
+
+        bag_of_words = lda_context_utils.create_bag_of_words(reviews_text)
+
+        dictionary = corpora.Dictionary(bag_of_words)
+        dictionary.filter_extremes()
+        corpus =\
+            [dictionary.doc2bow(text) for text in bag_of_words]
+
+        # numpy.random.seed(0)
+        if Constants.LDA_MULTICORE:
+            self.topic_model = LdaMulticore(
+                corpus, id2word=dictionary,
+                num_topics=self.num_topics,
+                passes=Constants.LDA_MODEL_PASSES,
+                iterations=Constants.LDA_MODEL_ITERATIONS,
+                workers=Constants.NUM_CORES-1)
+            print('lda multicore')
+        else:
+            self.topic_model = ldamodel.LdaModel(
+                corpus, id2word=dictionary,
+                num_topics=self.num_topics,
+                passes=Constants.LDA_MODEL_PASSES,
+                iterations=Constants.LDA_MODEL_ITERATIONS)
+            print('lda monocore')
+
+        lda_context_utils.update_reviews_with_topics(
+            self.topic_model, corpus, self.records)
+
+        topic_ratio_map = {}
+
+        for topic in range(self.num_topics):
+            topic_ratio_map[topic] = 1
+
+        sorted_topics = sorted(
+            topic_ratio_map.items(), key=operator.itemgetter(1), reverse=True)
+
+        self.context_rich_topics = sorted_topics
 
         return sorted_topics
 

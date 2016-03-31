@@ -223,7 +223,10 @@ class ContextTopNRunner(object):
     def train_topic_model(self):
         print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         lda_based_context = LdaBasedContext(self.train_records)
-        lda_based_context.get_context_rich_topics()
+        if Constants.REVIEW_TYPE == 'all_topics':
+            lda_based_context.get_all_topics()
+        else:
+            lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -273,7 +276,8 @@ class ContextTopNRunner(object):
             for record in self.records_to_predict:
                 record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
-            if Constants.REVIEW_TYPE:
+            if Constants.REVIEW_TYPE == Constants.SPECIFIC or \
+                    Constants.REVIEW_TYPE == Constants.GENERIC:
                 self.train_records = ETLUtils.filter_records(
                     self.train_records, Constants.PREDICTED_CLASS_FIELD,
                     [Constants.REVIEW_TYPE])
