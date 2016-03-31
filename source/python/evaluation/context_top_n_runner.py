@@ -1,5 +1,6 @@
 import copy
 import csv
+import json
 import os
 import random
 from subprocess import call
@@ -97,6 +98,29 @@ def filter_reviews(records, reviews, review_type):
     return filtered_records, filtered_reviews
 
 
+def write_results_to_csv(results):
+    if not os.path.exists(Constants.CSV_RESULTS_FILE):
+        with open(Constants.CSV_RESULTS_FILE, 'w') as f:
+            w = csv.DictWriter(f, results.keys())
+            w.writeheader()
+            w.writerow(results)
+    else:
+        with open(Constants.CSV_RESULTS_FILE, 'a') as f:
+            w = csv.DictWriter(f, results.keys())
+            w.writerow(results)
+
+
+def write_results_to_json(results):
+    if not os.path.exists(Constants.JSON_RESULTS_FILE):
+        with open(Constants.JSON_RESULTS_FILE, 'w') as f:
+            json.dump(results, f)
+            f.write('\n')
+    else:
+        with open(Constants.JSON_RESULTS_FILE, 'a') as f:
+            json.dump(results, f)
+            f.write('\n')
+
+
 class ContextTopNRunner(object):
 
     def __init__(self):
@@ -181,7 +205,7 @@ class ContextTopNRunner(object):
 
     def shuffle(self):
         print('shuffle: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        random.shuffle(self.records)
+        random.shuffle(self.original_records)
 
     def export(self):
         print('export: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -296,6 +320,8 @@ class ContextTopNRunner(object):
         recall = self.top_n_evaluator.recall
 
         print('Recall: %f' % recall)
+        print('Specific recall: %f' % self.top_n_evaluator.specific_recall)
+        print('Generic recall: %f' % self.top_n_evaluator.generic_recall)
 
         return recall
 
@@ -321,7 +347,7 @@ class ContextTopNRunner(object):
             print('\n\nCycle: %d/%d' % ((i+1), num_cycles))
 
             if Constants.SHUFFLE_DATA:
-                random.shuffle(self.original_records)
+                self.shuffle()
             self.records = copy.deepcopy(self.original_records)
 
             for j in range(num_folds):
@@ -374,15 +400,8 @@ class ContextTopNRunner(object):
         results['cycle_time'] = average_cycle_time
         results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
-        if not os.path.exists(Constants.RESULTS_FILE):
-            with open(Constants.RESULTS_FILE, 'wb') as f:
-                w = csv.DictWriter(f, results.keys())
-                w.writeheader()
-                w.writerow(results)
-        else:
-            with open(Constants.RESULTS_FILE, 'a') as f:
-                w = csv.DictWriter(f, results.keys())
-                w.writerow(results)
+        write_results_to_csv(results)
+        write_results_to_json(results)
 
 
 def run_tests():

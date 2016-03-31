@@ -69,8 +69,10 @@ class Constants(object):
     RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
                    ITEM_TYPE + 's_shuffled_tagged.json'
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
-    RESULTS_FILE = DATASET_FOLDER +\
-                        ITEM_TYPE + '_results.csv'
+    CSV_RESULTS_FILE = DATASET_FOLDER + \
+                       ITEM_TYPE + '_results.csv'
+    JSON_RESULTS_FILE = DATASET_FOLDER + \
+                       ITEM_TYPE + '_results.json'
     GIT_REVISION_HASH = strip(subprocess.check_output(
         ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
     _properties['git_revision_hash'] = GIT_REVISION_HASH
@@ -115,8 +117,10 @@ class Constants(object):
         Constants.RECORDS_FILE =\
             Constants.DATASET_FOLDER + 'yelp_training_set_review_' +\
             Constants.ITEM_TYPE + 's_shuffled_tagged.json'
-        Constants.RESULTS_FILE = Constants.DATASET_FOLDER +\
-            Constants.ITEM_TYPE + '_results.csv'
+        Constants.CSV_RESULTS_FILE = Constants.DATASET_FOLDER + \
+                                     Constants.ITEM_TYPE + '_results.csv'
+        Constants.JSON_RESULTS_FILE = Constants.DATASET_FOLDER + \
+                                     Constants.ITEM_TYPE + '_results.json'
         Constants.GIT_REVISION_HASH = strip(subprocess.check_output(
             ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
         Constants._properties['git_revision_hash'] = Constants.GIT_REVISION_HASH
