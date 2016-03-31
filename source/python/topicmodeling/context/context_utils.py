@@ -7,6 +7,7 @@ import itertools
 
 import h5py
 import networkx
+import sklearn
 from networkx.algorithms.approximation import dominating_set
 from networkx.algorithms.approximation import vertex_cover
 import nltk
@@ -15,8 +16,11 @@ from nltk.corpus.reader import Synset
 import numpy as np
 import time
 import scipy.misc
-from sklearn.cluster import AffinityPropagation
+from sklearn.cluster import AffinityPropagation, DBSCAN
 
+from datamining import cluster_evaluation
+from datamining.cluster_evaluation import DunnCalculator
+from topicmodeling.context.sense_clusterer import BaumanSensesGrouper
 from topicmodeling.context.senses_group import SenseGroup
 from topicmodeling.context.review import Review
 from utils.constants import Constants
@@ -414,6 +418,11 @@ def build_hdf5_sense_similarity_matrix(senses):
         sense_index_map[sense.name()] = sense_index
         sense_index += 1
 
+    sense_index_map_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE +\
+        '_sense_index_map.pkl'
+    with open(sense_index_map_file, 'wb') as write_file:
+        pickle.dump(sense_index_map, write_file, pickle.HIGHEST_PROTOCOL)
+
     print('building senses similarity matrix', time.strftime("%H:%M:%S"))
 
     index = 1
@@ -450,33 +459,153 @@ def main():
 
     with open(reviews_file, 'rb') as read_file:
         reviews = pickle.load(read_file)
+        # reviews = reviews[20:30]
 
     all_senses = list(generate_all_senses(reviews))
     print('num senses: %d' % len(all_senses))
     build_hdf5_sense_similarity_matrix(all_senses)
 
 
-def read():
+def build_groups2(nouns):
+
+    print('building groups', time.strftime("%H:%M:%S"))
+    all_senses = set()
+
+    sense_word_map = {}
+    for noun in nouns:
+        senses = wordnet.synsets(noun, pos='n')
+        all_senses.update(senses)
+        for sense in senses:
+            if sense.name() not in sense_word_map:
+                sense_word_map[sense.name()] = []
+            sense_word_map[sense.name()].append(noun)
+
+    all_senses = list(all_senses)
+    all_senses_names = [sense.name() for sense in all_senses]
+
+    print('number of senses:', len(all_senses))
+    sense_similarity_matrix, sense_similarity_matrix_columns =\
+        get_sense_similarity_submatrix(all_senses_names)
+    print('submatrix ready', time.strftime("%H:%M:%S"))
+
+    # affinity_propagation = AffinityPropagation()
+    # labels1 = affinity_propagation.fit_predict(sense_similarity_matrix)
+    # print('affinity propagation ready', time.strftime("%H:%M:%S"))
+
+    grouper = BaumanSensesGrouper(sense_similarity_matrix, 0.7)
+    groups = grouper.group_senses()
+    print('groups')
+    # print(groups)
+    new_groups = []
+    for group in groups:
+        new_group = set()
+        for element in group:
+            sense_name = sense_similarity_matrix_columns[element]
+            new_group.add(sense_name)
+        new_groups.append(new_group)
+
+    print('finished groups', time.strftime("%H:%M:%S"))
+    # print(groups)
+    # print(new_groups)
+    print('num groups: %d' % len(groups))
+
+    sense_groups = []
+    for group in new_groups:
+        sense_group = SenseGroup(group)
+        for sense in sense_group.senses:
+            sense_group.nouns |= set(sense_word_map[sense])
+        sense_groups.append(sense_group)
+
+    return sense_groups
+
+
+def get_sense_similarity_submatrix(sense_names_list):
+
+    columns = []
+    sense_index_map_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE +\
+        '_sense_index_map.pkl'
+    with open(sense_index_map_file, 'rb') as read_file:
+        sense_index_map = pickle.load(read_file)
+
+    inverse_sense_index_map = {v: k for k, v in sense_index_map.iteritems()}
+
+    for sense_name in sense_names_list:
+        columns.append(sense_index_map[sense_name])
+
+    columns.sort()
+    submatrix_senses = [inverse_sense_index_map[column] for column in columns]
 
     hdf5_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_sense_similarity_matrix.hdf5'
-
     f = h5py.File(hdf5_file, 'r')
-    my_matrix = f[Constants.ITEM_TYPE + "_sense_similarity_matrix"]
-    print('matrix length: %d' % len(my_matrix))
-    print(my_matrix[1, 1])
+    similarity_matrix = f[Constants.ITEM_TYPE + "_sense_similarity_matrix"]
+    matrix_size = len(similarity_matrix)
+    print('sense similarity matrix length: %d' % matrix_size)
+    # print(similarity_matrix[1, 1])
 
-    # clusterer = AffinityPropagation()
-    # labels = clusterer.fit_predict(my_matrix)
-    numpy_matrix = np.array(my_matrix)
-    print(numpy_matrix)
-    # print(labels)
-    f.close()
+    # columns = range(5)
+    submatrix = similarity_matrix[columns, :][:, columns]
+    print('%s: obtained submatrix, length: %d' % (time.strftime("%Y/%d/%m-%H:%M:%S"), len(submatrix)))
+    # new_senses = []
+
+    return submatrix, submatrix_senses
+
+
+def evaluate_clustering():
+
+    similarity_matrix = get_sense_similarity_submatrix(range(10000))
+    matrix_size = len(similarity_matrix)
+    print('got matrix')
+
+    affinity_propagation = AffinityPropagation()
+    labels1 = affinity_propagation.fit_predict(similarity_matrix)
+    print('affinity propagation')
+
+    dbscan = DBSCAN(min_samples=1)
+    labels2 = dbscan.fit_predict(similarity_matrix)
+    print('print dbscan')
+
+    distance_matrix = np.ndarray((matrix_size, matrix_size))
+    for i in range(matrix_size):
+        for j in range(matrix_size):
+            distance_matrix[i, j] = 1 - similarity_matrix[i, j]
+
+    print(distance_matrix[1, 2])
+    print(distance_matrix[1, 1])
+
+    print('created distance matrix')
+
+    cluster_map1 = cluster_evaluation.fpena_get_clusters(labels1)
+    cluster_map2 = cluster_evaluation.fpena_get_clusters(labels2)
+
+    print(cluster_map1)
+    print(cluster_map2)
+
+    sc1 = sklearn.metrics.silhouette_score(distance_matrix, labels1, metric='euclidean')
+    sc2 = sklearn.metrics.silhouette_score(distance_matrix, labels2, metric='euclidean')
+    sc5 = cluster_evaluation.fpena_evaluate(cluster_map1, distance_matrix)
+    sc6 = cluster_evaluation.fpena_evaluate(cluster_map2, distance_matrix)
+
+    num_elements1 = [len(values) for values in cluster_map1.values()]
+    num_elements2 = [len(values) for values in cluster_map2.values()]
+    print(num_elements1)
+    print(num_elements2)
+
+    print('Number of clusters Affinity Propagation: %f' % len(cluster_map1))
+    print('Number of clusters DBSCAN: %f' % len(cluster_map2))
+    print('Average elements per cluster Affinity Propagation: %f' % np.mean(num_elements1))
+    print('Average elements per cluster DBSCAN: %f' % np.mean(num_elements2))
+    print('Standard deviation per cluster Affinity Propagation: %f' % np.std(num_elements1))
+    print('Standard deviation per cluster DBSCAN: %f' % np.std(num_elements2))
+    print('Silouhette score Affinity Propagation (distance matrix): %f' % sc1)
+    print('Silouhette score DBSCAN (distance matrix): %f' % sc2)
+    print('Dunn index Affinity Propagation (distance matrix): %f' % sc5)
+    print('Dunn index DBSCAN (distance matrix): %f' % sc6)
 
 
 # start = time.time()
 # main()
-# mini_write_test()
-# read()
+# evaluate_clustering()
+# get_similarity_submatrix()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
