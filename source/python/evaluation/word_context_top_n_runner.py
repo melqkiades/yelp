@@ -339,8 +339,7 @@ class WordContextTopNRunner(object):
         num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
         total_iterations = num_cycles * num_folds
-        # split = 1 - (1/float(num_folds))
-        split = 0.8
+        split = 1 - (1/float(num_folds))
 
         self.load()
 
