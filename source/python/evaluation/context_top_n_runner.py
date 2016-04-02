@@ -223,7 +223,7 @@ class ContextTopNRunner(object):
     def train_topic_model(self):
         print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         lda_based_context = LdaBasedContext(self.train_records)
-        if Constants.REVIEW_TYPE == 'all_topics':
+        if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
             lda_based_context.get_all_topics()
         else:
             lda_based_context.get_context_rich_topics()

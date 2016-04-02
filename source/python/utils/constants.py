@@ -34,6 +34,7 @@ class Constants(object):
 
     SPECIFIC = 'specific'
     GENERIC = 'generic'
+    ALL_TOPICS = 'all_topics'
 
     # Folders
     DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
