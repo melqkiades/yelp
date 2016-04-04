@@ -133,13 +133,27 @@ def get_user_item_contexts(records, lda_model, user_id, apply_filter=False):
     return items_reviews
 
 
-def get_topic_distribution(review_text, lda_model, minimum_probability):
+def get_topic_distribution(review_text, lda_model, minimum_probability,
+                           text_sampling_proportion=None):
         """
 
         :type review_text: str
         :type lda_model: LdaModel
+        :type minimum_probability: float
+        :type text_sampling_proportion: float
+        :param text_sampling_proportion: a float in the range [0,1] that
+        indicates the proportion of text that should be sampled from the review
+         text. If None then all the review text is taken
         """
         review_bow = create_bag_of_words([review_text])
+
+        if text_sampling_proportion is not None:
+
+            num_words = int(text_sampling_proportion * len(review_bow[0]))
+            review_bow = [
+                numpy.random.choice(review_bow[0], num_words, replace=False)
+            ]
+
         dictionary = corpora.Dictionary(review_bow)
         corpus = dictionary.doc2bow(review_bow[0])
         lda_corpus = lda_model.get_document_topics(

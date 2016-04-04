@@ -245,7 +245,8 @@ class ContextTopNRunner(object):
         lda_based_context.find_contextual_topics(self.train_records)
 
         topics_map = {}
-        lda_based_context.find_contextual_topics(self.important_records)
+        lda_based_context.find_contextual_topics(
+            self.important_records, Constants.TEXT_SAMPLING_PROPORTION)
         for record in self.important_records:
             topics_map[record[Constants.REVIEW_ID_FIELD]] =\
                 record[Constants.TOPICS_FIELD]
@@ -427,9 +428,9 @@ def run_tests():
 
 start = time.time()
 
-# my_context_top_n_runner = ContextTopNRunner()
-# my_context_top_n_runner.perform_cross_validation()
-run_tests()
+my_context_top_n_runner = ContextTopNRunner()
+my_context_top_n_runner.perform_cross_validation()
+# run_tests()
 # parallel_context_top_n()
 end = time.time()
 total_time = end - start

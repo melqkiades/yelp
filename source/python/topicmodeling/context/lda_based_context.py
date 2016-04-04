@@ -188,11 +188,13 @@ class LdaBasedContext:
 
         return sorted_topics
 
-    def find_contextual_topics(self, records):
+    def find_contextual_topics(self, records, text_sampling_proportion=None):
         for record in records:
             # numpy.random.seed(0)
             topic_distribution = lda_context_utils.get_topic_distribution(
-                record[Constants.TEXT_FIELD], self.topic_model, self.epsilon)
+                record[Constants.TEXT_FIELD], self.topic_model, self.epsilon,
+                text_sampling_proportion
+            )
             record[Constants.TOPICS_FIELD] = topic_distribution
 
             topics_map = {}
