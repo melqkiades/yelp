@@ -7,6 +7,7 @@ from subprocess import call
 import time
 import cPickle as pickle
 import uuid
+import gc
 import numpy
 from etl import ETLUtils
 from etl import libfm_converter
@@ -21,12 +22,15 @@ from utils.constants import Constants
 __author__ = 'fpena'
 
 
+basic_headers = [
+    Constants.RATING_FIELD,
+    Constants.USER_ID_FIELD,
+    Constants.ITEM_ID_FIELD
+]
+
+
 def build_headers(context_rich_topics):
-    headers = [
-        Constants.RATING_FIELD,
-        Constants.USER_ID_FIELD,
-        Constants.ITEM_ID_FIELD
-    ]
+    headers = basic_headers[:]
     for topic in context_rich_topics:
         topic_id = 'topic' + str(topic[0])
         headers.append(topic_id)
@@ -133,6 +137,7 @@ class ContextTopNRunner(object):
         self.headers = None
         self.important_records = None
         self.context_rich_topics = []
+        self.context_topics_map = None
         self.csv_train_file = None
         self.csv_test_file = None
         self.context_predictions_file = None
@@ -151,6 +156,7 @@ class ContextTopNRunner(object):
         self.headers = None
         self.important_records = None
         self.context_rich_topics = []
+        self.context_topics_map = None
 
         os.remove(self.csv_train_file)
         os.remove(self.csv_test_file)
@@ -165,6 +171,7 @@ class ContextTopNRunner(object):
         self.context_train_file = None
         self.context_test_file = None
         self.context_log_file = None
+        gc.collect()
 
     def create_tmp_file_names(self):
 
@@ -244,26 +251,20 @@ class ContextTopNRunner(object):
 
         lda_based_context.find_contextual_topics(self.train_records)
 
-        topics_map = {}
         lda_based_context.find_contextual_topics(
             self.important_records, Constants.TEXT_SAMPLING_PROPORTION)
+
+        self.context_topics_map = {}
         for record in self.important_records:
-            topics_map[record[Constants.REVIEW_ID_FIELD]] =\
-                record[Constants.TOPICS_FIELD]
-
-        for record in self.records_to_predict:
-            topic_distribution = topics_map[record[Constants.REVIEW_ID_FIELD]]
-
+            topic_distribution = record[Constants.TOPICS_FIELD]
             context_topics = {}
             for i in self.context_rich_topics:
                 topic_id = 'topic' + str(i[0])
                 context_topics[topic_id] = topic_distribution[i[0]]
 
             record[Constants.CONTEXT_TOPICS_FIELD] = context_topics
-
-        print('contextual test set size: %d' % len(self.records_to_predict))
-        print('Exported contextual topics: %s' %
-              time.strftime("%Y/%m/%d-%H:%M:%S"))
+            self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] =\
+                context_topics
 
     def prepare(self):
         print('prepare: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -271,27 +272,50 @@ class ContextTopNRunner(object):
         self.headers = build_headers(self.context_rich_topics)
 
         if Constants.USE_CONTEXT is True:
-            for record in self.train_records:
-                record.update(record[Constants.CONTEXT_TOPICS_FIELD])
-
-            for record in self.records_to_predict:
-                record.update(record[Constants.CONTEXT_TOPICS_FIELD])
 
             if Constants.REVIEW_TYPE == Constants.SPECIFIC or \
-                    Constants.REVIEW_TYPE == Constants.GENERIC:
+                            Constants.REVIEW_TYPE == Constants.GENERIC:
                 self.train_records = ETLUtils.filter_records(
                     self.train_records, Constants.PREDICTED_CLASS_FIELD,
                     [Constants.REVIEW_TYPE])
 
-            ETLUtils.drop_fields([Constants.TOPICS_FIELD], self.train_records)
+        with open(self.csv_train_file, 'w') as out_file:
+            writer = csv.writer(out_file)
 
-        ETLUtils.keep_fields(self.headers, self.train_records)
-        ETLUtils.keep_fields(self.headers, self.records_to_predict)
+            # Write header
+            writer.writerow(self.headers)
 
-        ETLUtils.save_csv_file(
-            self.csv_train_file, self.train_records, self.headers)
-        ETLUtils.save_csv_file(
-            self.csv_test_file, self.records_to_predict, self.headers)
+            for record in self.train_records:
+                row = []
+                for header in basic_headers:
+                    row.append(record[header])
+
+                if Constants.USE_CONTEXT is True:
+                    for topic in self.context_rich_topics:
+                        context_topics = record[Constants.CONTEXT_TOPICS_FIELD]
+                        # print('context_topics', context_topics)
+                        row.append(context_topics['topic' + str(topic[0])])
+
+                writer.writerow(row)
+
+        with open(self.csv_test_file, 'w') as out_file:
+            writer = csv.writer(out_file)
+
+            # Write header
+            writer.writerow(self.headers)
+
+            for record in self.records_to_predict:
+                row = []
+                for header in basic_headers:
+                    row.append(record[header])
+
+                if Constants.USE_CONTEXT is True:
+                    for topic in self.context_rich_topics:
+                        important_record = record[Constants.REVIEW_ID_FIELD]
+                        context_topics = self.context_topics_map[important_record]
+                        row.append(context_topics['topic' + str(topic[0])])
+
+                writer.writerow(row)
 
         print('Exported CSV and JSON files: %s'
               % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -302,6 +326,13 @@ class ContextTopNRunner(object):
         ]
 
         print('num_cols', len(self.headers))
+
+        self.train_records = None
+        self.test_records = None
+        self.records_to_predict = None
+        self.headers = None
+        self.important_records = None
+        self.context_rich_topics = []
 
         libfm_converter.csv_to_libfm(
             csv_files, 0, [1, 2], [], ',', has_header=True,
