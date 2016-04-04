@@ -226,6 +226,8 @@ class ContextTopNRunner(object):
         self.top_n_evaluator.initialize(user_item_map)
         self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
         self.important_records = self.top_n_evaluator.important_records
+        self.test_records = None
+        gc.collect()
 
     def train_topic_model(self):
         print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -266,6 +268,9 @@ class ContextTopNRunner(object):
             self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] =\
                 context_topics
 
+        self.important_records = None
+        gc.collect()
+
     def prepare(self):
         print('prepare: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -298,6 +303,9 @@ class ContextTopNRunner(object):
 
                 writer.writerow(row)
 
+        self.train_records = None
+        gc.collect()
+
         with open(self.csv_test_file, 'w') as out_file:
             writer = csv.writer(out_file)
 
@@ -317,6 +325,11 @@ class ContextTopNRunner(object):
 
                 writer.writerow(row)
 
+        self.records_to_predict = None
+        self.context_topics_map = None
+        self.context_rich_topics = None
+        gc.collect()
+
         print('Exported CSV and JSON files: %s'
               % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -326,13 +339,6 @@ class ContextTopNRunner(object):
         ]
 
         print('num_cols', len(self.headers))
-
-        self.train_records = None
-        self.test_records = None
-        self.records_to_predict = None
-        self.headers = None
-        self.important_records = None
-        self.context_rich_topics = []
 
         libfm_converter.csv_to_libfm(
             csv_files, 0, [1, 2], [], ',', has_header=True,
