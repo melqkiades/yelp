@@ -14,7 +14,13 @@ from utils.constants import Constants
 
 def get_topic_model_file_path(cycle_index, fold_index):
 
-    topic_model_file = Constants.ITEM_TYPE + '_topic_model_cycle:' +\
+    if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
+        all_topics = 'alltopics_'
+    else:
+        all_topics = ''
+
+    topic_model_file = Constants.ITEM_TYPE + '_' + all_topics +\
+                       'topic_model_cycle:' +\
                        str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
                        '_fold:' + str(fold_index+1) + '|' +\
                        str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
