@@ -147,7 +147,7 @@ def get_topic_distribution(review_text, lda_model, minimum_probability,
         """
         review_bow = create_bag_of_words([review_text])
 
-        if text_sampling_proportion is not None and review_bow[0] > 0:
+        if text_sampling_proportion is not None and len(review_bow[0]) > 0:
 
             num_words = int(text_sampling_proportion * len(review_bow[0]))
             review_bow = [
