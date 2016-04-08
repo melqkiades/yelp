@@ -8,7 +8,8 @@ from multiprocessing import Pool
 import numpy
 
 from etl import ETLUtils
-from topicmodeling.context.lda_based_context import LdaBasedContext
+from topicmodeling.context import context_utils
+from topicmodeling.context import lda_context_utils
 from utils.constants import Constants
 
 
@@ -26,8 +27,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
                        str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
                        '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
                        '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
-                       '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
-                       '.pkl'
+                       '_passes:' + str(Constants.LDA_MODEL_PASSES)
     return Constants.CACHE_FOLDER + topic_model_file
 
 
@@ -37,10 +37,11 @@ def create_topic_model(records, cycle_index, fold_index):
 
     print(topic_model_file_path)
 
-    if not os.path.exists(topic_model_file_path):
-        topic_model = train_topic_model(records)
-        with open(topic_model_file_path, 'wb') as write_file:
-            pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists(topic_model_file_path + '.state'):
+        document_list = context_utils.get_text_from_reviews(records)
+        topic_model =\
+            lda_context_utils.build_topic_model_from_documents(document_list)
+        topic_model.save(topic_model_file_path)
 
 
 def plant_seeds():
@@ -51,15 +52,6 @@ def plant_seeds():
     if Constants.NUMPY_RANDOM_SEED is not None:
         print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
-
-
-def train_topic_model(records):
-    print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    lda_based_context = LdaBasedContext(records)
-    lda_based_context.get_context_rich_topics()
-    print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    return lda_based_context
 
 
 def load_topic_model(cycle_index, fold_index):
@@ -126,7 +118,7 @@ def create_topic_model_wrapper(args):
 def parallel_context_top_n(args):
 
     pool_start_time = time.time()
-    pool = Pool()
+    pool = Pool(2)
     print('Total CPUs: %d' % pool._processes)
 
     num_iterations = len(args)

@@ -1,7 +1,8 @@
-from gensim.models import ldamodel, LdaMulticore
+import time
 
 import operator
 from gensim import corpora
+
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import context_utils
 from utils.constants import Constants
@@ -26,6 +27,10 @@ class LdaBasedContext:
         self.topics = range(self.num_topics)
         self.topic_model = None
         self.context_rich_topics = None
+        self.specific_dictionary = None
+        self.specific_corpus = None
+        self.generic_dictionary = None
+        self.generic_corpus = None
 
     def separate_reviews(self):
 
@@ -38,6 +43,30 @@ class LdaBasedContext:
             if record[Constants.PREDICTED_CLASS_FIELD] == 'generic':
                 self.generic_reviews.append(record)
 
+    def generate_review_corpus(self):
+
+        self.separate_reviews()
+
+        specific_reviews_text = \
+            context_utils.get_text_from_reviews(self.specific_reviews)
+        generic_reviews_text = \
+            context_utils.get_text_from_reviews(self.generic_reviews)
+
+        specific_bow = lda_context_utils.create_bag_of_words(
+            specific_reviews_text)
+        generic_bow = \
+            lda_context_utils.create_bag_of_words(generic_reviews_text)
+
+        self.specific_dictionary = corpora.Dictionary(specific_bow)
+        self.specific_dictionary.filter_extremes()
+        self.specific_corpus = \
+            [self.specific_dictionary.doc2bow(text) for text in specific_bow]
+
+        self.generic_dictionary = corpora.Dictionary(generic_bow)
+        self.generic_dictionary.filter_extremes()
+        self.generic_corpus = \
+            [self.generic_dictionary.doc2bow(text) for text in generic_bow]
+
     def get_context_rich_topics(self):
         """
         Returns a list with the topics that are context rich and their
@@ -48,53 +77,25 @@ class LdaBasedContext:
         the topic and the second position indicates the specific/generic
         frequency ratio
         """
-        self.separate_reviews()
-
-        specific_reviews_text =\
-            context_utils.get_text_from_reviews(self.specific_reviews)
-        generic_reviews_text =\
-            context_utils.get_text_from_reviews(self.generic_reviews)
-
-        specific_bow = lda_context_utils.create_bag_of_words(
-            specific_reviews_text)
-        generic_bow =\
-            lda_context_utils.create_bag_of_words(generic_reviews_text)
-
-        specific_dictionary = corpora.Dictionary(specific_bow)
-        specific_dictionary.filter_extremes()
-        specific_corpus =\
-            [specific_dictionary.doc2bow(text) for text in specific_bow]
-
-        generic_dictionary = corpora.Dictionary(generic_bow)
-        generic_dictionary.filter_extremes()
-        generic_corpus =\
-            [generic_dictionary.doc2bow(text) for text in generic_bow]
 
         # numpy.random.seed(0)
-        if Constants.LDA_MULTICORE:
-            self.topic_model = LdaMulticore(
-                specific_corpus, id2word=specific_dictionary,
-                num_topics=self.num_topics,
-                passes=Constants.LDA_MODEL_PASSES,
-                iterations=Constants.LDA_MODEL_ITERATIONS,
-                workers=Constants.NUM_CORES-1)
-            print('lda multicore')
-        else:
-            self.topic_model = ldamodel.LdaModel(
-                specific_corpus, id2word=specific_dictionary,
-                num_topics=self.num_topics,
-                passes=Constants.LDA_MODEL_PASSES,
-                iterations=Constants.LDA_MODEL_ITERATIONS)
-            print('lda monocore')
+        if self.topic_model is None:
+            print('topic model is None')
+            self.topic_model = lda_context_utils.build_topic_model_from_corpus(
+                self.specific_corpus, self.specific_dictionary)
 
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, specific_corpus, self.specific_reviews)
+            self.topic_model, self.specific_corpus, self.specific_reviews,
+            self.epsilon)
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, generic_corpus, self.generic_reviews)
+            self.topic_model, self.generic_corpus, self.generic_reviews,
+            self.epsilon)
+
+        print('%s: updated reviews with topics' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         topic_ratio_map = {}
-        ratio_topics = 0
-
+        non_contextual_topics = set()
         for topic in range(self.num_topics):
             weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
                 topic, self.records)
@@ -106,19 +107,27 @@ class LdaBasedContext:
                     topic, self.generic_reviews)
 
             if weighted_frq < self.alpha:
-                continue
+                non_contextual_topics.add(topic)
 
-            ratio = (specific_weighted_frq + 0.0001) / (generic_weighted_frq + 0.0001)
+            if generic_weighted_frq == 0:
+                ratio = 'N/A'
+            else:
+                ratio = (specific_weighted_frq + 0.0001) /\
+                        (generic_weighted_frq + 0.0001)
 
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
 
             if ratio < self.beta:
-                continue
+                non_contextual_topics.add(topic)
 
-            ratio_topics += 1
             topic_ratio_map[topic] = ratio
 
+        # export_all_topics(self.topic_model)
+        # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        for topic in non_contextual_topics:
+            topic_ratio_map.pop(topic)
         sorted_topics = sorted(
             topic_ratio_map.items(), key=operator.itemgetter(1), reverse=True)
 
@@ -128,7 +137,7 @@ class LdaBasedContext:
         #     print('topic', ratio, topic_index, self.topic_model.print_topic(topic_index, topn=50))
 
         # print('num_topics', len(self.topics))
-        print('ratio_topics', ratio_topics)
+        print('context topics: %d' % len(topic_ratio_map))
         self.context_rich_topics = sorted_topics
         # print(self.context_rich_topics)
 
@@ -156,30 +165,19 @@ class LdaBasedContext:
         corpus =\
             [dictionary.doc2bow(text) for text in bag_of_words]
 
-        # numpy.random.seed(0)
-        if Constants.LDA_MULTICORE:
-            self.topic_model = LdaMulticore(
-                corpus, id2word=dictionary,
-                num_topics=self.num_topics,
-                passes=Constants.LDA_MODEL_PASSES,
-                iterations=Constants.LDA_MODEL_ITERATIONS,
-                workers=Constants.NUM_CORES-1)
-            print('lda multicore')
-        else:
-            self.topic_model = ldamodel.LdaModel(
-                corpus, id2word=dictionary,
-                num_topics=self.num_topics,
-                passes=Constants.LDA_MODEL_PASSES,
-                iterations=Constants.LDA_MODEL_ITERATIONS)
-            print('lda monocore')
+        self.topic_model =\
+            lda_context_utils.build_topic_model_from_corpus(corpus, dictionary)
 
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, corpus, self.records)
+            self.topic_model, corpus, self.records, self.epsilon)
 
         topic_ratio_map = {}
 
         for topic in range(self.num_topics):
             topic_ratio_map[topic] = 1
+
+        # export_all_topics(self.topic_model)
+        # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         sorted_topics = sorted(
             topic_ratio_map.items(), key=operator.itemgetter(1), reverse=True)
@@ -217,9 +215,6 @@ def main():
 #
 # start = time.time()
 # main()
-# # test_reviews_classfier()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
-
-

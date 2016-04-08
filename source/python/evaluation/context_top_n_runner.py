@@ -15,6 +15,7 @@ from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
 from topicmodeling.context import topic_model_creator
+from topicmodeling.context import lda_context_utils
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
 from utils.constants import Constants
@@ -202,6 +203,7 @@ class ContextTopNRunner(object):
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
+        ETLUtils.drop_fields(['tagged_words'], self.original_records)
         print('num_records: %d' % len(self.original_records))
 
         if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
@@ -229,24 +231,45 @@ class ContextTopNRunner(object):
         self.test_records = None
         gc.collect()
 
-    def train_topic_model(self):
+    def train_topic_model(self, cycle_index, fold_index):
+
+        topic_model = None
+        if Constants.CACHE_TOPIC_MODEL:
+            print('loading topic model')
+            topic_model = topic_model_creator.load_topic_model(
+                cycle_index, fold_index)
+
         print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         lda_based_context = LdaBasedContext(self.train_records)
         if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
             lda_based_context.get_all_topics()
         else:
+            lda_based_context.generate_review_corpus()
+            lda_based_context.topic_model = topic_model
             lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         return lda_based_context
 
-    def load_topic_model(self, i, j):
-        print('load topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        lda_based_context = topic_model_creator.load_topic_model(i, j)
-        self.context_rich_topics = lda_based_context.context_rich_topics
-
-        return lda_based_context
+    # def load_topic_model(self, i, j):
+    #     print('load topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    #
+    #     lda_based_context = LdaBasedContext(self.train_records)
+    #     if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
+    #         lda_based_context.get_all_topics()
+    #     else:
+    #         lda_based_context.generate_review_corpus()
+    #         lda_context_utils.build_topic_model_from_corpus(
+    #             lda_based_context.specific_corpus,
+    #             lda_based_context.specific_dictionary)
+    #         lda_based_context.get_context_rich_topics()
+    #     self.context_rich_topics = lda_based_context.context_rich_topics
+    #
+    #     # lda_based_context = topic_model_creator.load_topic_model(i, j)
+    #     # self.context_rich_topics = lda_based_context.context_rich_topics
+    #
+    #     return lda_based_context
 
     def find_reviews_topics(self, lda_based_context):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -404,10 +427,7 @@ class ContextTopNRunner(object):
                         self.records, split=split, start=cv_start)
                 self.export()
                 if Constants.USE_CONTEXT:
-                    if Constants.CACHE_TOPIC_MODEL:
-                        lda_based_context = self.load_topic_model(i, j)
-                    else:
-                        lda_based_context = self.train_topic_model()
+                    lda_based_context = self.train_topic_model(i, j)
                     self.find_reviews_topics(lda_based_context)
                 self.prepare()
                 self.predict()
