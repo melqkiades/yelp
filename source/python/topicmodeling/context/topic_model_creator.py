@@ -6,6 +6,7 @@ import traceback
 from multiprocessing import Pool
 
 import numpy
+from gensim.models import LdaModel
 
 from etl import ETLUtils
 from topicmodeling.context import context_utils
@@ -56,8 +57,7 @@ def plant_seeds():
 
 def load_topic_model(cycle_index, fold_index):
     file_path = get_topic_model_file_path(cycle_index, fold_index)
-    with open(file_path, 'rb') as read_file:
-        topic_model = pickle.load(read_file)
+    topic_model = LdaModel.load(file_path)
     return topic_model
 
 
