@@ -31,6 +31,7 @@ class LdaBasedContext:
         self.specific_corpus = None
         self.generic_dictionary = None
         self.generic_corpus = None
+        self.max_words = None
 
     def separate_reviews(self):
 
@@ -140,6 +141,10 @@ class LdaBasedContext:
         print('context topics: %d' % len(topic_ratio_map))
         self.context_rich_topics = sorted_topics
         # print(self.context_rich_topics)
+        self.max_words = []
+        for topic in self.context_rich_topics:
+            self.max_words.append(
+                self.topic_model.show_topic(topic[0], 1)[0][1])
 
         return sorted_topics
 
@@ -191,7 +196,7 @@ class LdaBasedContext:
             # numpy.random.seed(0)
             topic_distribution = lda_context_utils.get_topic_distribution(
                 record[Constants.TEXT_FIELD], self.topic_model, self.epsilon,
-                text_sampling_proportion
+                text_sampling_proportion, self.max_words
             )
             record[Constants.TOPICS_FIELD] = topic_distribution
 

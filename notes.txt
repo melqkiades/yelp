@@ -55,3 +55,9 @@
 - To update git in the server while there is other code executing
   > git reset --hard HEAD
   > git pull
+- To replace several files with the same prefix name by another prefix
+  for file in fileprefix*
+  do
+      mv -i "${file}" "${file/fileprefix_/replacement_}"
+  done
+- 

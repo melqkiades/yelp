@@ -1,3 +1,4 @@
+import time
 from gensim import corpora
 from gensim.models import ldamodel, LdaMulticore
 from nltk import RegexpTokenizer
@@ -51,7 +52,7 @@ def build_topic_model_from_corpus(corpus, dictionary):
 
     # numpy.random.seed(0)
     if Constants.LDA_MULTICORE:
-        print('lda multicore')
+        print('%s: lda multicore' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         topic_model = LdaMulticore(
             corpus, id2word=dictionary,
             num_topics=Constants.LDA_NUM_TOPICS,
@@ -59,7 +60,7 @@ def build_topic_model_from_corpus(corpus, dictionary):
             iterations=Constants.LDA_MODEL_ITERATIONS,
             workers=Constants.NUM_CORES - 1)
     else:
-        print('lda monocore')
+        print('%s: lda monocore' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         topic_model = ldamodel.LdaModel(
             corpus, id2word=dictionary,
             num_topics=Constants.LDA_NUM_TOPICS,
@@ -234,7 +235,7 @@ def get_user_item_contexts(
 
 
 def get_topic_distribution(review_text, lda_model, minimum_probability,
-                           text_sampling_proportion=None):
+                           sampling_method=None, max_words=None):
         """
 
         :type review_text: str
@@ -246,13 +247,7 @@ def get_topic_distribution(review_text, lda_model, minimum_probability,
          text. If None then all the review text is taken
         """
         review_bow = create_bag_of_words([review_text])
-
-        if text_sampling_proportion is not None and len(review_bow[0]) > 0:
-
-            num_words = int(text_sampling_proportion * len(review_bow[0]))
-            review_bow = [
-                numpy.random.choice(review_bow[0], num_words, replace=False)
-            ]
+        review_bow = sample_bag_of_words(review_bow, sampling_method, max_words)
 
         dictionary = corpora.Dictionary(review_bow)
         corpus = dictionary.doc2bow(review_bow[0])
@@ -264,6 +259,24 @@ def get_topic_distribution(review_text, lda_model, minimum_probability,
             topic_distribution[pair[0]] = pair[1]
 
         return topic_distribution
+
+
+def sample_bag_of_words(review_bow, sampling_method, max_words=None):
+
+    if sampling_method is None or len(review_bow[0]) == 0:
+        return review_bow
+
+    if sampling_method == 'max':
+        bow_set = set(review_bow[0])
+        words_set = set(max_words)
+        review_bow = [list(bow_set.intersection(words_set))]
+        return review_bow
+    elif 0.0 <= sampling_method <= 1.0:
+        num_words = int(sampling_method * len(review_bow[0]))
+        review_bow = [
+            numpy.random.choice(review_bow[0], num_words, replace=False)
+        ]
+        return review_bow
 
 
 def export_topics(topic_model, topic_ratio_map):
