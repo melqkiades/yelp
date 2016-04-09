@@ -1,4 +1,3 @@
-import cPickle as pickle
 import os
 import random
 import time
@@ -34,6 +33,8 @@ def get_topic_model_file_path(cycle_index, fold_index):
 
 def create_topic_model(records, cycle_index, fold_index):
 
+    print('%s: Create topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
     topic_model_file_path = get_topic_model_file_path(cycle_index, fold_index)
 
     print(topic_model_file_path)
@@ -64,6 +65,8 @@ def load_topic_model(cycle_index, fold_index):
 def create_topic_models():
 
     print(Constants._properties)
+
+    print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
 
@@ -129,8 +132,9 @@ def parallel_context_top_n(args):
             1):
         results_list.append(result)
         # sys.stderr.write('\rdone {0:%}'.format(float(i)/num_iterations))
-        print('Progress: %2.1f%% (%d/%d)' %
-              (float(i)/num_iterations*100, i, num_iterations))
+        print('%s: Progress: %2.1f%% (%d/%d)' %
+              (time.strftime("%Y/%m/%d-%H:%M:%S"),
+               float(i)/num_iterations*100, i, num_iterations))
     pool.close()
     pool.join()
 
