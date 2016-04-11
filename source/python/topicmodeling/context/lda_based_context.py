@@ -68,6 +68,25 @@ class LdaBasedContext:
         self.generic_corpus = \
             [self.generic_dictionary.doc2bow(text) for text in generic_bow]
 
+    def build_topic_model(self):
+        print('%s: building topic model' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
+        self.topic_model = lda_context_utils.build_topic_model_from_corpus(
+            self.specific_corpus, self.specific_dictionary)
+        print('%s: topic model built' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    def update_reviews_with_topics(self):
+        lda_context_utils.update_reviews_with_topics(
+            self.topic_model, self.specific_corpus, self.specific_reviews,
+            self.epsilon)
+        lda_context_utils.update_reviews_with_topics(
+            self.topic_model, self.generic_corpus, self.generic_reviews,
+            self.epsilon)
+
+        print('%s: updated reviews with topics' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
+
     def get_context_rich_topics(self):
         """
         Returns a list with the topics that are context rich and their
@@ -80,21 +99,6 @@ class LdaBasedContext:
         """
 
         # numpy.random.seed(0)
-        if self.topic_model is None:
-            print('topic model is None')
-            self.topic_model = lda_context_utils.build_topic_model_from_corpus(
-                self.specific_corpus, self.specific_dictionary)
-
-        lda_context_utils.update_reviews_with_topics(
-            self.topic_model, self.specific_corpus, self.specific_reviews,
-            self.epsilon)
-        lda_context_utils.update_reviews_with_topics(
-            self.topic_model, self.generic_corpus, self.generic_reviews,
-            self.epsilon)
-
-        print('%s: updated reviews with topics' %
-              time.strftime("%Y/%m/%d-%H:%M:%S"))
-
         topic_ratio_map = {}
         non_contextual_topics = set()
         for topic in range(self.num_topics):
@@ -113,8 +117,7 @@ class LdaBasedContext:
             if generic_weighted_frq == 0:
                 ratio = 'N/A'
             else:
-                ratio = (specific_weighted_frq + 0.0001) /\
-                        (generic_weighted_frq + 0.0001)
+                ratio = specific_weighted_frq / generic_weighted_frq
 
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
@@ -124,11 +127,16 @@ class LdaBasedContext:
 
             topic_ratio_map[topic] = ratio
 
-        # export_all_topics(self.topic_model)
+        # lda_context_utils.export_topics(self.topic_model, topic_ratio_map)
         # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         for topic in non_contextual_topics:
             topic_ratio_map.pop(topic)
+
+        # print('non contextual topics', len(non_contextual_topics))
+        # for topic in topic_ratio_map.keys():
+        #     print(topic, topic_ratio_map[topic])
+        #
         sorted_topics = sorted(
             topic_ratio_map.items(), key=operator.itemgetter(1), reverse=True)
 

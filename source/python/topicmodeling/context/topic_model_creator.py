@@ -3,13 +3,10 @@ import random
 import time
 import traceback
 from multiprocessing import Pool
-
+import cPickle as pickle
 import numpy
-from gensim.models import LdaModel
-
 from etl import ETLUtils
-from topicmodeling.context import context_utils
-from topicmodeling.context import lda_context_utils
+from topicmodeling.context.lda_based_context import LdaBasedContext
 from utils.constants import Constants
 
 
@@ -21,13 +18,14 @@ def get_topic_model_file_path(cycle_index, fold_index):
         all_topics = ''
 
     topic_model_file = Constants.ITEM_TYPE + '_' + all_topics +\
-                       'topic_model_cycle:' +\
+                       'lda_model_cycle:' +\
                        str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
                        '_fold:' + str(fold_index+1) + '|' +\
                        str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
                        '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
                        '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
-                       '_passes:' + str(Constants.LDA_MODEL_PASSES)
+                       '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
+                       '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
@@ -39,11 +37,14 @@ def create_topic_model(records, cycle_index, fold_index):
 
     print(topic_model_file_path)
 
-    if not os.path.exists(topic_model_file_path + '.state'):
-        document_list = context_utils.get_text_from_reviews(records)
-        topic_model =\
-            lda_context_utils.build_topic_model_from_documents(document_list)
-        topic_model.save(topic_model_file_path)
+    if not os.path.exists(topic_model_file_path):
+        topic_model = LdaBasedContext(records)
+        topic_model.generate_review_corpus()
+        topic_model.build_topic_model()
+        topic_model.update_reviews_with_topics()
+        # topic_model.save(topic_model_file_path)
+        with open(topic_model_file_path, 'wb') as write_file:
+            pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
 
 
 def plant_seeds():
@@ -58,7 +59,9 @@ def plant_seeds():
 
 def load_topic_model(cycle_index, fold_index):
     file_path = get_topic_model_file_path(cycle_index, fold_index)
-    topic_model = LdaModel.load(file_path)
+    # topic_model = LdaModel.load(file_path)
+    with open(file_path, 'rb') as read_file:
+        topic_model = pickle.load(read_file)
     return topic_model
 
 
