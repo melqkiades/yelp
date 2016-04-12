@@ -1,3 +1,4 @@
+import argparse
 import os
 import random
 import time
@@ -7,6 +8,7 @@ import cPickle as pickle
 import numpy
 from etl import ETLUtils
 from topicmodeling.context.lda_based_context import LdaBasedContext
+from utils import constants
 from utils.constants import Constants
 
 
@@ -18,7 +20,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
         all_topics = ''
 
     topic_model_file = Constants.ITEM_TYPE + '_' + all_topics +\
-                       'lda_model_cycle:' +\
+                       'topic_model_cycle:' +\
                        str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
                        '_fold:' + str(fold_index+1) + '|' +\
                        str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
@@ -37,14 +39,12 @@ def create_topic_model(records, cycle_index, fold_index):
 
     print(topic_model_file_path)
 
-    if not os.path.exists(topic_model_file_path):
-        topic_model = LdaBasedContext(records)
-        topic_model.generate_review_corpus()
-        topic_model.build_topic_model()
-        topic_model.update_reviews_with_topics()
-        # topic_model.save(topic_model_file_path)
-        with open(topic_model_file_path, 'wb') as write_file:
-            pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
+    if os.path.exists(topic_model_file_path):
+        print('topic model already exists')
+
+    topic_model = train_topic_model(records)
+    with open(topic_model_file_path, 'wb') as write_file:
+        pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
 
 
 def plant_seeds():
@@ -57,18 +57,50 @@ def plant_seeds():
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 
+def train_topic_model(records):
+    print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    lda_based_context = LdaBasedContext(records)
+    lda_based_context.generate_review_corpus()
+    lda_based_context.build_topic_model()
+    lda_based_context.update_reviews_with_topics()
+
+    print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    return lda_based_context
+
+
 def load_topic_model(cycle_index, fold_index):
     file_path = get_topic_model_file_path(cycle_index, fold_index)
-    # topic_model = LdaModel.load(file_path)
     with open(file_path, 'rb') as read_file:
         topic_model = pickle.load(read_file)
     return topic_model
 
 
+def create_single_topic_model(cycle_index, fold_index):
+
+    print(Constants._properties)
+    print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
+
+    plant_seeds()
+    num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+    split = 1 - (1/float(num_folds))
+
+    for i in range(cycle_index+1):
+
+        if Constants.SHUFFLE_DATA:
+            random.shuffle(records)
+
+    cv_start = float(fold_index) / num_folds
+    train_records, test_records = \
+        ETLUtils.split_train_test(records, split=split, start=cv_start)
+    create_topic_model(train_records, cycle_index, fold_index)
+
+
 def create_topic_models():
 
     print(Constants._properties)
-
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
@@ -148,15 +180,49 @@ def parallel_context_top_n(args):
     print('average cycle time: %d seconds' % average_cycle_time)
 
 
-def main():
-    create_topic_models()
-    # parallel_context_top_n()
-    # test()
+def generate_file_with_commands():
 
+    code_path = constants.CODE_FOLDER[:-1]
+    python_path = "PYTHONPATH='" + code_path + "' "
+    python_command = "python "
+    command_list = []
+
+    for cycle in range(Constants.NUM_CYCLES):
+        for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
+            python_file = "topic_model_creator.py -c %d -f %d"
+            full_command = python_path + python_command + python_file
+            command_list.append(full_command % (cycle, fold))
+
+    with open("/Users/fpena/tmp/command_list.txt", "w") as write_file:
+        for command in command_list:
+            write_file.write("%s\n" % command)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-c', '--cycle', metavar='int', type=int,
+        nargs=1, help='The index of the running cycle')
+    parser.add_argument(
+        '-f', '--fold', metavar='int', type=int,
+        nargs=1, help='The index of the cross validation fold')
+
+    args = parser.parse_args()
+    fold = args.fold[0]
+    cycle = args.cycle[0]
+    create_single_topic_model(cycle, fold)
 
 # start = time.time()
-# main()
+# create_single_topic_models(0, 0)
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
+#
+if __name__ == '__main__':
+    start = time.time()
+    main()
+    end = time.time()
+    total_time = end - start
+    print("Total time = %f seconds" % total_time)
 
+# generate_file_with_commands()
