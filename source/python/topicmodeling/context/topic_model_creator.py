@@ -41,6 +41,7 @@ def create_topic_model(records, cycle_index, fold_index):
 
     if os.path.exists(topic_model_file_path):
         print('topic model already exists')
+        return
 
     topic_model = train_topic_model(records)
     with open(topic_model_file_path, 'wb') as write_file:
