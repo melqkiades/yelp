@@ -1,3 +1,4 @@
+import copy
 import time
 
 import operator
@@ -27,6 +28,7 @@ class LdaBasedContext:
         self.topics = range(self.num_topics)
         self.topic_model = None
         self.context_rich_topics = None
+        self.topic_ratio_map = None
         self.specific_dictionary = None
         self.specific_corpus = None
         self.generic_dictionary = None
@@ -126,6 +128,8 @@ class LdaBasedContext:
                 non_contextual_topics.add(topic)
 
             topic_ratio_map[topic] = ratio
+
+        self.topic_ratio_map = copy.deepcopy(topic_ratio_map)
 
         # lda_context_utils.export_topics(self.topic_model, topic_ratio_map)
         # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
