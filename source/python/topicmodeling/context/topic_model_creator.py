@@ -6,6 +6,8 @@ import traceback
 from multiprocessing import Pool
 import cPickle as pickle
 import numpy
+from os.path import expanduser
+
 from etl import ETLUtils
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from utils import constants
@@ -27,7 +29,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
                        '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
                        '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
                        '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
-                       '.pkl'
+                       '-3.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
@@ -43,7 +45,11 @@ def create_topic_model(records, cycle_index, fold_index):
         print('topic model already exists')
         return
 
-    topic_model = train_topic_model(records)
+    if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
+        topic_model = train_all_topics_model(records)
+    else:
+        topic_model = train_context_topics_model(records)
+
     with open(topic_model_file_path, 'wb') as write_file:
         pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
 
@@ -58,14 +64,24 @@ def plant_seeds():
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 
-def train_topic_model(records):
-    print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+def train_context_topics_model(records):
+    print('%s: train context topics model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
     lda_based_context = LdaBasedContext(records)
     lda_based_context.generate_review_corpus()
     lda_based_context.build_topic_model()
     lda_based_context.update_reviews_with_topics()
 
-    print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    print('%s: Trained LDA Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    return lda_based_context
+
+
+def train_all_topics_model(records):
+    print('%s: train all topics model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    lda_based_context = LdaBasedContext(records)
+    lda_based_context.get_all_topics()
+
+    print('%s: Trained LDA Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     return lda_based_context
 
@@ -136,7 +152,7 @@ def create_topic_models():
 
         parallel_context_top_n(args)
 
-        # lda_based_context = train_topic_model(train_records)
+        # lda_based_context = train_context_topics_model(train_records)
         # create_topic_model(i+1, j+1)
 
 
@@ -185,16 +201,23 @@ def generate_file_with_commands():
 
     code_path = constants.CODE_FOLDER[:-1]
     python_path = "PYTHONPATH='" + code_path + "' "
-    python_command = "python "
+    python_command = "stdbuf -oL nohup python "
+    review_type = ''
+    if Constants.ALL_TOPICS is not None:
+        review_type = Constants.ALL_TOPICS + "-"
+    log_file = " > ~/logs/" "topicmodel-" + review_type + Constants.ITEM_TYPE +\
+               "-%d-%d.log"
     command_list = []
 
     for cycle in range(Constants.NUM_CYCLES):
         for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
-            python_file = "topic_model_creator.py -c %d -f %d"
-            full_command = python_path + python_command + python_file
-            command_list.append(full_command % (cycle, fold))
+            python_file = constants.CODE_FOLDER +\
+                "topicmodeling/context/topic_model_creator.py -c %d -f %d"
+            full_command = python_path + python_command + python_file + log_file
+            command_list.append(full_command % (cycle, fold, cycle+1, fold+1))
 
-    with open("/Users/fpena/tmp/command_list.txt", "w") as write_file:
+    home = expanduser("~")
+    with open(home + "/tmp/command_list.txt", "w") as write_file:
         for command in command_list:
             write_file.write("%s\n" % command)
 
@@ -219,11 +242,11 @@ def main():
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
 #
-if __name__ == '__main__':
-    start = time.time()
-    main()
-    end = time.time()
-    total_time = end - start
-    print("Total time = %f seconds" % total_time)
-
+# if __name__ == '__main__':
+#     start = time.time()
+#     main()
+#     end = time.time()
+#     total_time = end - start
+#     print("Total time = %f seconds" % total_time)
+#
 # generate_file_with_commands()

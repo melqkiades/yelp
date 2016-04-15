@@ -60,4 +60,5 @@
   do
       mv -i "${file}" "${file/fileprefix_/replacement_}"
   done
-- 
+- To add a comma (or anything) at the end of each line using a regular expression
+  Search for ([^\n])$ and replace it by \1,

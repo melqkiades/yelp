@@ -203,7 +203,7 @@ class ContextTopNRunner(object):
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
-        ETLUtils.drop_fields(['tagged_words'], self.original_records)
+        # ETLUtils.drop_fields(['tagged_words'], self.original_records)
         print('num_records: %d' % len(self.original_records))
 
         if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
