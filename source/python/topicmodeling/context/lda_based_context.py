@@ -29,11 +29,25 @@ class LdaBasedContext:
         self.topic_model = None
         self.context_rich_topics = None
         self.topic_ratio_map = None
+        self.topic_statistics_map = None
         self.specific_dictionary = None
         self.specific_corpus = None
         self.generic_dictionary = None
         self.generic_corpus = None
         self.max_words = None
+        self.lda_beta_comparison_operator = None
+        if Constants.LDA_BETA_COMPARISON_OPERATOR == 'gt':
+            self.lda_beta_comparison_operator = operator.gt
+        elif Constants.LDA_BETA_COMPARISON_OPERATOR == 'lt':
+            self.lda_beta_comparison_operator = operator.lt
+        elif Constants.LDA_BETA_COMPARISON_OPERATOR == 'ge':
+            self.lda_beta_comparison_operator = operator.ge
+        elif Constants.LDA_BETA_COMPARISON_OPERATOR == 'le':
+            self.lda_beta_comparison_operator = operator.le
+        elif Constants.LDA_BETA_COMPARISON_OPERATOR == 'eq':
+            self.lda_beta_comparison_operator = operator.le
+        else:
+            raise ValueError('Comparison operator not supported for LDA beta')
 
     def separate_reviews(self):
 
@@ -102,34 +116,86 @@ class LdaBasedContext:
 
         # numpy.random.seed(0)
         topic_ratio_map = {}
+        statistics_map = {}
         non_contextual_topics = set()
         for topic in range(self.num_topics):
-            weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
-                topic, self.records)
-            specific_weighted_frq = \
-                lda_context_utils.calculate_topic_weighted_frequency(
+
+            weighted_frequencies =\
+                lda_context_utils.calculate_topic_weighted_frequency_complete(
+                    topic, self.records)
+            specific_weighted_frequencies =\
+                lda_context_utils.calculate_topic_weighted_frequency_complete(
                     topic, self.specific_reviews)
-            generic_weighted_frq = \
-                lda_context_utils.calculate_topic_weighted_frequency(
+            generic_weighted_frequencies =\
+                lda_context_utils.calculate_topic_weighted_frequency_complete(
                     topic, self.generic_reviews)
 
+            weighted_frq = weighted_frequencies['review_frequency']
+            specific_weighted_frq = \
+                specific_weighted_frequencies['review_frequency']
+            generic_weighted_frq = \
+                generic_weighted_frequencies['review_frequency']
+
             if weighted_frq < self.alpha:
-                non_contextual_topics.add(topic)
+                continue
+                # non_contextual_topics.add(topic)
 
             if generic_weighted_frq == 0:
                 ratio = 'N/A'
             else:
                 ratio = specific_weighted_frq / generic_weighted_frq
 
+            if generic_weighted_frequencies['log_words_frequency'] == 0:
+                words_ratio = 'N/A'
+            else:
+                words_ratio = \
+                    specific_weighted_frequencies['log_words_frequency'] /\
+                    generic_weighted_frequencies['log_words_frequency']
+
+            if generic_weighted_frequencies['log_past_verbs_frequency'] == 0:
+                past_verbs_ratio = 'N/A'
+            else:
+                past_verbs_ratio = \
+                    specific_weighted_frequencies['log_past_verbs_frequency'] /\
+                    generic_weighted_frequencies['log_past_verbs_frequency']
+
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
 
-            if ratio < self.beta:
+            if self.lda_beta_comparison_operator(ratio, self.beta):
                 non_contextual_topics.add(topic)
 
             topic_ratio_map[topic] = ratio
 
+            statistics_map[topic] = {}
+            statistics_map[topic]['frequency_ratio'] = ratio
+            statistics_map[topic]['words_ratio'] = words_ratio
+            statistics_map[topic]['past_verbs_ratio'] = past_verbs_ratio
+            statistics_map[topic]['weighted_frq'] = {}
+            statistics_map[topic]['weighted_frq']['review_frequency'] =\
+                weighted_frequencies['review_frequency']
+            statistics_map[topic]['weighted_frq']['log_words_frequency'] =\
+                weighted_frequencies['log_words_frequency']
+            statistics_map[topic]['weighted_frq']['log_past_verbs_frequency'] =\
+                weighted_frequencies['log_past_verbs_frequency']
+            statistics_map[topic]['specific_weighted_frq'] = {}
+            statistics_map[topic]['specific_weighted_frq']['review_frequency'] =\
+                specific_weighted_frequencies['review_frequency']
+            statistics_map[topic]['specific_weighted_frq']['log_words_frequency'] =\
+                specific_weighted_frequencies['log_words_frequency']
+            statistics_map[topic]['specific_weighted_frq']['log_past_verbs_frequency'] =\
+                specific_weighted_frequencies['log_past_verbs_frequency']
+            statistics_map[topic]['generic_weighted_frq'] = {}
+            statistics_map[topic]['generic_weighted_frq']['review_frequency'] =\
+                generic_weighted_frequencies['review_frequency']
+            statistics_map[topic]['generic_weighted_frq']['log_words_frequency'] =\
+                generic_weighted_frequencies['log_words_frequency']
+            statistics_map[topic]['generic_weighted_frq']['log_past_verbs_frequency'] =\
+                generic_weighted_frequencies['log_past_verbs_frequency']
+
         self.topic_ratio_map = copy.deepcopy(topic_ratio_map)
+        self.topic_statistics_map = statistics_map
+
 
         # lda_context_utils.export_topics(self.topic_model, topic_ratio_map)
         # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))

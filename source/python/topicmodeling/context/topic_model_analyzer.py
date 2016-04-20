@@ -5,10 +5,11 @@ import time
 
 from pandas import DataFrame
 
+from etl import ETLUtils
 from topicmodeling.context import topic_model_creator
 from utils.constants import Constants
 
-context_words = {
+restaurant_context_words = {
     "ball",
     "bf",
     "birthday",
@@ -99,6 +100,100 @@ context_words = {
     "young",
 }
 
+hotel_context_words = {
+    "airport",
+    "anniversary",
+    "attended",
+    "autumn",
+    "bike",
+    "boyfriend",
+    "bus",
+    "business",
+    "car",
+    "carts",
+    "children",
+    "christmas",
+    "colleagues",
+    "conference",
+    "course",
+    "crowd",
+    "date",
+    "dog",
+    "dogs",
+    "driving",
+    "engagement",
+    "facial",
+    "family",
+    "fiance",
+    "fiancee",
+    "fitness",
+    "flight",
+    "football",
+    "friday",
+    "friend",
+    "friends",
+    "game",
+    "games",
+    "girlfriend",
+    "golf",
+    "grandfather",
+    "grandma",
+    "grandmother",
+    "grandpa",
+    "grandparents",
+    "group",
+    "groupon",
+    "honeymoon",
+    "horse",
+    "hubby",
+    "husband",
+    "kids",
+    "lazy",
+    "marriage",
+    "married",
+    "massage",
+    "mom",
+    "monday",
+    "music",
+    "parents",
+    "parking",
+    "party",
+    "partying",
+    "pet",
+    "relax",
+    "relaxed",
+    "relaxing",
+    "reservation",
+    "rest",
+    "romance",
+    "romantic",
+    "saturday",
+    "shuttle",
+    "spring",
+    "staycation",
+    "steam",
+    "summer",
+    "sunday",
+    "tennis",
+    "thanksgiving",
+    "thursday",
+    "tournament",
+    "training",
+    "transportation",
+    "treatment",
+    "trip",
+    "tuesday",
+    "vacation",
+    "valet",
+    "wedding",
+    "wednesday",
+    "weekday",
+    "weekend",
+    "wife",
+    "winter",
+    "work"
+}
+
 
 def load_topic_model(cycle_index, fold_index):
 
@@ -116,10 +211,14 @@ def load_topic_model(cycle_index, fold_index):
     return lda_based_context
 
 
-def export_topics(cycle_index, fold_index, epsilon):
+def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
 
     new_properties = copy.deepcopy(Constants._properties)
-    new_properties['lda_epsilon'] = epsilon
+    if epsilon is not None:
+        new_properties['lda_epsilon'] = epsilon
+    if alpha is not None:
+        new_properties['lda_alpha'] = alpha
+
     Constants.update_properties(new_properties)
 
     lda_based_context = load_topic_model(cycle_index, fold_index)
@@ -130,24 +229,25 @@ def export_topics(cycle_index, fold_index, epsilon):
         str(Constants.LDA_MODEL_PASSES) + '_' + \
         str(Constants.LDA_MODEL_ITERATIONS) + '_' + \
         str(Constants.LDA_EPSILON) + \
-        '-2.csv'
+        '.csv'
     print(file_name)
 
     num_words = 10
     headers = [
         'topic_id',
         'ratio',
-        # 'words_ratio',
-        # 'past_verbs_ratio',
-        # 'frq',
-        # 'specific_frq',
-        # 'generic_frq',
-        # 'log_words',
-        # 'specific_log_words',
-        # 'generic_log_words',
-        # 'log_past_verbs',
-        # 'specific_log_past_verbs',
-        # 'generic_log_past_verbs'
+        'score',
+        'words_ratio',
+        'past_verbs_ratio',
+        'frq',
+        'specific_frq',
+        'generic_frq',
+        'log_words',
+        'specific_log_words',
+        'generic_log_words',
+        'log_past_verbs',
+        'specific_log_past_verbs',
+        'generic_log_past_verbs'
     ]
 
     for i in range(num_words):
@@ -155,31 +255,43 @@ def export_topics(cycle_index, fold_index, epsilon):
 
     results = []
 
-    for topic in range(lda_based_context.num_topics):
+    topic_ratio_map = lda_based_context.topic_ratio_map
+    topic_statistics_map = lda_based_context.topic_statistics_map
+
+    num_reviews = len(lda_based_context.records)
+    num_specific_reviews = len(lda_based_context.specific_reviews)
+    num_generic_reviews = len(lda_based_context.generic_reviews)
+    print('num reviews: %d' % num_reviews)
+    print('num specific reviews: %d' % num_specific_reviews)
+    print('num generic reviews: %d' % num_generic_reviews)
+    print('specific reviews percentage : %f %%' % (float(num_specific_reviews) / num_reviews * 100))
+    print('generic reviews percentage : %f %%' % (float(num_generic_reviews) / num_reviews * 100))
+
+    for topic in topic_statistics_map.keys():
 
         # pri
 
         result = {}
         result['topic_id'] = topic
-        result['ratio'] = lda_based_context.topic_ratio_map[topic]
-        # result['words_ratio'] = topic_ratio_map[topic]['words_ratio']
-        # result['past_verbs_ratio'] = topic_ratio_map[topic]['past_verbs_ratio']
-        # result['frq'] = topic_ratio_map[topic]['weighted_frq']['review_frequency']
-        # result['specific_frq'] = topic_ratio_map[topic]['specific_weighted_frq']['review_frequency']
-        # result['generic_frq'] = topic_ratio_map[topic]['generic_weighted_frq']['review_frequency']
-        # result['log_words'] = topic_ratio_map[topic]['weighted_frq']['log_words_frequency']
-        # result['specific_log_words'] = topic_ratio_map[topic]['specific_weighted_frq']['log_words_frequency']
-        # result['generic_log_words'] = topic_ratio_map[topic]['generic_weighted_frq']['log_words_frequency']
-        # result['log_past_verbs'] = topic_ratio_map[topic]['weighted_frq']['log_past_verbs_frequency']
-        # result['specific_log_past_verbs'] = topic_ratio_map[topic]['specific_weighted_frq']['log_past_verbs_frequency']
-        # result['generic_log_past_verbs'] = topic_ratio_map[topic]['generic_weighted_frq']['log_past_verbs_frequency']
+        result['ratio'] = topic_statistics_map[topic]['frequency_ratio']
+        result['words_ratio'] = topic_statistics_map[topic]['words_ratio']
+        result['past_verbs_ratio'] = topic_statistics_map[topic]['past_verbs_ratio']
+        result['frq'] = topic_statistics_map[topic]['weighted_frq']['review_frequency']
+        result['specific_frq'] = topic_statistics_map[topic]['specific_weighted_frq']['review_frequency']
+        result['generic_frq'] = topic_statistics_map[topic]['generic_weighted_frq']['review_frequency']
+        result['log_words'] = topic_statistics_map[topic]['weighted_frq']['log_words_frequency']
+        result['specific_log_words'] = topic_statistics_map[topic]['specific_weighted_frq']['log_words_frequency']
+        result['generic_log_words'] = topic_statistics_map[topic]['generic_weighted_frq']['log_words_frequency']
+        result['log_past_verbs'] = topic_statistics_map[topic]['weighted_frq']['log_past_verbs_frequency']
+        result['specific_log_past_verbs'] = topic_statistics_map[topic]['specific_weighted_frq']['log_past_verbs_frequency']
+        result['generic_log_past_verbs'] = topic_statistics_map[topic]['generic_weighted_frq']['log_past_verbs_frequency']
         result.update(split_topic(lda_based_context.topic_model.print_topic(topic, topn=num_words)))
 
         # print(lda_based_context.topic_model.print_topic(topic, topn=num_words))
         results.append(result)
     analyze_topics(results)
     #
-    # ETLUtils.save_csv_file(file_name, results, headers)
+    ETLUtils.save_csv_file(file_name, results, headers)
 
 
 def split_topic(topic_string):
@@ -189,6 +301,12 @@ def split_topic(topic_string):
     :type topic_string: str
     :param topic_string:
     """
+
+    context_words = None
+    if Constants.ITEM_TYPE == 'hotel':
+        context_words = hotel_context_words
+    if Constants.ITEM_TYPE == 'restaurant':
+        context_words = restaurant_context_words
 
     words_dict = {}
     index = 0
@@ -224,6 +342,9 @@ def analyze_topics(topic_data):
     scores['high_ratio_count'] = data_frame[(data_frame.ratio > 1.0) & (data_frame.score > 0.0)]['topic_id'].count()
     scores['low_ratio_count'] = data_frame[(data_frame.ratio < 1.0) & (data_frame.score > 0.0)]['topic_id'].count()
 
+    high_ratio_count = float(data_frame[data_frame.ratio > 1.0]['score'].count())
+    low_ratio_count = float(data_frame[data_frame.ratio < 1.0]['score'].count())
+
     results = copy.deepcopy(Constants._properties)
     results.update(scores)
 
@@ -235,6 +356,8 @@ def analyze_topics(topic_data):
     print('all ratio count: %f' % scores['all_ratio_count'])
     print('greater than 1.0 count: %f' % scores['high_ratio_count'])
     print('lower than 1.0 count: %f' % scores['low_ratio_count'])
+    print('weighted greater than 1.0 count: %f' % (float(scores['high_ratio_count'] / high_ratio_count)))
+    print('weighted lower than 1.0 count: %f' % (float(scores['low_ratio_count'] / low_ratio_count)))
     # print('\nN/A')
     # print(data_frame[data_frame.ratio == 'N/A'].mean())
     # print('\n> 1.0')
@@ -263,9 +386,16 @@ def write_results_to_json(results):
 
 start = time.time()
 
-epsilon_list = [0.04, 0.08, 0.12]
-for epsilon in epsilon_list:
-    export_topics(0, 0, epsilon)
+# epsilon_list = [0.001, 0.005, 0.01, 0.02, 0.05, 0.07, 0.1]
+# alpha_list = [0.005, 0.01, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
+epsilon_list = [1, 2, 3, 4, 5]
+alpha_list = ['a', 'b', 'c', 'd', 'e']
+
+export_topics(0, 0, 0.001)
+
+# for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
+    # print(epsilon, alpha)
+    # export_topics(0, 0, epsilon)
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)

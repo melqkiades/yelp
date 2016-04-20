@@ -66,6 +66,7 @@ class Constants(object):
     CACHE_TOPIC_MODEL = _properties['cache_topic_model']
     TEXT_SAMPLING_PROPORTION = _properties['text_sampling_proportion']
     TOPIC_WEIGHTING_METHOD = _properties['topic_weighting_method']
+    LDA_BETA_COMPARISON_OPERATOR = _properties['lda_beta_comparison_operator']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -118,6 +119,8 @@ class Constants(object):
             Constants._properties['text_sampling_proportion']
         Constants.TOPIC_WEIGHTING_METHOD =\
             Constants._properties['topic_weighting_method']
+        Constants.LDA_BETA_COMPARISON_OPERATOR =\
+            Constants._properties['lda_beta_comparison_operator']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
