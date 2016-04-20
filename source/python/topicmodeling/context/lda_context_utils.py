@@ -102,7 +102,12 @@ def calculate_topic_weighted_frequency(topic, reviews):
     for review in reviews:
         for review_topic in review[Constants.TOPICS_FIELD]:
             if topic == review_topic[0]:
-                num_reviews += 1
+                if Constants.TOPIC_WEIGHTING_METHOD == 'binary':
+                    num_reviews += 1
+                elif Constants.TOPIC_WEIGHTING_METHOD == 'probability':
+                    num_reviews += review_topic[1]
+                else:
+                    raise ValueError('Topic weighting method not recognized')
 
     return num_reviews / len(reviews)
 
@@ -123,9 +128,14 @@ def calculate_topic_weighted_frequency_complete(topic, reviews):
     for review in reviews:
         for review_topic in review[Constants.TOPICS_FIELD]:
             if topic == review_topic[0]:
-                review_frequency += 1
                 log_words_frequency += review['log_words']
                 log_past_verbs_frequency += review['log_past_verbs']
+                if Constants.TOPIC_WEIGHTING_METHOD == 'binary':
+                    review_frequency += 1
+                elif Constants.TOPIC_WEIGHTING_METHOD == 'probability':
+                    review_frequency += review_topic[1]
+                else:
+                    raise ValueError('Topic weighting method not recognized')
 
     results = {
         'review_frequency': review_frequency / len(reviews),
@@ -241,9 +251,10 @@ def get_topic_distribution(review_text, lda_model, minimum_probability,
         :type review_text: str
         :type lda_model: LdaModel
         :type minimum_probability: float
-        :type text_sampling_proportion: float
-        :param text_sampling_proportion: a float in the range [0,1] that
-        indicates the proportion of text that should be sampled from the review
+        :param sampling_method: a float in the range [0,1] that
+        indicates the proportion of text that should be sampled from the review.
+        It can also take the string value of 'max', indicating that only the
+        word with the highest probability from the topic will be sampled
          text. If None then all the review text is taken
         """
         review_bow = create_bag_of_words([review_text])
@@ -277,109 +288,6 @@ def sample_bag_of_words(review_bow, sampling_method, max_words=None):
             numpy.random.choice(review_bow[0], num_words, replace=False)
         ]
         return review_bow
-
-
-def export_topics(topic_model, topic_ratio_map):
-
-    print('export topic model')
-
-    file_name = Constants.DATASET_FOLDER + 'all_reviews_topic_model_' + \
-        Constants.ITEM_TYPE + '_' + \
-        str(Constants.LDA_NUM_TOPICS) + '_' + \
-        str(Constants.LDA_MODEL_PASSES) + '_' + \
-        str(Constants.LDA_MODEL_ITERATIONS) + '.csv'
-    print(file_name)
-
-    num_words = 10
-    headers = [
-        'topic_id',
-        'ratio',
-        'words_ratio',
-        'past_verbs_ratio',
-        'frq',
-        'specific_frq',
-        'generic_frq',
-        'log_words',
-        'specific_log_words',
-        'generic_log_words',
-        'log_past_verbs',
-        'specific_log_past_verbs',
-        'generic_log_past_verbs'
-    ]
-
-    for i in range(num_words):
-        headers.append('word' + str(i))
-
-    results = []
-
-    for topic in range(topic_model.num_topics):
-        result = {}
-        result['topic_id'] = topic
-        result['ratio'] = topic_ratio_map[topic]['ratio']
-        result['words_ratio'] = topic_ratio_map[topic]['words_ratio']
-        result['past_verbs_ratio'] = topic_ratio_map[topic]['past_verbs_ratio']
-        result['frq'] = topic_ratio_map[topic]['weighted_frq']['review_frequency']
-        result['specific_frq'] = topic_ratio_map[topic]['specific_weighted_frq']['review_frequency']
-        result['generic_frq'] = topic_ratio_map[topic]['generic_weighted_frq']['review_frequency']
-        result['log_words'] = topic_ratio_map[topic]['weighted_frq']['log_words_frequency']
-        result['specific_log_words'] = topic_ratio_map[topic]['specific_weighted_frq']['log_words_frequency']
-        result['generic_log_words'] = topic_ratio_map[topic]['generic_weighted_frq']['log_words_frequency']
-        result['log_past_verbs'] = topic_ratio_map[topic]['weighted_frq']['log_past_verbs_frequency']
-        result['specific_log_past_verbs'] = topic_ratio_map[topic]['specific_weighted_frq']['log_past_verbs_frequency']
-        result['generic_log_past_verbs'] = topic_ratio_map[topic]['generic_weighted_frq']['log_past_verbs_frequency']
-        result.update(split_topic(topic_model.print_topic(topic, topn=num_words), num_words))
-        results.append(result)
-
-    ETLUtils.save_csv_file(file_name, results, headers)
-
-
-def export_all_topics(topic_model):
-
-    print('export topic model')
-
-    file_name = Constants.DATASET_FOLDER + 'generic_topic_model_' + \
-        Constants.ITEM_TYPE + '_' + \
-        str(Constants.LDA_NUM_TOPICS) + '_' + \
-        str(Constants.LDA_MODEL_PASSES) + '_' + \
-        str(Constants.LDA_MODEL_ITERATIONS) + '.csv'
-    print(file_name)
-
-    num_words = 10
-    headers = [
-        'topic_id'
-    ]
-
-    for i in range(num_words):
-        headers.append('word' + str(i))
-
-    results = []
-
-    for topic in range(topic_model.num_topics):
-        result = {}
-        result['topic_id'] = topic
-        result.update(split_topic(topic_model.print_topic(topic, topn=num_words), num_words))
-        results.append(result)
-
-    ETLUtils.save_csv_file(file_name, results, headers)
-
-
-def split_topic(topic_string, num_words):
-    """
-    Splits a topic into dictionary containing each word
-
-    :type topic_string: str
-    :param topic_string:
-    :param num_words:
-    """
-
-    words_dict = {}
-    index = 0
-    topic_words = topic_string.split(' + ')
-    for word in topic_words:
-        words_dict['word' + str(index)] = word
-        index += 1
-
-    return words_dict
 
 
 my_documents = [

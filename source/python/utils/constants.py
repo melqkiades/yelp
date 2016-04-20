@@ -65,6 +65,7 @@ class Constants(object):
     NUM_CORES = _properties['num_cores']
     CACHE_TOPIC_MODEL = _properties['cache_topic_model']
     TEXT_SAMPLING_PROPORTION = _properties['text_sampling_proportion']
+    TOPIC_WEIGHTING_METHOD = _properties['topic_weighting_method']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -115,6 +116,8 @@ class Constants(object):
         Constants.CACHE_TOPIC_MODEL = Constants._properties['cache_topic_model']
         Constants.TEXT_SAMPLING_PROPORTION =\
             Constants._properties['text_sampling_proportion']
+        Constants.TOPIC_WEIGHTING_METHOD =\
+            Constants._properties['topic_weighting_method']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
