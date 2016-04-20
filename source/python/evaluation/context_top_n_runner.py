@@ -250,8 +250,8 @@ class ContextTopNRunner(object):
                 lda_based_context.update_reviews_with_topics()
 
         if Constants.REVIEW_TYPE != Constants.ALL_TOPICS:
-            self.context_rich_topics =\
-                lda_based_context.get_context_rich_topics()
+            lda_based_context.get_context_rich_topics()
+        self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         return lda_based_context
