@@ -29,7 +29,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
                        '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
                        '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
                        '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
-                       '-3.pkl'
+                       '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
@@ -198,15 +198,19 @@ def parallel_context_top_n(args):
 
 
 def generate_file_with_commands():
+    print('%s: Generating file with commands' %
+          time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     code_path = constants.CODE_FOLDER[:-1]
     python_path = "PYTHONPATH='" + code_path + "' "
     python_command = "stdbuf -oL nohup python "
     review_type = ''
-    if Constants.ALL_TOPICS is not None:
-        review_type = Constants.ALL_TOPICS + "-"
-    log_file = " > ~/logs/" "topicmodel-" + review_type + Constants.ITEM_TYPE +\
-               "-%d-%d.log"
+    if Constants.REVIEW_TYPE is not None:
+        review_type = Constants.REVIEW_TYPE + "-"
+    base_file_name = "topicmodel-" + review_type + Constants.ITEM_TYPE
+    log_file = " > ~/logs/" + base_file_name + "-%d-%d.log"
+    commands_dir = expanduser("~") + "/tmp/"
+    commands_file = commands_dir + base_file_name + ".sh"
     command_list = []
 
     for cycle in range(Constants.NUM_CYCLES):
@@ -216,8 +220,7 @@ def generate_file_with_commands():
             full_command = python_path + python_command + python_file + log_file
             command_list.append(full_command % (cycle, fold, cycle+1, fold+1))
 
-    home = expanduser("~")
-    with open(home + "/tmp/command_list.txt", "w") as write_file:
+    with open(commands_file, "w") as write_file:
         for command in command_list:
             write_file.write("%s\n" % command)
 
@@ -237,11 +240,11 @@ def main():
     create_single_topic_model(cycle, fold)
 
 # start = time.time()
-# create_single_topic_models(0, 0)
+# create_single_topic_model(0, 0)
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
-#
+
 # if __name__ == '__main__':
 #     start = time.time()
 #     main()
