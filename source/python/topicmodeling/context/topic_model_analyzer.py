@@ -3,6 +3,10 @@ import json
 import os
 import time
 
+import itertools
+
+import nltk
+import numpy
 from pandas import DataFrame
 
 from etl import ETLUtils
@@ -255,7 +259,6 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
 
     results = []
 
-    topic_ratio_map = lda_based_context.topic_ratio_map
     topic_statistics_map = lda_based_context.topic_statistics_map
 
     num_reviews = len(lda_based_context.records)
@@ -384,18 +387,52 @@ def write_results_to_json(results):
             f.write('\n')
 
 
-start = time.time()
+# start = time.time()
 
 # epsilon_list = [0.001, 0.005, 0.01, 0.02, 0.05, 0.07, 0.1]
 # alpha_list = [0.005, 0.01, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
-epsilon_list = [1, 2, 3, 4, 5]
-alpha_list = ['a', 'b', 'c', 'd', 'e']
+# num_cycles = len(epsilon_list) * len(alpha_list)
+# cycle_index = 1
 
-export_topics(0, 0, 0.001)
+# export_topics(0, 0, 0.001)
 
-# for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
-    # print(epsilon, alpha)
-    # export_topics(0, 0, epsilon)
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# # for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
+# #     print('cycle_index: %d/%d' % (cycle_index, num_cycles))
+# #     export_topics(0, 0, epsilon)
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
+
+tagger = nltk.PerceptronTagger()
+
+time_list = []
+accurate_dict = {}
+approximate_dict = {'NN': 0, 'JJ': 0, 'VB': 0}
+
+for word in restaurant_context_words:
+    cycle_start = time.time()
+    tagged_word = tagger.tag([word])[0]
+    print(tagged_word)
+    time_list.append(time.time() - cycle_start)
+
+    word_tag = tagged_word[1]
+    if word_tag not in accurate_dict:
+        accurate_dict[word_tag] = 0
+    accurate_dict[word_tag] += 1
+
+    if word_tag.startswith('NN'):
+        approximate_dict['NN'] += 1
+    elif word_tag.startswith('JJ'):
+        approximate_dict['JJ'] += 1
+    elif word_tag.startswith('VB'):
+        approximate_dict['VB'] += 1
+    else:
+        if word_tag not in approximate_dict:
+            accurate_dict[word_tag] = 0
+        accurate_dict[word_tag] += 1
+
+print(accurate_dict)
+print(approximate_dict)
+
+print('average cycle time: %f' % numpy.mean(time_list))
+
