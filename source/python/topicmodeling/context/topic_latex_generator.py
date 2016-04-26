@@ -5,7 +5,7 @@ import time
 import nltk
 import re
 from pylatex.base_classes import CommandBase, Arguments
-from pylatex import Document, Section, Subsection, UnsafeCommand, Tabular
+from pylatex import Document, Section, Subsection, UnsafeCommand, Tabular, LongTabu
 from pylatex.package import Package
 
 from topicmodeling.context.topic_model_analyzer import load_topic_model, \
@@ -45,7 +45,6 @@ def extract_words(text):
     review_words = []
 
     for sentence in sentences:
-        # words = [word.strip(string.punctuation) for word in sentence.split()]
         words = [word.lower() for word in nltk.word_tokenize(sentence)]
         review_words.extend(words)
 
@@ -81,7 +80,8 @@ class TopicLatexGenerator:
 
     def __init__(self, lda_based_context):
         self.lda_based_context = lda_based_context
-        self.doc = Document(Constants.ITEM_TYPE + '-topic-models')
+        self.doc =\
+            Document(Constants.ITEM_TYPE + '-topic-models-nouns-complete')
         self.num_cols = 5
         self.num_topics = self.lda_based_context.num_topics
         self.rgb_tuples = None
@@ -93,7 +93,10 @@ class TopicLatexGenerator:
         self.manual_context_topic_words = None
         self.headers = None
         self.topic_words_map = None
-        self.table_format = '|' + 'c|' * (self.num_cols + 1)
+        self.table_format = '|c|' + 'c|' * (self.num_cols + 1)
+        self.tagger = nltk.PerceptronTagger()
+        self.tag_count_map = {'NN': 0, 'JJ': 0, 'VB': 0}
+
         self.init_colors()
         self.init_headers()
         self.init_topic_words()
@@ -115,8 +118,8 @@ class TopicLatexGenerator:
         self.automatic_context_topic_colors = {}
         for topic in self.lda_based_context.context_rich_topics:
             topic_id = topic[0]
-            self.automatic_context_topic_colors[topic_id] = \
-                self.rgb_tuples[color_index]
+            self.automatic_context_topic_colors[topic_id] = color_index
+            # self.rgb_tuples[color_index]
             color_index += 1
 
         color_index = 0
@@ -130,7 +133,7 @@ class TopicLatexGenerator:
                 color_index += 1
 
     def init_headers(self):
-        self.headers = ['ID']
+        self.headers = ['ID', 'Ratio']
         for column_index in range(self.num_cols):
             self.headers.append('Word ' + str(column_index + 1))
 
@@ -153,22 +156,37 @@ class TopicLatexGenerator:
 
     def create_automatic_context_topics(self):
 
-        with self.doc.create(Section('Context-rich topic models (automatic)')):
+        with self.doc.create(Section(
+                Constants.ITEM_TYPE.title() +
+                ' context-rich topic models (automatic)')):
             num_context_topics = len(self.lda_based_context.context_rich_topics)
 
-            with self.doc.create(Tabular(self.table_format)) as table:
+            with self.doc.create(LongTabu(self.table_format)) as table:
                 table.add_hline()
                 table.add_row(self.headers, mapper=bold_mapper)
                 table.add_hline()
 
                 for topic in self.lda_based_context.context_rich_topics:
                     topic_id = topic[0]
-                    row = [str(topic_id + 1)]
+                    ratio = topic[1]
+                    color_id = self.automatic_context_topic_colors[topic_id]
+                    color = self.rgb_tuples[color_id]
+                    id_cell = str(topic_id) + str('|||') + str(color[0]) + \
+                        '|||' + str(color[1]) + '|||' + str(color[2])
+                    ratio_cell = str(ratio) + str('|||') + str(color[0]) + \
+                        '|||' + str(color[1]) + '|||' + str(color[2])
+                    row = [id_cell, ratio_cell]
+                    # row = [str(topic_id + 1)]
                     topic_words =\
                         self.lda_based_context.topic_model.print_topic(
                             topic_id, topn=self.num_cols).split(' + ')
-                    row.extend(topic_words)
-                    table.add_row(row)
+                    for word in topic_words:
+                        word_color = word + str('|||') + str(color[0]) +\
+                                     '|||' + str(color[1]) + '|||' +\
+                                     str(color[2])
+                        row.append(word_color)
+                    # row.extend(topic_words)
+                    table.add_row(row, mapper=background_color_mapper)
 
                 table.add_hline()
 
@@ -177,7 +195,9 @@ class TopicLatexGenerator:
                 'Number of context-rich topics: %d' % num_context_topics)
 
     def create_manual_context_topics(self):
-        with self.doc.create(Section('Context-rich topic models (manual)')):
+        with self.doc.create(Section(
+                Constants.ITEM_TYPE.title() +
+                ' context-rich topic models (manual)')):
 
             num_context_topics = 0
 
@@ -226,23 +246,9 @@ class TopicLatexGenerator:
                             self.doc.append(doc_part)
                     review_index += 1
 
-                # another_text = UnsafeCommand(
-                #     arguments=Arguments(1.0, 0.5, 0.5, ' Hola '))
-                #
-                # self.doc.append('Also some crazy characters: $&#{}')
-                # self.doc.append(' and some other things')
-                # for color in self.rgb_tuples:
-                #     red = color[0]
-                #     green = color[1]
-                #     blue = color[2]
-                #     self.doc.append(
-                #         ExampleCommand(
-                #             arguments=Arguments(red, green, blue,
-                #                                 'Hello World!')))
-
     def generate_pdf(self):
         self.create_automatic_context_topics()
-        self.create_manual_context_topics()
+        # self.create_manual_context_topics()
         self.create_reviews()
         self.doc.generate_pdf()
         self.doc.generate_tex()
@@ -253,11 +259,12 @@ class TopicLatexGenerator:
         new_words = []
         for word in words:
             word_found = False
-            for topic_id in self.manual_context_topic_ids:
+            for topic_id in self.automatic_context_topic_ids:
                 if word in self.topic_words_map[topic_id]:
+                    self.tag_word(word)
                     doc_parts.append(' '.join(new_words))
                     # doc_parts.append('topic: %d word: %s' % (topic_id, word))
-                    color_id = self.manual_context_topic_colors[topic_id]
+                    color_id = self.automatic_context_topic_colors[topic_id]
                     color = self.rgb_tuples[color_id]
                     doc_parts.append(ColorBoxCommand(
                         arguments=Arguments(
@@ -271,11 +278,75 @@ class TopicLatexGenerator:
 
         return doc_parts
 
+    def tag_word(self, word):
+
+        tagged_word = self.tagger.tag([word])[0]
+        word_tag = tagged_word[1]
+
+        if word_tag.startswith('NN'):
+            self.tag_count_map['NN'] += 1
+        elif word_tag.startswith('JJ'):
+            self.tag_count_map['JJ'] += 1
+        elif word_tag.startswith('VB'):
+            self.tag_count_map['VB'] += 1
+        else:
+            if word_tag not in self.tag_count_map:
+                self.tag_count_map[word_tag] = 0
+            self.tag_count_map[word_tag] += 1
+
+    def get_topic_statistics(self, topic_ids):
+
+        tags_dict = {'NN': 0, 'JJ': 0, 'VB': 0}
+
+        topic_words = set()
+        for topic_id in topic_ids:
+            topic_words.update(self.topic_words_map[topic_id])
+
+        for word in topic_words:
+            tagged_word = self.tagger.tag([word])[0]
+            word_tag = tagged_word[1]
+
+            if word_tag.startswith('NN'):
+                tags_dict['NN'] += 1
+            elif word_tag.startswith('JJ'):
+                tags_dict['JJ'] += 1
+            elif word_tag.startswith('VB'):
+                tags_dict['VB'] += 1
+            else:
+                if word_tag not in tags_dict:
+                    tags_dict[word_tag] = 0
+                tags_dict[word_tag] += 1
+
+        print(tags_dict)
+
+        total_count = 0.0
+        for tag_count in tags_dict.values():
+            total_count += tag_count
+
+        print('nouns percentage: %f%%' % (tags_dict['NN'] / total_count * 100))
+
+        return tags_dict
+
 
 def main():
     lda_based_context = load_topic_model(0, 0)
     topic_latex_generator = TopicLatexGenerator(lda_based_context)
+
+    print('\nautomatic')
+    topic_latex_generator.get_topic_statistics(
+        topic_latex_generator.automatic_context_topic_colors)
+    print('\nmanual')
+    topic_latex_generator.get_topic_statistics(
+        topic_latex_generator.manual_context_topic_colors)
     topic_latex_generator.generate_pdf()
+    tag_count_map = topic_latex_generator.tag_count_map
+
+    total_count = 0.0
+    for tag_count in tag_count_map.values():
+        total_count += tag_count
+
+    print(tag_count_map)
+    print('nouns percentage: %f%%' % (tag_count_map['NN'] / total_count * 100))
 
 start = time.time()
 main()
