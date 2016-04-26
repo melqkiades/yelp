@@ -1,4 +1,6 @@
 import time
+
+import nltk
 from gensim import corpora
 from gensim.models import ldamodel, LdaMulticore
 from nltk import RegexpTokenizer
@@ -156,7 +158,11 @@ def create_bag_of_words(document_list):
     :return:
     """
     tokenizer = RegexpTokenizer(r'\w+')
+    tagger = nltk.PerceptronTagger()
     cached_stop_words = set(stopwords.words("english"))
+    cached_stop_words |= {
+        't', 'didn', 'doesn', 'haven', 'don', 'aren', 'isn', 've', 'll',
+        'couldn', 'm', 'hasn', 'hadn', 'won', 'shouldn', 's'}
     body = []
     processed = []
 
@@ -170,8 +176,15 @@ def create_bag_of_words(document_list):
 
     for entry in body:
         row = tokenizer.tokenize(entry)
-        processed.append(
-            [word for word in row if word not in cached_stop_words])
+        tagged_words = tagger.tag(row)
+
+        nouns = []
+        for tagged_word in tagged_words:
+            if tagged_word[1].startswith('NN'):
+                nouns.append(tagged_word[0])
+
+        nouns = [word for word in nouns if word not in cached_stop_words]
+        processed.append(nouns)
 
     return processed
 

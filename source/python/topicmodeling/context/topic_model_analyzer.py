@@ -233,7 +233,7 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
         str(Constants.LDA_MODEL_PASSES) + '_' + \
         str(Constants.LDA_MODEL_ITERATIONS) + '_' + \
         str(Constants.LDA_EPSILON) + \
-        '.csv'
+        '-nouns-complete.csv'
     print(file_name)
 
     num_words = 10
@@ -269,6 +269,7 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     print('num generic reviews: %d' % num_generic_reviews)
     print('specific reviews percentage : %f %%' % (float(num_specific_reviews) / num_reviews * 100))
     print('generic reviews percentage : %f %%' % (float(num_generic_reviews) / num_reviews * 100))
+    print('number of contextual topics: %d' % len(lda_based_context.context_rich_topics))
 
     for topic in topic_statistics_map.keys():
 
@@ -318,7 +319,7 @@ def split_topic(topic_string):
     for topic_word in topic_words:
         word = topic_word.split('*')[1]
         word_score = float(topic_word.split('*')[0])
-        words_dict['word' + str(index)] = topic_word
+        words_dict['word' + str(index)] = topic_word.encode('utf-8')
         if word in context_words:
             topic_score += word_score
         index += 1
@@ -394,7 +395,7 @@ def write_results_to_json(results):
 # num_cycles = len(epsilon_list) * len(alpha_list)
 # cycle_index = 1
 
-# export_topics(0, 0, 0.001)
+# export_topics(0, 0)
 
 # # for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
 # #     print('cycle_index: %d/%d' % (cycle_index, num_cycles))
@@ -412,7 +413,6 @@ approximate_dict = {'NN': 0, 'JJ': 0, 'VB': 0}
 for word in restaurant_context_words:
     cycle_start = time.time()
     tagged_word = tagger.tag([word])[0]
-    print(tagged_word)
     time_list.append(time.time() - cycle_start)
 
     word_tag = tagged_word[1]
@@ -428,11 +428,11 @@ for word in restaurant_context_words:
         approximate_dict['VB'] += 1
     else:
         if word_tag not in approximate_dict:
-            accurate_dict[word_tag] = 0
-        accurate_dict[word_tag] += 1
+            approximate_dict[word_tag] = 0
+        approximate_dict[word_tag] += 1
 
-print(accurate_dict)
-print(approximate_dict)
-
-print('average cycle time: %f' % numpy.mean(time_list))
+# print(accurate_dict)
+# print(approximate_dict)
+#
+# print('average cycle time: %f' % numpy.mean(time_list))
 

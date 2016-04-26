@@ -29,7 +29,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
                        '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
                        '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
                        '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
-                       '.pkl'
+                       '-nouns.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
