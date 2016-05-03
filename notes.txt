@@ -65,3 +65,10 @@
 - To quote all the words in a text file by using regular expression
   Search  = ^([A-Za-z0-9]+)$
   Replace = "\1"
+- To enable proxy internet connection for anaconda create a file in the home directory named .condarc with the following contents
+  proxy_servers:
+      http: http://4c.ucc.ie:80
+      https: http://4c.ucc.ie:80
+- To install a specific package using conda do:
+  conda remove package
+  conda install package=1.2.3
