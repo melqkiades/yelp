@@ -202,7 +202,8 @@ class ContextTopNRunner(object):
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
+        self.original_records =\
+            ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
         # ETLUtils.drop_fields(['tagged_words'], self.original_records)
         print('num_records: %d' % len(self.original_records))
 
@@ -347,7 +348,8 @@ class ContextTopNRunner(object):
                 if Constants.USE_CONTEXT is True:
                     for topic in self.context_rich_topics:
                         important_record = record[Constants.REVIEW_ID_FIELD]
-                        context_topics = self.context_topics_map[important_record]
+                        context_topics =\
+                            self.context_topics_map[important_record]
                         row.append(context_topics['topic' + str(topic[0])])
 
                 writer.writerow(row)

@@ -12,29 +12,6 @@ from utils.constants import Constants
 __author__ = 'fpena'
 
 
-def build_topic_model_from_documents(document_list):
-    """
-    Builds a topic model with the given documents. The model is built using
-    Latent Dirichlet Allocation
-
-    :type document_list: list[str]
-    :parameter document_list: a list of strings, in which each element represnts
-    a document
-    :rtype: gensim.models.ldamodel.LdaModel
-    :return: an LdaModel built using the reviews contained in the records
-    parameter
-    """
-
-    bag_of_words = create_bag_of_words(document_list)
-
-    dictionary = corpora.Dictionary(bag_of_words)
-    dictionary.filter_extremes()
-    corpus = \
-        [dictionary.doc2bow(text) for text in bag_of_words]
-
-    return build_topic_model_from_corpus(corpus, dictionary)
-
-
 def build_topic_model_from_corpus(corpus, dictionary):
     """
     Builds a topic model with the given corpus and dictionary.
@@ -147,6 +124,7 @@ def calculate_topic_weighted_frequency_complete(topic, reviews):
 
     return results
 
+
 def create_bag_of_words(document_list):
     """
     Creates a bag of words representation of the document list given. It removes
@@ -165,11 +143,6 @@ def create_bag_of_words(document_list):
         'couldn', 'm', 'hasn', 'hadn', 'won', 'shouldn', 's'}
     body = []
     processed = []
-
-    # remove common words and tokenize
-    # texts = [[word for word in document.lower().split()
-    #           if word not in stopwords.words('english')]
-    #          for document in reviews]
 
     for i in range(0, len(document_list)):
         body.append(document_list[i].lower())
@@ -230,32 +203,35 @@ def get_user_item_contexts(
     return items_reviews
 
 
-def get_topic_distribution(review_text, lda_model, minimum_probability,
+def get_topic_distribution(record, lda_model, dictionary, minimum_probability,
                            sampling_method=None, max_words=None):
-        """
+    """
 
-        :type review_text: str
-        :type lda_model: LdaModel
-        :type minimum_probability: float
-        :param sampling_method: a float in the range [0,1] that
-        indicates the proportion of text that should be sampled from the review.
-        It can also take the string value of 'max', indicating that only the
-        word with the highest probability from the topic will be sampled
-         text. If None then all the review text is taken
-        """
-        review_bow = create_bag_of_words([review_text])
-        review_bow = sample_bag_of_words(review_bow, sampling_method, max_words)
+    :type record: dict
+    :type lda_model: LdaModel
+    :type minimum_probability: float
+    :param sampling_method: a float in the range [0,1] that
+    indicates the proportion of text that should be sampled from the review.
+    It can also take the string value of 'max', indicating that only the
+    word with the highest probability from the topic will be sampled
+     text. If None then all the review text is taken
+    :param max_words: is the set of words with maximum probability for each
+    contextual topic
+    """
+    # review_bow = [record[Constants.BOW_FIELD]]
+    # review_bow =\
+    #     sample_bag_of_words(review_bow, sampling_method, max_words)
 
-        dictionary = corpora.Dictionary(review_bow)
-        corpus = dictionary.doc2bow(review_bow[0])
-        lda_corpus = lda_model.get_document_topics(
-            corpus, minimum_probability=minimum_probability)
+    # corpus = dictionary.doc2bow(review_bow[0])
+    corpus = record[Constants.CORPUS_FIELD]
+    lda_corpus = lda_model.get_document_topics(
+        corpus, minimum_probability=minimum_probability)
 
-        topic_distribution = numpy.zeros(lda_model.num_topics)
-        for pair in lda_corpus:
-            topic_distribution[pair[0]] = pair[1]
+    topic_distribution = numpy.zeros(lda_model.num_topics)
+    for pair in lda_corpus:
+        topic_distribution[pair[0]] = pair[1]
 
-        return topic_distribution
+    return topic_distribution
 
 
 def sample_bag_of_words(review_bow, sampling_method, max_words=None):

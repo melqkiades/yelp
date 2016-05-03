@@ -22,14 +22,15 @@ def get_topic_model_file_path(cycle_index, fold_index):
         all_topics = ''
 
     topic_model_file = Constants.ITEM_TYPE + '_' + all_topics +\
-                       'topic_model_cycle:' +\
-                       str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
-                       '_fold:' + str(fold_index+1) + '|' +\
-                       str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
-                       '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
-                       '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
-                       '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
-                       '-nouns.pkl'
+        'topic_model_cycle:' +\
+        str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
+        '_fold:' + str(fold_index+1) + '|' +\
+        str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
+        '_numtopics:' + str(Constants.LDA_NUM_TOPICS) +\
+        '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
+        '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
+        '_bow:' + str(Constants.BOW_TYPE) +\
+        '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
@@ -98,7 +99,7 @@ def create_single_topic_model(cycle_index, fold_index):
     print(Constants._properties)
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
+    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
     plant_seeds()
     num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS

@@ -241,17 +241,17 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
         'topic_id',
         'ratio',
         'score',
-        'words_ratio',
-        'past_verbs_ratio',
-        'frq',
-        'specific_frq',
-        'generic_frq',
-        'log_words',
-        'specific_log_words',
-        'generic_log_words',
-        'log_past_verbs',
-        'specific_log_past_verbs',
-        'generic_log_past_verbs'
+        # 'words_ratio',
+        # 'past_verbs_ratio',
+        # 'frq',
+        # 'specific_frq',
+        # 'generic_frq',
+        # 'log_words',
+        # 'specific_log_words',
+        # 'generic_log_words',
+        # 'log_past_verbs',
+        # 'specific_log_past_verbs',
+        # 'generic_log_past_verbs'
     ]
 
     for i in range(num_words):
@@ -260,6 +260,7 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     results = []
 
     topic_statistics_map = lda_based_context.topic_statistics_map
+    topic_ratio_map = lda_based_context.topic_ratio_map
 
     num_reviews = len(lda_based_context.records)
     num_specific_reviews = len(lda_based_context.specific_reviews)
@@ -271,28 +272,36 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     print('generic reviews percentage : %f %%' % (float(num_generic_reviews) / num_reviews * 100))
     print('number of contextual topics: %d' % len(lda_based_context.context_rich_topics))
 
-    for topic in topic_statistics_map.keys():
-
-        # pri
-
+    for topic in topic_ratio_map.keys():
         result = {}
         result['topic_id'] = topic
-        result['ratio'] = topic_statistics_map[topic]['frequency_ratio']
-        result['words_ratio'] = topic_statistics_map[topic]['words_ratio']
-        result['past_verbs_ratio'] = topic_statistics_map[topic]['past_verbs_ratio']
-        result['frq'] = topic_statistics_map[topic]['weighted_frq']['review_frequency']
-        result['specific_frq'] = topic_statistics_map[topic]['specific_weighted_frq']['review_frequency']
-        result['generic_frq'] = topic_statistics_map[topic]['generic_weighted_frq']['review_frequency']
-        result['log_words'] = topic_statistics_map[topic]['weighted_frq']['log_words_frequency']
-        result['specific_log_words'] = topic_statistics_map[topic]['specific_weighted_frq']['log_words_frequency']
-        result['generic_log_words'] = topic_statistics_map[topic]['generic_weighted_frq']['log_words_frequency']
-        result['log_past_verbs'] = topic_statistics_map[topic]['weighted_frq']['log_past_verbs_frequency']
-        result['specific_log_past_verbs'] = topic_statistics_map[topic]['specific_weighted_frq']['log_past_verbs_frequency']
-        result['generic_log_past_verbs'] = topic_statistics_map[topic]['generic_weighted_frq']['log_past_verbs_frequency']
-        result.update(split_topic(lda_based_context.topic_model.print_topic(topic, topn=num_words)))
-
-        # print(lda_based_context.topic_model.print_topic(topic, topn=num_words))
+        result['ratio'] = topic_ratio_map[topic]
+        result.update(split_topic(
+            lda_based_context.topic_model.print_topic(topic, topn=num_words)))
         results.append(result)
+
+    # for topic in topic_statistics_map.keys():
+    #
+    #     # pri
+    #
+    #     result = {}
+    #     result['topic_id'] = topic
+    #     result['ratio'] = topic_statistics_map[topic]['frequency_ratio']
+    #     result['words_ratio'] = topic_statistics_map[topic]['words_ratio']
+    #     result['past_verbs_ratio'] = topic_statistics_map[topic]['past_verbs_ratio']
+    #     result['frq'] = topic_statistics_map[topic]['weighted_frq']['review_frequency']
+    #     result['specific_frq'] = topic_statistics_map[topic]['specific_weighted_frq']['review_frequency']
+    #     result['generic_frq'] = topic_statistics_map[topic]['generic_weighted_frq']['review_frequency']
+    #     result['log_words'] = topic_statistics_map[topic]['weighted_frq']['log_words_frequency']
+    #     result['specific_log_words'] = topic_statistics_map[topic]['specific_weighted_frq']['log_words_frequency']
+    #     result['generic_log_words'] = topic_statistics_map[topic]['generic_weighted_frq']['log_words_frequency']
+    #     result['log_past_verbs'] = topic_statistics_map[topic]['weighted_frq']['log_past_verbs_frequency']
+    #     result['specific_log_past_verbs'] = topic_statistics_map[topic]['specific_weighted_frq']['log_past_verbs_frequency']
+    #     result['generic_log_past_verbs'] = topic_statistics_map[topic]['generic_weighted_frq']['log_past_verbs_frequency']
+    #     result.update(split_topic(lda_based_context.topic_model.print_topic(topic, topn=num_words)))
+    #
+    #     # print(lda_based_context.topic_model.print_topic(topic, topn=num_words))
+    #     results.append(result)
     analyze_topics(results)
     #
     ETLUtils.save_csv_file(file_name, results, headers)

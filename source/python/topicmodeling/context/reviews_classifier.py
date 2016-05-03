@@ -1,12 +1,7 @@
-import cPickle as pickle
-import time
-
 import numpy
 from sklearn.linear_model import LogisticRegression
 
-from etl import ETLUtils
 from topicmodeling.context import review_metrics_extractor
-from topicmodeling.context.review import Review
 
 __author__ = 'fpena'
 
@@ -19,22 +14,13 @@ class ReviewsClassifier:
         self.min_values = None
         self.max_values = None
 
-    def train(self, records, reviews=None):
+    def train(self, records):
 
-        if reviews is None:
-            reviews = []
-            for record in records:
-                reviews.append(Review(record['text']))
+        metrics = numpy.zeros((len(records), self.num_features))
 
-        if len(records) != len(reviews):
-            msg = 'The size of the records and reviews arrays must be the same'
-            raise ValueError(msg)
-
-        metrics = numpy.zeros((len(reviews), self.num_features))
-
-        for index in range(len(reviews)):
+        for index in range(len(records)):
             metrics[index] =\
-                review_metrics_extractor.get_review_metrics(reviews[index])
+                review_metrics_extractor.get_review_metrics(records[index])
 
         self.min_values = metrics.min(axis=0)
         self.max_values = metrics.max(axis=0)
@@ -45,27 +31,21 @@ class ReviewsClassifier:
             numpy.array([record['specific'] == 'yes' for record in records])
         self.classifier.fit(metrics, labels)
 
-    def predict(self, reviews):
-        metrics = numpy.zeros((len(reviews), self.num_features))
-        for index in range(len(reviews)):
+    def predict(self, records):
+        metrics = numpy.zeros((len(records), self.num_features))
+        for index in range(len(records)):
+            print('\r%d/%d' % (index, len(records))),
             metrics[index] =\
-                review_metrics_extractor.get_review_metrics(reviews[index])
+                review_metrics_extractor.get_review_metrics(records[index])
 
+        print('')
         review_metrics_extractor.normalize_matrix_by_columns(
             metrics, self.min_values, self.max_values)
         return self.classifier.predict(metrics)
 
-    def label_json_reviews(self, records, reviews=None):
+    def label_json_reviews(self, records):
 
-        if reviews is None:
-            reviews = []
-            for record in records:
-                reviews.append(Review(record['text']))
-
-        if len(records) != len(reviews):
-            msg = 'The size of the records and reviews arrays must be the same'
-            raise ValueError(msg)
-        predicted_classes = self.predict(reviews)
+        predicted_classes = self.predict(records)
 
         for record, predicted_class in zip(records, predicted_classes):
             if predicted_class:
@@ -74,47 +54,3 @@ class ReviewsClassifier:
                 label = 'generic'
 
             record['predicted_class'] = label
-
-        return records
-
-
-def main():
-    # dataset = 'hotel'
-    dataset = 'restaurant'
-    my_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-    my_training_records_file =\
-        my_folder + 'classified_' + dataset + '_reviews.json'
-    my_training_reviews_file =\
-        my_folder + 'classified_' + dataset + '_reviews.pkl'
-    my_training_records = ETLUtils.load_json_file(my_training_records_file)
-
-    with open(my_training_reviews_file, 'rb') as read_file:
-        my_training_reviews = pickle.load(read_file)
-
-    classifier = ReviewsClassifier()
-    classifier.train(my_training_records, my_training_reviews)
-
-    my_input_records_file =\
-        my_folder + 'yelp_training_set_review_' + dataset + 's_shuffled.json'
-    my_input_reviews_file =\
-        my_folder + 'reviews_' + dataset + '_shuffled.pkl'
-    my_output_records_file =\
-        my_folder + 'yelp_training_set_review_' + dataset +\
-        's_shuffled_tagged.json'
-
-    with open(my_input_reviews_file, 'rb') as read_file:
-        my_input_reviews = pickle.load(read_file)
-
-    my_input_records = ETLUtils.load_json_file(my_input_records_file)
-
-    my_output_records =\
-        classifier.label_json_reviews(my_input_records, my_input_reviews)
-
-    ETLUtils.save_json_file(my_output_records_file, my_output_records)
-
-
-# start = time.time()
-# main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)

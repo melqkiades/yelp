@@ -23,3 +23,4 @@ cache_topic_model: True
 text_sampling_proportion:
 topic_weighting_method: binary
 lda_beta_comparison_operator: lt
+bow_type: NN

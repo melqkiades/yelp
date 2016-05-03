@@ -30,9 +30,8 @@ class LdaBasedContext:
         self.context_rich_topics = None
         self.topic_ratio_map = None
         self.topic_statistics_map = None
-        self.specific_dictionary = None
+        self.dictionary = None
         self.specific_corpus = None
-        self.generic_dictionary = None
         self.generic_corpus = None
         self.max_words = None
         self.lda_beta_comparison_operator = None
@@ -63,32 +62,18 @@ class LdaBasedContext:
     def generate_review_corpus(self):
 
         self.separate_reviews()
+        self.dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
 
-        specific_reviews_text = \
-            context_utils.get_text_from_reviews(self.specific_reviews)
-        generic_reviews_text = \
-            context_utils.get_text_from_reviews(self.generic_reviews)
-
-        specific_bow = lda_context_utils.create_bag_of_words(
-            specific_reviews_text)
-        generic_bow = \
-            lda_context_utils.create_bag_of_words(generic_reviews_text)
-
-        self.specific_dictionary = corpora.Dictionary(specific_bow)
-        self.specific_dictionary.filter_extremes()
-        self.specific_corpus = \
-            [self.specific_dictionary.doc2bow(text) for text in specific_bow]
-
-        self.generic_dictionary = corpora.Dictionary(generic_bow)
-        self.generic_dictionary.filter_extremes()
-        self.generic_corpus = \
-            [self.generic_dictionary.doc2bow(text) for text in generic_bow]
+        self.specific_corpus =\
+            [record[Constants.CORPUS_FIELD] for record in self.specific_reviews]
+        self.generic_corpus =\
+            [record[Constants.CORPUS_FIELD] for record in self.generic_reviews]
 
     def build_topic_model(self):
         print('%s: building topic model' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.topic_model = lda_context_utils.build_topic_model_from_corpus(
-            self.specific_corpus, self.specific_dictionary)
+            self.specific_corpus, self.dictionary)
         print('%s: topic model built' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -116,48 +101,24 @@ class LdaBasedContext:
 
         # numpy.random.seed(0)
         topic_ratio_map = {}
-        statistics_map = {}
         non_contextual_topics = set()
         for topic in range(self.num_topics):
-
-            weighted_frequencies =\
-                lda_context_utils.calculate_topic_weighted_frequency_complete(
-                    topic, self.records)
-            specific_weighted_frequencies =\
-                lda_context_utils.calculate_topic_weighted_frequency_complete(
+            weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
+                topic, self.records)
+            specific_weighted_frq = \
+                lda_context_utils.calculate_topic_weighted_frequency(
                     topic, self.specific_reviews)
-            generic_weighted_frequencies =\
-                lda_context_utils.calculate_topic_weighted_frequency_complete(
+            generic_weighted_frq = \
+                lda_context_utils.calculate_topic_weighted_frequency(
                     topic, self.generic_reviews)
 
-            weighted_frq = weighted_frequencies['review_frequency']
-            specific_weighted_frq = \
-                specific_weighted_frequencies['review_frequency']
-            generic_weighted_frq = \
-                generic_weighted_frequencies['review_frequency']
-
             if weighted_frq < self.alpha:
-                continue
-                # non_contextual_topics.add(topic)
+                non_contextual_topics.add(topic)
 
             if generic_weighted_frq == 0:
                 ratio = 'N/A'
             else:
                 ratio = specific_weighted_frq / generic_weighted_frq
-
-            if generic_weighted_frequencies['log_words_frequency'] == 0:
-                words_ratio = 'N/A'
-            else:
-                words_ratio = \
-                    specific_weighted_frequencies['log_words_frequency'] /\
-                    generic_weighted_frequencies['log_words_frequency']
-
-            if generic_weighted_frequencies['log_past_verbs_frequency'] == 0:
-                past_verbs_ratio = 'N/A'
-            else:
-                past_verbs_ratio = \
-                    specific_weighted_frequencies['log_past_verbs_frequency'] /\
-                    generic_weighted_frequencies['log_past_verbs_frequency']
 
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
@@ -167,35 +128,7 @@ class LdaBasedContext:
 
             topic_ratio_map[topic] = ratio
 
-            statistics_map[topic] = {}
-            statistics_map[topic]['frequency_ratio'] = ratio
-            statistics_map[topic]['words_ratio'] = words_ratio
-            statistics_map[topic]['past_verbs_ratio'] = past_verbs_ratio
-            statistics_map[topic]['weighted_frq'] = {}
-            statistics_map[topic]['weighted_frq']['review_frequency'] =\
-                weighted_frequencies['review_frequency']
-            statistics_map[topic]['weighted_frq']['log_words_frequency'] =\
-                weighted_frequencies['log_words_frequency']
-            statistics_map[topic]['weighted_frq']['log_past_verbs_frequency'] =\
-                weighted_frequencies['log_past_verbs_frequency']
-            statistics_map[topic]['specific_weighted_frq'] = {}
-            statistics_map[topic]['specific_weighted_frq']['review_frequency'] =\
-                specific_weighted_frequencies['review_frequency']
-            statistics_map[topic]['specific_weighted_frq']['log_words_frequency'] =\
-                specific_weighted_frequencies['log_words_frequency']
-            statistics_map[topic]['specific_weighted_frq']['log_past_verbs_frequency'] =\
-                specific_weighted_frequencies['log_past_verbs_frequency']
-            statistics_map[topic]['generic_weighted_frq'] = {}
-            statistics_map[topic]['generic_weighted_frq']['review_frequency'] =\
-                generic_weighted_frequencies['review_frequency']
-            statistics_map[topic]['generic_weighted_frq']['log_words_frequency'] =\
-                generic_weighted_frequencies['log_words_frequency']
-            statistics_map[topic]['generic_weighted_frq']['log_past_verbs_frequency'] =\
-                generic_weighted_frequencies['log_past_verbs_frequency']
-
         self.topic_ratio_map = copy.deepcopy(topic_ratio_map)
-        self.topic_statistics_map = statistics_map
-
 
         # lda_context_utils.export_topics(self.topic_model, topic_ratio_map)
         # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -238,18 +171,10 @@ class LdaBasedContext:
         method)
         """
 
-        reviews_text =\
-            context_utils.get_text_from_reviews(self.records)
+        corpus = [record[Constants.CORPUS_FIELD] for record in self.records]
 
-        bag_of_words = lda_context_utils.create_bag_of_words(reviews_text)
-
-        dictionary = corpora.Dictionary(bag_of_words)
-        dictionary.filter_extremes()
-        corpus =\
-            [dictionary.doc2bow(text) for text in bag_of_words]
-
-        self.topic_model =\
-            lda_context_utils.build_topic_model_from_corpus(corpus, dictionary)
+        self.topic_model = lda_context_utils.build_topic_model_from_corpus(
+            corpus, self.dictionary)
 
         lda_context_utils.update_reviews_with_topics(
             self.topic_model, corpus, self.records, self.epsilon)
@@ -273,7 +198,7 @@ class LdaBasedContext:
         for record in records:
             # numpy.random.seed(0)
             topic_distribution = lda_context_utils.get_topic_distribution(
-                record[Constants.TEXT_FIELD], self.topic_model, self.epsilon,
+                record, self.topic_model, self.dictionary, self.epsilon,
                 text_sampling_proportion, self.max_words
             )
             record[Constants.TOPICS_FIELD] = topic_distribution

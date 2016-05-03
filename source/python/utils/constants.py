@@ -18,19 +18,22 @@ def load_properties():
 
 class Constants(object):
 
-
     # Please keep the constants' names in alphabetical order to avoid problems
     # with the version control system (merging)
 
+    BOW_FIELD = 'bow'
     CONTEXT_TOPICS_FIELD = 'context_topics'
     CONTEXT_WORDS_FIELD = 'context_words'
+    CORPUS_FIELD = 'corpus'
     ITEM_ID_FIELD = 'business_id'
+    POS_TAGS_FIELD = 'pos_tags'
     PREDICTED_CLASS_FIELD = 'predicted_class'
     RATING_FIELD = 'stars'
     REVIEW_ID_FIELD = 'review_id'
     TEXT_FIELD = 'text'
     TOPICS_FIELD = 'topics'
     USER_ID_FIELD = 'user_id'
+    VOTES_FIELD = 'votes'
 
     SPECIFIC = 'specific'
     GENERIC = 'generic'
@@ -67,16 +70,24 @@ class Constants(object):
     TEXT_SAMPLING_PROPORTION = _properties['text_sampling_proportion']
     TOPIC_WEIGHTING_METHOD = _properties['topic_weighting_method']
     LDA_BETA_COMPARISON_OPERATOR = _properties['lda_beta_comparison_operator']
+    BOW_TYPE = _properties['bow_type']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
-    RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
-                   ITEM_TYPE + 's_shuffled_tagged.json'
+    # RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
+    #                ITEM_TYPE + 's_shuffled_tagged.json'
+    RECORDS_FILE =\
+        DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's.json'
+    PROCESSED_RECORDS_FILE =\
+        CACHE_FOLDER + ITEM_TYPE + '_processed_reviews.json'
+    FULL_PROCESSED_RECORDS_FILE =\
+        CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews.json'
+    DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary.pkl'
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     CSV_RESULTS_FILE = DATASET_FOLDER + \
-                       ITEM_TYPE + '_results.csv'
+        ITEM_TYPE + '_results.csv'
     JSON_RESULTS_FILE = DATASET_FOLDER + \
-                       ITEM_TYPE + '_results.json'
+        ITEM_TYPE + '_results.json'
     GIT_REVISION_HASH = strip(subprocess.check_output(
         ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
     _properties['git_revision_hash'] = GIT_REVISION_HASH
@@ -84,9 +95,9 @@ class Constants(object):
     _properties['os_name'] = OS_NAME
     # Cache files
     USER_ITEM_MAP_FILE = CACHE_FOLDER +\
-                              ITEM_TYPE + '_' + 'user_item_map.pkl'
+        ITEM_TYPE + '_' + 'user_item_map.pkl'
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
-                            ITEM_TYPE + '.pkl'
+        ITEM_TYPE + '.pkl'
 
     @staticmethod
     def update_properties(new_properties):
@@ -121,6 +132,7 @@ class Constants(object):
             Constants._properties['topic_weighting_method']
         Constants.LDA_BETA_COMPARISON_OPERATOR =\
             Constants._properties['lda_beta_comparison_operator']
+        Constants.BOW_TYPE = Constants._properties['bow_type']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
@@ -128,9 +140,9 @@ class Constants(object):
             Constants.DATASET_FOLDER + 'yelp_training_set_review_' +\
             Constants.ITEM_TYPE + 's_shuffled_tagged.json'
         Constants.CSV_RESULTS_FILE = Constants.DATASET_FOLDER + \
-                                     Constants.ITEM_TYPE + '_results.csv'
+            Constants.ITEM_TYPE + '_results.csv'
         Constants.JSON_RESULTS_FILE = Constants.DATASET_FOLDER + \
-                                     Constants.ITEM_TYPE + '_results.json'
+            Constants.ITEM_TYPE + '_results.json'
         Constants.GIT_REVISION_HASH = strip(subprocess.check_output(
             ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
         Constants._properties['git_revision_hash'] = Constants.GIT_REVISION_HASH
@@ -138,6 +150,6 @@ class Constants(object):
         Constants._properties['os_name'] = Constants.OS_NAME
         # Cache files
         Constants.USER_ITEM_MAP_FILE = Constants.CACHE_FOLDER +\
-                                  Constants.ITEM_TYPE + '_' + 'user_item_map.pkl'
+            Constants.ITEM_TYPE + '_' + 'user_item_map.pkl'
         Constants.TOPIC_MODEL_FILE = Constants.CACHE_FOLDER + 'topic_model_' +\
-                                Constants.ITEM_TYPE + '.pkl'
+            Constants.ITEM_TYPE + '.pkl'

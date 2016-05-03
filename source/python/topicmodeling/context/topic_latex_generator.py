@@ -8,6 +8,7 @@ from pylatex.base_classes import CommandBase, Arguments
 from pylatex import Document, Section, Subsection, UnsafeCommand, Tabular, LongTabu
 from pylatex.package import Package
 
+from etl import ETLUtils
 from topicmodeling.context.topic_model_analyzer import load_topic_model, \
     split_topic
 from utils.constants import Constants
@@ -236,7 +237,9 @@ class TopicLatexGenerator:
             with self.doc.create(Subsection('A subsection')):
 
                 review_index = 0
-                for record in self.lda_based_context.records[:100]:
+                full_records = ETLUtils.load_json_file(
+                    Constants.FULL_PROCESSED_RECORDS_FILE)
+                for record in full_records[:100]:
                     with self.doc.create(Subsection(
                                     'Review %d (%s)' % (
                             (review_index + 1), record[
