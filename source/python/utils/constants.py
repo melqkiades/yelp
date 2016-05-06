@@ -79,10 +79,13 @@ class Constants(object):
     RECORDS_FILE =\
         DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's.json'
     PROCESSED_RECORDS_FILE =\
-        CACHE_FOLDER + ITEM_TYPE + '_processed_reviews.json'
+        CACHE_FOLDER + ITEM_TYPE + '_processed_reviews' +\
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) + '.json'
     FULL_PROCESSED_RECORDS_FILE =\
-        CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews.json'
-    DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary.pkl'
+        CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews' + \
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) + '.json'
+    DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary' + \
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) + '.pkl'
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     CSV_RESULTS_FILE = DATASET_FOLDER + \
         ITEM_TYPE + '_results.csv'

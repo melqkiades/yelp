@@ -2,7 +2,7 @@ import random
 
 import time
 
-import operator
+import numpy
 from gensim import corpora
 from nltk import PerceptronTagger
 from nltk.corpus import stopwords
@@ -19,6 +19,12 @@ class YelpReviewsPreprocessor:
         self.records = None
         self.dictionary = None
 
+    @staticmethod
+    def plant_seeds():
+        print('%s: plant seeds' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        random.seed(0)
+        numpy.random.seed(0)
+
     def load_records(self):
         print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         records_file =\
@@ -30,7 +36,8 @@ class YelpReviewsPreprocessor:
         print('%s: shuffle records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         random.shuffle(self.records)
 
-    def pos_tag_reviews(self, records):
+    @staticmethod
+    def pos_tag_reviews(records):
         print('%s: tag reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         tagger = PerceptronTagger()
 
@@ -81,18 +88,6 @@ class YelpReviewsPreprocessor:
             all_words.append(record[Constants.BOW_FIELD])
 
         self.dictionary = corpora.Dictionary(all_words)
-
-        dfs = self.dictionary.dfs
-        sorted_dict = sorted(dfs.items(), key=operator.itemgetter(1), reverse=True)
-
-        print(self.dictionary.dfs)
-        print(sorted_dict)
-        print(self.dictionary.id2token)
-
-        for word_id, word_frequency in sorted_dict[:100]:
-            print(self.dictionary[word_id], word_frequency)
-            # print(self.dictionary.id2token[word_id], word_frequency)
-
         self.dictionary.filter_extremes(2, 0.4)
 
     def build_corpus(self):
@@ -123,8 +118,9 @@ class YelpReviewsPreprocessor:
         ETLUtils.drop_fields(unnecessary_fields, self.records)
 
     def full_cycle(self):
+        print(Constants._properties)
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        random.seed(0)
+        self.plant_seeds()
         self.load_records()
         self.shuffle_records()
         self.pos_tag_reviews(self.records)
@@ -133,8 +129,6 @@ class YelpReviewsPreprocessor:
         self.build_dictionary()
         self.build_corpus()
         self.export_records()
-        print(self.records[0])
-        print(self.records[1])
 
 
 def main():

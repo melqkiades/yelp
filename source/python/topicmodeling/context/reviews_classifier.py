@@ -2,6 +2,7 @@ import numpy
 from sklearn.linear_model import LogisticRegression
 
 from topicmodeling.context import review_metrics_extractor
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -34,11 +35,9 @@ class ReviewsClassifier:
     def predict(self, records):
         metrics = numpy.zeros((len(records), self.num_features))
         for index in range(len(records)):
-            print('\r%d/%d' % (index, len(records))),
             metrics[index] =\
                 review_metrics_extractor.get_review_metrics(records[index])
 
-        print('')
         review_metrics_extractor.normalize_matrix_by_columns(
             metrics, self.min_values, self.max_values)
         return self.classifier.predict(metrics)
@@ -49,8 +48,8 @@ class ReviewsClassifier:
 
         for record, predicted_class in zip(records, predicted_classes):
             if predicted_class:
-                label = 'specific'
+                label = Constants.SPECIFIC
             else:
-                label = 'generic'
+                label = Constants.GENERIC
 
-            record['predicted_class'] = label
+            record[Constants.PREDICTED_CLASS_FIELD] = label

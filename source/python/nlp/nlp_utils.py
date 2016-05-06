@@ -29,8 +29,22 @@ def get_words(text):
     words = []
 
     for sentence in sentences:
-        words.extend([word for word in nltk.tokenize.word_tokenize(sentence)])
+        words.extend(get_words_from_sentence(sentence))
+
     return words
+
+
+def get_words_from_sentence(sentence):
+    """
+    Splits the given sentence into words and returns them
+
+    :type sentence: str
+    :param sentence: just a text. It must be in english and it must be only one
+    sentence, otherwise it may bring down the quality of the results.
+    :rtype: list[str]
+    :return: a list with the words there are in the given sentence
+    """
+    return nltk.tokenize.word_tokenize(sentence)
 
 
 def tag_words(text, tagger=None):
@@ -46,7 +60,8 @@ def tag_words(text, tagger=None):
     :return: a list of lists with pairs, in the form of (word, tag)
     """
     sentences = get_sentences(text)
-    tokenized_sentences = [get_words(sent.lower()) for sent in sentences]
+    tokenized_sentences = [
+        get_words_from_sentence(sent.lower()) for sent in sentences]
     if tagger is None:
         tagger = nltk.PerceptronTagger()
 
