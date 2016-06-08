@@ -5,12 +5,15 @@ import time
 import nltk
 import re
 from pylatex.base_classes import CommandBase, Arguments
-from pylatex import Document, Section, Subsection, UnsafeCommand, Tabular, LongTabu
+from pylatex import Document, Section, Subsection, Command, UnsafeCommand, Tabular, LongTabu, Itemize, NoEscape
 from pylatex.package import Package
 
+import pattern
 from etl import ETLUtils
+from nlp import nlp_utils
+from topicmodeling.context import topic_model_creator
 from topicmodeling.context.topic_model_analyzer import load_topic_model, \
-    split_topic
+    split_topic, context_words
 from utils.constants import Constants
 import sys
 reload(sys)
@@ -84,13 +87,16 @@ class TopicLatexGenerator:
         self.doc =\
             Document(Constants.ITEM_TYPE + '-topic-models-nouns-complete')
         self.num_cols = 5
-        self.num_topics = self.lda_based_context.num_topics
+        self.num_topics = Constants.LDA_NUM_TOPICS
         self.rgb_tuples = None
         self.automatic_context_topic_colors = None
+        self.keyword_context_topic_colors = None
         self.manual_context_topic_colors = None
         self.automatic_context_topic_ids = None
+        self.keyword_context_topic_ids = None
         self.manual_context_topic_ids = None
         self.automatic_context_topic_words = None
+        self.keyword_context_topic_words = None
         self.manual_context_topic_words = None
         self.headers = None
         self.topic_words_map = None
@@ -115,23 +121,29 @@ class TopicLatexGenerator:
                       for x in range(self.num_topics)]
         self.rgb_tuples = map(lambda hsv: colorsys.hsv_to_rgb(*hsv), hsv_tuples)
 
-        color_index = 0
-        self.automatic_context_topic_colors = {}
-        for topic in self.lda_based_context.context_rich_topics:
-            topic_id = topic[0]
-            self.automatic_context_topic_colors[topic_id] = color_index
-            # self.rgb_tuples[color_index]
-            color_index += 1
+        # color_index = 0
+        # self.automatic_context_topic_colors = {}
+        # for topic in self.lda_based_context.context_rich_topics:
+        #     topic_id = topic[0]
+        #     self.automatic_context_topic_colors[topic_id] = color_index
+        #     # self.rgb_tuples[color_index]
+        #     color_index += 1
+        #
+        # color_index = 0
+        # self.keyword_context_topic_colors = {}
+        # for topic_id in range(self.num_topics):
+        #     topic_score = split_topic(
+        #         self.lda_based_context.topic_model.print_topic(
+        #             topic_id, topn=self.num_cols))
+        #     if topic_score['score'] > 0:
+        #         self.keyword_context_topic_colors[topic_id] = color_index
+        #         color_index += 1
 
         color_index = 0
         self.manual_context_topic_colors = {}
-        for topic_id in range(self.num_topics):
-            topic_score = split_topic(
-                self.lda_based_context.topic_model.print_topic(
-                    topic_id, topn=self.num_cols))
-            if topic_score['score'] > 0:
-                self.manual_context_topic_colors[topic_id] = color_index
-                color_index += 1
+        for topic in context_words[Constants.ITEM_TYPE]:
+            self.manual_context_topic_colors[topic] = color_index
+            color_index += 1
 
     def init_headers(self):
         self.headers = ['ID', 'Ratio']
@@ -139,21 +151,24 @@ class TopicLatexGenerator:
             self.headers.append('Word ' + str(column_index + 1))
 
     def init_topic_words(self):
-        self.topic_words_map = \
-            extract_topic_words(
-                self.lda_based_context.topic_model, range(self.num_topics))
+        pass
+        # self.topic_words_map = \
+        #     extract_topic_words(
+        #         self.lda_based_context.topic_model, range(self.num_topics))
 
     def init_topic_ids(self):
-        self.automatic_context_topic_ids = [
-            topic[0] for topic in self.lda_based_context.context_rich_topics]
+        # self.automatic_context_topic_ids = [
+        #     topic[0] for topic in self.lda_based_context.context_rich_topics]
+        #
+        # self.keyword_context_topic_ids = []
+        # for topic_id in range(self.num_topics):
+        #     topic_score = split_topic(
+        #         self.lda_based_context.topic_model.print_topic(
+        #             topic_id, topn=self.num_cols))
+        #     if topic_score['score'] > 0:
+        #         self.keyword_context_topic_ids.append(topic_id)
 
-        self.manual_context_topic_ids = []
-        for topic_id in range(self.num_topics):
-            topic_score = split_topic(
-                self.lda_based_context.topic_model.print_topic(
-                    topic_id, topn=self.num_cols))
-            if topic_score['score'] > 0:
-                self.manual_context_topic_ids.append(topic_id)
+        self.manual_context_topic_ids = range(len(context_words[Constants.ITEM_TYPE]))
 
     def create_automatic_context_topics(self):
 
@@ -195,10 +210,10 @@ class TopicLatexGenerator:
             self.doc.append(
                 'Number of context-rich topics: %d' % num_context_topics)
 
-    def create_manual_context_topics(self):
+    def create_keyword_context_topics(self):
         with self.doc.create(Section(
                 Constants.ITEM_TYPE.title() +
-                ' context-rich topic models (manual)')):
+                ' context-rich topic models (keyword)')):
 
             num_context_topics = 0
 
@@ -212,7 +227,7 @@ class TopicLatexGenerator:
                         self.lda_based_context.topic_model.print_topic(
                             topic_id, topn=self.num_cols))
                     if topic_score['score'] > 0:
-                        color_id = self.manual_context_topic_colors[topic_id]
+                        color_id = self.keyword_context_topic_colors[topic_id]
                         color = self.rgb_tuples[color_id]
                         id_cell = str(topic_id)+str('|||')+str(color[0]) + \
                             '|||'+str(color[1])+'|||'+str(color[2])
@@ -232,26 +247,66 @@ class TopicLatexGenerator:
             self.doc.append(
                 'Number of context-rich topics: %d' % num_context_topics)
 
+    def create_manual_context_topics(self):
+        with self.doc.create(Section(
+                Constants.ITEM_TYPE.title() +
+                ' context-rich topic models (manual)')):
+
+            with self.doc.create(Tabular(self.table_format)) as table:
+                table.add_hline()
+                table.add_row(self.headers, mapper=bold_mapper)
+                table.add_hline()
+
+                for topic in context_words[Constants.ITEM_TYPE]:
+                    color_id = self.manual_context_topic_colors[topic]
+                    color = self.rgb_tuples[color_id]
+                    id_cell = str(topic)+str('|||')+str(color[0]) + \
+                        '|||'+str(color[1])+'|||'+str(color[2])
+                    row = [id_cell]
+                    for word in list(context_words[Constants.ITEM_TYPE][topic])[:self.num_cols + 1]:
+                        word_color = word+str('|||')+str(color[0])+'|||' + \
+                            str(color[1])+'|||'+str(color[2])
+                        row.append(word_color)
+                    table.add_row(row, mapper=background_color_mapper)
+
+                table.add_hline()
+
+            self.doc.append(UnsafeCommand('par'))
+            # self.doc.append(
+            #     'Number of context-rich topics: %d' %
+            #     len(context_words[Constants.ITEM_TYPE]))
+            self.doc.append(ColorBoxCommand(
+                arguments=Arguments(
+                    1, 1, 1, 'Number of context-rich topics: ' +
+                            str(len(context_words[Constants.ITEM_TYPE])))))
+
     def create_reviews(self):
         with self.doc.create(Section('Reviews')):
             with self.doc.create(Subsection('A subsection')):
 
+                sg_map = {'yes': 'specific', 'no': 'generic'}
+
                 review_index = 0
-                full_records = ETLUtils.load_json_file(
-                    Constants.FULL_PROCESSED_RECORDS_FILE)
-                for record in full_records[:100]:
+                # full_records = ETLUtils.load_json_file(
+                #     Constants.FULL_PROCESSED_RECORDS_FILE)
+                records_file = Constants.DATASET_FOLDER +\
+                    'classified_' + Constants.ITEM_TYPE + '_reviews.json'
+                full_records = ETLUtils.load_json_file(records_file)
+
+                for record in full_records:
                     with self.doc.create(Subsection(
                                     'Review %d (%s)' % (
-                            (review_index + 1), record[
-                                Constants.PREDICTED_CLASS_FIELD]))):
-                        for doc_part in self.build_text(
-                                record[Constants.TEXT_FIELD]):
+                            (review_index + 1), sg_map[record['specific']]))):
+                        # for doc_part in self.build_text(
+                        #         record[Constants.TEXT_FIELD]):
+                        for doc_part in self.build_text_manual(record):
                             self.doc.append(doc_part)
                     review_index += 1
 
     def generate_pdf(self):
-        self.create_automatic_context_topics()
-        # self.create_manual_context_topics()
+        # self.create_automatic_context_topics()
+        # self.create_keyword_context_topics()
+        self.create_manual_context_topics()
         self.create_reviews()
         self.doc.generate_pdf()
         self.doc.generate_tex()
@@ -281,6 +336,52 @@ class TopicLatexGenerator:
 
         return doc_parts
 
+    def build_text_manual(self, record):
+        text = record[Constants.TEXT_FIELD]
+        sentences = nlp_utils.get_sentences(text)
+        lemmatized_words = []
+        for sentence in sentences:
+            lemmatized_words.append(nlp_utils.lemmatize_sentence(
+                sentence, nltk.re.compile(''),
+                min_length=1, max_length=100))
+
+        doc_parts = []
+        itemize = Itemize()
+
+        for sentence in lemmatized_words:
+            new_words = []
+            itemize.add_item('')
+            for tagged_word in sentence:
+                tag = tagged_word[1]
+                word = tagged_word[0]
+                singular = pattern.text.en.singularize(word)
+                word_found = False
+
+                if tag == 'VBD':
+                    new_words.append('\\colorbox[rgb]{0.5,0.5,0.5}{'+ word + '}')
+                    word_found = True
+
+                if tag.startswith('PRP'):
+                    new_words.append('\\colorbox[rgb]{0.85,0.85,0.85}{' + word + '}')
+                    word_found = True
+
+                for topic in context_words[Constants.ITEM_TYPE]:
+                    if singular in context_words[Constants.ITEM_TYPE][topic]:
+                        color_id = self.manual_context_topic_colors[topic]
+                        color = self.rgb_tuples[color_id]
+                        new_words.append(
+                            '\\colorbox[rgb]{' +
+                            str(color[0]) + ',' + str(color[1]) + ',' +
+                            str(color[2]) + '}{' + word + '}')
+                        word_found = True
+                        break
+                if not word_found:
+                    new_words.append(word)
+            itemize.append(NoEscape(' '.join(new_words)))
+        doc_parts.append(itemize)
+
+        return doc_parts
+
     def tag_word(self, word):
 
         tagged_word = self.tagger.tag([word])[0]
@@ -305,6 +406,7 @@ class TopicLatexGenerator:
         for topic_id in topic_ids:
             topic_words.update(self.topic_words_map[topic_id])
 
+        print(topic_words)
         for word in topic_words:
             tagged_word = self.tagger.tag([word])[0]
             word_tag = tagged_word[1]
@@ -332,24 +434,10 @@ class TopicLatexGenerator:
 
 
 def main():
-    lda_based_context = load_topic_model(0, 0)
-    topic_latex_generator = TopicLatexGenerator(lda_based_context)
-
-    print('\nautomatic')
-    topic_latex_generator.get_topic_statistics(
-        topic_latex_generator.automatic_context_topic_colors)
-    print('\nmanual')
-    topic_latex_generator.get_topic_statistics(
-        topic_latex_generator.manual_context_topic_colors)
+    topic_model_creator.plant_seeds()
+    # lda_based_context = load_topic_model(0, 0)
+    topic_latex_generator = TopicLatexGenerator(None)
     topic_latex_generator.generate_pdf()
-    tag_count_map = topic_latex_generator.tag_count_map
-
-    total_count = 0.0
-    for tag_count in tag_count_map.values():
-        total_count += tag_count
-
-    print(tag_count_map)
-    print('nouns percentage: %f%%' % (tag_count_map['NN'] / total_count * 100))
 
 start = time.time()
 main()
