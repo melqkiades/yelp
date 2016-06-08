@@ -71,6 +71,9 @@ class Constants(object):
     TOPIC_WEIGHTING_METHOD = _properties['topic_weighting_method']
     LDA_BETA_COMPARISON_OPERATOR = _properties['lda_beta_comparison_operator']
     BOW_TYPE = _properties['bow_type']
+    LEMMATIZE = _properties['lemmatize']
+    MIN_DICTIONARY_WORD_COUNT = _properties['min_dictionary_word_count']
+    MAX_DICTIONARY_WORD_COUNT = _properties['max_dictionary_word_count']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -136,6 +139,11 @@ class Constants(object):
         Constants.LDA_BETA_COMPARISON_OPERATOR =\
             Constants._properties['lda_beta_comparison_operator']
         Constants.BOW_TYPE = Constants._properties['bow_type']
+        Constants.LEMMATIZE = Constants._properties['lemmatize']
+        Constants.MIN_DICTIONARY_WORD_COUNT =\
+            Constants._properties['min_dictionary_word_count']
+        Constants.MIN_DICTIONARY_WORD_COUNT =\
+            Constants._properties['max_dictionary_word_count']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'

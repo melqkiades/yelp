@@ -1,22 +1,22 @@
 # Properties for the recommender system
 business_type: hotel
-review_type: 
+review_type:
 topn_n: 10
-topn_num_items: 45
+topn_num_items: 270
 random_seed: 0
 numpy_random_seed: 0
-num_cycles: 2
+num_cycles: 1
 lda_alpha: 0.005
 lda_beta: 1.0
 lda_epsilon: 0.01
-lda_num_topics: 150
-lda_model_passes: 1
-lda_model_iterations: 50
+lda_num_topics: 25
+lda_model_passes: 10
+lda_model_iterations: 500
 lda_multicore: False
 libfm_seed: 0
-libfm_num_factors : 8
-cross_validation_num_folds: 5
-use_context: False
+libfm_num_factors : 50
+cross_validation_num_folds: 50
+use_context: True
 shuffle_data: True
 num_cores:
 cache_topic_model: True
@@ -24,3 +24,6 @@ text_sampling_proportion:
 topic_weighting_method: binary
 lda_beta_comparison_operator: lt
 bow_type: NN
+lemmatize: True
+min_dictionary_word_count: 5
+max_dictionary_word_count: 0.2

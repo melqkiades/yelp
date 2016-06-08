@@ -26,7 +26,8 @@ def get_review_metrics(record):
     log_words = math.log(len(nlp_utils.get_words(review_text)) + 1)
     # log_time_words = math.log(len(self.get_time_words(review.text)) + 1)
     tagged_words = record[Constants.POS_TAGS_FIELD]
-    counts = Counter(tag for word, tag in tagged_words)
+    counts = Counter(tag for word, tag, lemma in tagged_words)
+    # print(counts)
     log_past_verbs = math.log(counts['VBD'] + 1)
     log_verbs = math.log(nlp_utils.count_verbs(counts) + 1)
     log_personal_pronouns = math.log(counts['PRP'] + 1)

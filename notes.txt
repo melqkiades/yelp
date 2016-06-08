@@ -72,3 +72,6 @@
 - To install a specific package using conda do:
   conda remove package
   conda install package=1.2.3
+- When facing problems with LaTeX cache on UNIX, and it tells you it can't find a file or something, use this to clear the bibtex cache
+  rm -rf `biber --cache`
+
