@@ -1,4 +1,7 @@
+import gensim
 import nltk
+from gensim.utils import lemmatize
+from pattern.text.en import parse
 
 
 def get_sentences(text):
@@ -11,7 +14,16 @@ def get_sentences(text):
     :return: a list with the sentences there are in the given text
     """
     sentence_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-    return sentence_tokenizer.tokenize(text)
+    newline_re = nltk.re.compile('\n')
+    paragraphs = newline_re.split(text)
+    sentences = []
+    for paragraph in paragraphs:
+        # sentences.append(paragraph)
+        sentences.extend(sentence_tokenizer.tokenize(paragraph))
+
+    return sentences
+    # return sentence_tokenizer.tokenize(text)
+
 
 
 def get_words(text):
@@ -69,6 +81,72 @@ def tag_words(text, tagger=None):
     for sent in tokenized_sentences:
         tagged_words.extend(tagger.tag(sent))
     return tagged_words
+
+
+def lemmatize_text(text):
+    """
+    Tags the words contained in the given text using part-of-speech tags. The
+    text is split into sentences and it returns a list of lists with the tagged
+    words. One list for every sentence.
+
+    :param tagger: a part-of-speech tagger. This parameter is useful in order to
+    avoid the initialization of the tagger every time this method is called,
+    since the initialization can take a long time.
+    :param text: the text to tag
+    :return: a list of lists with pairs, in the form of (word, tag)
+    """
+    sentences = get_sentences(text)
+    # tokenized_sentences = [
+    #     get_words_from_sentence(sent.lower()) for sent in sentences]
+
+    lemmatized_words = []
+    for sentence in sentences:
+        lemmatized_words.extend(lemmatize_sentence(
+            sentence, nltk.re.compile(''),
+            min_length=1, max_length=100))
+    return lemmatized_words
+
+
+def lemmatize_sentence(content, allowed_tags=nltk.re.compile(''),
+               stopwords=frozenset(), min_length=1, max_length=100):
+
+
+    """
+    This function is only available when the optional 'pattern' package is installed.
+
+    Use the English lemmatizer from `pattern` to extract UTF8-encoded tokens in
+    their base form=lemma, e.g. "are, is, being" -> "be" etc.
+    This is a smarter version of stemming, taking word context into account.
+
+    Only considers nouns, verbs, adjectives and adverbs by default (=all other lemmas are discarded).
+
+    >>> lemmatize('Hello World! How is it going?! Nonexistentword, 21')
+    ['world/NN', 'be/VB', 'go/VB', 'nonexistentword/NN']
+
+    >>> lemmatize('The study ranks high.')
+    ['study/NN', 'rank/VB', 'high/JJ']
+
+    >>> lemmatize('The ranks study hard.')
+    ['rank/NN', 'study/VB', 'hard/RB']
+
+    """
+
+    # tokenization in `pattern` is weird; it gets thrown off by non-letters,
+    # producing '==relate/VBN' or '**/NN'... try to preprocess the text a little
+    # FIXME this throws away all fancy parsing cues, including sentence structure,
+    # abbreviations etc.
+    content = gensim.utils.u(' ').join(
+        gensim.utils.tokenize(content, lower=True, errors='ignore'))
+
+    parsed = parse(content, lemmata=True, collapse=False)
+    result = []
+    for sentence in parsed:
+        for token, tag, _, _, lemma in sentence:
+            if min_length <= len(lemma) <= max_length and not lemma.startswith(
+                    '_') and lemma not in stopwords:
+                if allowed_tags.match(tag):
+                    result.append((token, tag, lemma))
+    return result
 
 
 def count_verbs(tags_count):
