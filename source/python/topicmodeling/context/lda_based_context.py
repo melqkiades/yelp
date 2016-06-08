@@ -15,9 +15,6 @@ class LdaBasedContext:
 
     def __init__(self, records):
         self.records = records
-        self.alpha = Constants.LDA_ALPHA
-        self.beta = Constants.LDA_BETA
-        self.epsilon = Constants.LDA_EPSILON
         self.specific_reviews = None
         self.generic_reviews = None
         self.all_nouns = None
@@ -80,10 +77,10 @@ class LdaBasedContext:
     def update_reviews_with_topics(self):
         lda_context_utils.update_reviews_with_topics(
             self.topic_model, self.specific_corpus, self.specific_reviews,
-            self.epsilon)
+            Constants.LDA_EPSILON)
         lda_context_utils.update_reviews_with_topics(
             self.topic_model, self.generic_corpus, self.generic_reviews,
-            self.epsilon)
+            Constants.LDA_EPSILON)
 
         print('%s: updated reviews with topics' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -101,8 +98,11 @@ class LdaBasedContext:
 
         # numpy.random.seed(0)
         topic_ratio_map = {}
+        lower_than_alpha_count = 0.0
+        lower_than_beta_count = 0.0
         non_contextual_topics = set()
         for topic in range(self.num_topics):
+            print('topic: %d' % topic)
             weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
                 topic, self.records)
             specific_weighted_frq = \
@@ -112,19 +112,24 @@ class LdaBasedContext:
                 lda_context_utils.calculate_topic_weighted_frequency(
                     topic, self.generic_reviews)
 
-            if weighted_frq < self.alpha:
+            if weighted_frq < Constants.LDA_ALPHA:
                 non_contextual_topics.add(topic)
+                print('non-contextual_topic: %d' % topic)
+                lower_than_alpha_count += 1.0
 
             if generic_weighted_frq == 0:
                 ratio = 'N/A'
+                # non_contextual_topics.add(topic)
             else:
                 ratio = specific_weighted_frq / generic_weighted_frq
 
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
 
-            if self.lda_beta_comparison_operator(ratio, self.beta):
+            if self.lda_beta_comparison_operator(ratio, Constants.LDA_BETA):
                 non_contextual_topics.add(topic)
+                lower_than_beta_count += 1.0
+                print('non-contextual_topic: %d' % topic)
 
             topic_ratio_map[topic] = ratio
 
@@ -150,6 +155,8 @@ class LdaBasedContext:
 
         # print('num_topics', len(self.topics))
         print('context topics: %d' % len(topic_ratio_map))
+        print('topics lower than alpha: %d' % lower_than_alpha_count)
+        print('topics lower than beta: %d' % lower_than_beta_count)
         self.context_rich_topics = sorted_topics
         # print(self.context_rich_topics)
         self.max_words = []
@@ -177,7 +184,7 @@ class LdaBasedContext:
             corpus, self.dictionary)
 
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, corpus, self.records, self.epsilon)
+            self.topic_model, corpus, self.records, Constants.LDA_EPSILON)
 
         topic_ratio_map = {}
 
@@ -198,8 +205,8 @@ class LdaBasedContext:
         for record in records:
             # numpy.random.seed(0)
             topic_distribution = lda_context_utils.get_topic_distribution(
-                record, self.topic_model, self.dictionary, self.epsilon,
-                text_sampling_proportion, self.max_words
+                record, self.topic_model, self.dictionary,
+                Constants.LDA_EPSILON, text_sampling_proportion, self.max_words
             )
             record[Constants.TOPICS_FIELD] = topic_distribution
 
