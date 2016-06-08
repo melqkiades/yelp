@@ -13,7 +13,7 @@ from etl import ETLUtils
 from topicmodeling.context import topic_model_creator
 from utils.constants import Constants
 
-restaurant_context_words = {
+single_restaurant_context_words = {
     "ball",
     "bf",
     "birthday",
@@ -104,12 +104,15 @@ restaurant_context_words = {
     "young",
 }
 
-hotel_context_words = {
+single_hotel_context_words = {
     "airport",
     "anniversary",
+    "april",
     "attended",
+    "august",
     "autumn",
     "bike",
+    "birthday"
     "boyfriend",
     "bus",
     "business",
@@ -119,15 +122,18 @@ hotel_context_words = {
     "christmas",
     "colleagues",
     "conference",
+    "convention",
     "course",
     "crowd",
     "date",
+    "december",
     "dog",
     "dogs",
     "driving",
     "engagement",
     "facial",
     "family",
+    "february",
     "fiance",
     "fiancee",
     "fitness",
@@ -151,19 +157,28 @@ hotel_context_words = {
     "horse",
     "hubby",
     "husband",
+    "january",
+    "june",
+    "july",
     "kids",
     "lazy",
+    "march",
     "marriage",
     "married",
     "massage",
+    "may",
     "mom",
     "monday",
     "music",
+    "nightlife",
+    "november",
+    "october",
     "parents",
     "parking",
     "party",
     "partying",
     "pet",
+    "pets",
     "relax",
     "relaxed",
     "relaxing",
@@ -172,6 +187,7 @@ hotel_context_words = {
     "romance",
     "romantic",
     "saturday",
+    "september",
     "shuttle",
     "spring",
     "staycation",
@@ -199,6 +215,93 @@ hotel_context_words = {
 }
 
 
+grouped_hotel_context_words = {
+    'airport': {'airport', 'shuttle', 'plane', 'flight', 'transportation',
+                'bus'},
+    'holiday': {'holiday', 'vacation', 'staycation', 'getaway', '@', '@@'},
+    'conference': {'conference', 'convention', 'group', 'meeting', 'attended',
+                   '@'},
+    'pets': {'dog', 'pet', 'cat', '@', '@@', '@@@'},
+    'discount': {'discount', 'hotwire', 'groupon', 'deal', 'priceline', '@'},
+    'wedding': {'wedding', 'reception', 'ceremony', 'marriage', '@', '@@'},
+    'festivities': {'christmas', 'thanksgiving', 'holiday', '@', '@@', '@@@'},
+    'family': {'mom', 'dad', 'father', 'mother', 'grandma', 'grandmother',
+               'grandpa', 'grandfather', 'parent', 'grandparent',
+               'daughter', 'uncle', 'sister', 'brother', 'aunt', 'sibling',
+               'child',  'daughter', 'son', 'kid', 'boy', 'girl', 'family'},
+    'romantic': {'date', 'anniversary', 'romantic', 'girlfriend',
+                 'boyfriend', 'bf', 'gf', 'hubby', 'husband', 'wife',
+                 'fiance', 'fiancee', 'weekend', 'getaway', 'romance'},
+    'anniversary': {'husband', 'wife', 'weekend', 'anniversary', 'hubby', '@'},
+    'gambling': {'gamble', 'casino', 'slot', 'machine', 'roulette', '@'},
+    'party': {'party', 'friend', 'music', 'group', 'nightlife', 'dj'},
+    'business': {'busines', 'work', 'job', 'colleague', 'coworker', '@'},
+    'parking': {'car', 'parking', 'valet', 'driver', '@', '@@'},
+    'season': {'winter', 'spring', 'summer', 'fall', 'autumn', '@'},
+    'month': {'january', 'february', 'march', 'april', 'may', 'june',
+              'july', 'august', 'september', 'october', 'november',
+              'december'},
+    'day': {'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+            'saturday', 'sunday', 'weekday', 'weekend'},
+    'occasion': {'birthday', 'anniversary', 'celebration', 'date',
+                 'wedding', 'honeymoon'},
+    'sport_event': {'football', 'baseball', 'basketball', 'game', 'field',
+                    'match', 'tournament', 'ticket'},
+    'outdoor': {'golf', 'tenni', 'court', 'field', 'horse', 'cabana'
+                'training', 'exercise', 'bike', 'cycle', 'kart', 'cart',
+                'fitness'},
+    'relax': {
+        'relax', 'quiet', 'getaway', 'stress', 'relief', 'massage',
+        'spa', 'steam', 'jacuzzi', 'facial', 'treatment', 'relaxing',
+        'treatment'
+    },
+    'accessibility': {
+        'wheelchair', 'handicap', 'ramp', '@', '@@', '@@@'
+    },
+    # 'non-contextual': {'room'}
+}
+
+grouped_restaurant_context_words = {
+    'breakfast': {'brunch', 'breakfast', 'morning', 'pancakes', 'omelette',
+                  'waffle'},
+    'lunch': {'afternoon', 'lunch', 'noon',  '@', '@@', '@@@'},
+    'dinner': {'dinner', 'evening', 'night',  '@', '@@', '@@@'},
+    'romantic': {'date', 'night', 'anniversary', 'romantic', 'girlfriend',
+                 'boyfriend', 'bf', 'gf', 'hubby', 'husband', 'wife',
+                 'fiance', 'fiancee', 'weekend'},
+    'party': {'party', 'friend', 'music', 'group', 'disco',
+              'club', 'guy', 'people', 'night', 'nightlife'},
+    'kids': {'child', 'kid', 'boy', 'girl', 'family', '@'},
+    'parking': {'parking', 'car', 'valet', 'driver', '@', '@@'},
+    'work': {'busines', 'colleague', 'workplace', 'job', 'meeting', 'coworker',
+             'office'},
+    'family': {'mom', 'dad', 'father', 'mother', 'grandma', 'grandmother',
+               'grandpa', 'grandfather', 'parent', 'grandparent',
+               'daughter', 'uncle', 'sister', 'brother', 'aunt', 'sibling',
+               'daughter', 'son'},
+    'friends': {'friend', 'group', 'girl', 'boy', 'guy', '@'},
+    'time': {'morning', 'noon', 'afternoon', 'evening', 'night', '@'},
+    'birthday': {'birthday', 'celebration', 'event', '@', '@@', '@@@'},
+    'discount': {'deal', 'coupon', 'groupon', 'discount', '@', '@@'},
+    'takeaway': {'delivery', 'takeaway', 'drive', 'thru', 'takeout',
+                 'deliver'},
+    'sports': {'sports', 'match', 'game', 'tv', 'football',
+               'baseball', 'basketball', 'nfl'},
+    'karaoke': {'song', 'karaoke', 'music', '@', '@@', '@@@'},
+    'outdoor': {'outdoor', 'patio', 'outside', 'summer', '@', '@@'},
+    'day': {'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+            'saturday', 'sunday', 'weekday', 'weekend'},
+    # 'season': {'winter', 'summer', 'fall', 'autumn'},
+    'accessibility': {'wheelchair', 'handicap', 'ramp', '@', '@@', '@@@'},
+    # 'non-contextual': {'food'}
+}
+
+context_words = {
+    'hotel': grouped_hotel_context_words,
+    'restaurant': grouped_restaurant_context_words
+}
+
+
 def load_topic_model(cycle_index, fold_index):
 
     print(Constants._properties)
@@ -216,6 +319,8 @@ def load_topic_model(cycle_index, fold_index):
 
 
 def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
+
+    topic_model_creator.plant_seeds()
 
     new_properties = copy.deepcopy(Constants._properties)
     if epsilon is not None:
@@ -302,9 +407,9 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     #
     #     # print(lda_based_context.topic_model.print_topic(topic, topn=num_words))
     #     results.append(result)
-    analyze_topics(results)
+    analyze_topics(results, lda_based_context)
     #
-    ETLUtils.save_csv_file(file_name, results, headers)
+    # ETLUtils.save_csv_file(file_name, results, headers)
 
 
 def split_topic(topic_string):
@@ -317,9 +422,9 @@ def split_topic(topic_string):
 
     context_words = None
     if Constants.ITEM_TYPE == 'hotel':
-        context_words = hotel_context_words
+        context_words = single_hotel_context_words
     if Constants.ITEM_TYPE == 'restaurant':
-        context_words = restaurant_context_words
+        context_words = single_restaurant_context_words
 
     words_dict = {}
     index = 0
@@ -340,7 +445,7 @@ def split_topic(topic_string):
     return words_dict
 
 
-def analyze_topics(topic_data):
+def analyze_topics(topic_data, lda_based_context):
 
     data_frame = DataFrame.from_dict(topic_data)
     # data_frame.info()
@@ -354,14 +459,19 @@ def analyze_topics(topic_data):
     scores['all_ratio_count'] = data_frame[data_frame.score > 0.0]['topic_id'].count()
     scores['high_ratio_count'] = data_frame[(data_frame.ratio > 1.0) & (data_frame.score > 0.0)]['topic_id'].count()
     scores['low_ratio_count'] = data_frame[(data_frame.ratio < 1.0) & (data_frame.score > 0.0)]['topic_id'].count()
+    scores['num_context_topics'] = len(lda_based_context.context_rich_topics)
 
-    high_ratio_count = float(data_frame[data_frame.ratio > 1.0]['score'].count())
+    high_ratio_count = float(
+        data_frame[data_frame.ratio > 1.0]['score'].count())
     low_ratio_count = float(data_frame[data_frame.ratio < 1.0]['score'].count())
+
+    scores['weighted_high_ratio_count'] = float(scores['high_ratio_count'] / high_ratio_count)
+    scores['weighted_low_ratio_count'] = float(scores['low_ratio_count'] / low_ratio_count)
 
     results = copy.deepcopy(Constants._properties)
     results.update(scores)
 
-    write_results_to_json(results)
+    # write_results_to_json(results)
 
     print('all mean score: %f' % scores['all_ratio_mean_score'])
     print('greater than 1.0 mean score: %f' % scores['high_ratio_mean_score'])
@@ -381,6 +491,73 @@ def analyze_topics(topic_data):
     # print(data_frame[data_frame.ratio == 'N/A'].mean())
 
 
+def analyze_manual_topics():
+    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+
+    context_topics = context_words[Constants.ITEM_TYPE]
+    topic_counts = {'all': {}, 'specific': {}, 'generic': {}}
+    review_type_counts = {Constants.SPECIFIC: 0.0, Constants.GENERIC: 0.0}
+    ratio_counts = {}
+
+    # Init counts
+    for review_type in topic_counts:
+        for topic in context_topics:
+            topic_counts[review_type][topic] = 0.0
+
+    for topic in context_topics:
+        ratio_counts[topic] = 0.0
+
+    # my_records = [
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.SPECIFIC,
+    #      Constants.BOW_FIELD: ['room']},
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.SPECIFIC,
+    #      Constants.BOW_FIELD: ['room']},
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.SPECIFIC,
+    #      Constants.BOW_FIELD: ['pool']},
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
+    #      Constants.BOW_FIELD: ['room']},
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
+    #      Constants.BOW_FIELD: ['room']},
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
+    #      Constants.BOW_FIELD: ['room']},
+    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
+    #      Constants.BOW_FIELD: ['staff']},
+    # ]
+
+    index = 0
+    for record in records:
+
+        review_type = record[Constants.PREDICTED_CLASS_FIELD]
+        review_type_counts[review_type] += 1
+
+        # print('\n***************************************')
+        # print(record[Constants.TEXT_FIELD])
+        # print(index, record[Constants.PREDICTED_CLASS_FIELD], record[Constants.BOW_FIELD])
+
+        for topic, topic_words in context_topics.items():
+            if len(topic_words.intersection(record[Constants.BOW_FIELD])) > 0:
+                topic_counts['all'][topic] += 1
+                topic_counts[review_type][topic] += 1
+
+        index += 1
+
+    for topic in context_topics:
+        specific_topic_count = topic_counts[Constants.SPECIFIC][topic]
+        total_specific_count = review_type_counts[Constants.SPECIFIC]
+        specific_weighted = specific_topic_count / total_specific_count
+
+        generic_topic_count = topic_counts[Constants.GENERIC][topic]
+        total_generic_count = review_type_counts[Constants.GENERIC]
+        generic_weighted = generic_topic_count / total_generic_count
+        # print('specific_weighted', specific_weighted)
+        # print('generic_weighted', generic_weighted)
+        ratio_counts[topic] = specific_weighted / generic_weighted
+
+    print(review_type_counts)
+    print(topic_counts)
+    print(ratio_counts)
+
+
 def write_results_to_json(results):
     file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
                 Constants.ITEM_TYPE + \
@@ -398,17 +575,20 @@ def write_results_to_json(results):
 
 
 # start = time.time()
-
-# epsilon_list = [0.001, 0.005, 0.01, 0.02, 0.05, 0.07, 0.1]
-# alpha_list = [0.005, 0.01, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
+#
+# # epsilon_list = [0.001, 0.005, 0.01, 0.03, 0.05, 0.07, 0.1, 0.35, 0.5]
+# epsilon_list = [0.001]
+# # alpha_list = [0.005, 0.01, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
+# alpha_list = [0.005]
 # num_cycles = len(epsilon_list) * len(alpha_list)
 # cycle_index = 1
-
+#
 # export_topics(0, 0)
-
-# # for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
-# #     print('cycle_index: %d/%d' % (cycle_index, num_cycles))
-# #     export_topics(0, 0, epsilon)
+#
+# for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
+#     print('cycle_index: %d/%d' % (cycle_index, num_cycles))
+#     export_topics(0, 0, epsilon, alpha)
+#     cycle_index += 1
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
@@ -419,7 +599,7 @@ time_list = []
 accurate_dict = {}
 approximate_dict = {'NN': 0, 'JJ': 0, 'VB': 0}
 
-for word in restaurant_context_words:
+for word in single_restaurant_context_words:
     cycle_start = time.time()
     tagged_word = tagger.tag([word])[0]
     time_list.append(time.time() - cycle_start)
@@ -440,8 +620,38 @@ for word in restaurant_context_words:
             approximate_dict[word_tag] = 0
         approximate_dict[word_tag] += 1
 
+
+def see_topic_analysis_results():
+    topic_analysis_file = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
+                          Constants.ITEM_TYPE + '.json'
+
+    results = ETLUtils.load_json_file(topic_analysis_file)
+
+    index = 0
+    for result in results:
+        score_ratio = result['high_ratio_mean_score'] / result[
+            'low_ratio_mean_score']
+        count_ratio = result['weighted_high_ratio_count'] / result[
+            'weighted_low_ratio_count']
+        print(index, score_ratio, count_ratio,
+              result['high_ratio_mean_score'],
+              result['low_ratio_mean_score'],
+              result['lda_epsilon'], result['topic_weighting_method'],
+              result['num_context_topics'], result['lda_num_topics'])
+        index += 1
+
+
+# see_topic_analysis_results()
+
 # print(accurate_dict)
 # print(approximate_dict)
 #
 # print('average cycle time: %f' % numpy.mean(time_list))
+
+# start = time.time()
+# analyze_manual_topics()
+# # load_topic_model(0, 0)
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
 
