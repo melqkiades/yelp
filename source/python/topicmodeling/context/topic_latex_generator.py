@@ -304,7 +304,7 @@ class TopicLatexGenerator:
                     review_index += 1
 
     def generate_pdf(self):
-        # self.create_automatic_context_topics()
+        self.create_automatic_context_topics()
         # self.create_keyword_context_topics()
         self.create_manual_context_topics()
         self.create_reviews()
@@ -435,8 +435,8 @@ class TopicLatexGenerator:
 
 def main():
     topic_model_creator.plant_seeds()
-    # lda_based_context = load_topic_model(0, 0)
-    topic_latex_generator = TopicLatexGenerator(None)
+    lda_based_context = load_topic_model(0, 0)
+    topic_latex_generator = TopicLatexGenerator(lda_based_context)
     topic_latex_generator.generate_pdf()
 
 start = time.time()
