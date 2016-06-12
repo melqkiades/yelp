@@ -74,6 +74,7 @@ class Constants(object):
     LEMMATIZE = _properties['lemmatize']
     MIN_DICTIONARY_WORD_COUNT = _properties['min_dictionary_word_count']
     MAX_DICTIONARY_WORD_COUNT = _properties['max_dictionary_word_count']
+    MAX_SENTENCES = _properties['max_sentences']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -83,12 +84,15 @@ class Constants(object):
         DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's.json'
     PROCESSED_RECORDS_FILE =\
         CACHE_FOLDER + ITEM_TYPE + '_processed_reviews' +\
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) + '.json'
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
+        ('' if MAX_SENTENCES is None else '_sentences') + '.json'
     FULL_PROCESSED_RECORDS_FILE =\
         CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews' + \
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) + '.json'
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
+        ('' if MAX_SENTENCES is None else '_sentences') + '.json'
     DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary' + \
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) + '.pkl'
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
+        ('' if MAX_SENTENCES is None else '_sentences') + '.pkl'
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     CSV_RESULTS_FILE = DATASET_FOLDER + \
         ITEM_TYPE + '_results.csv'
@@ -144,6 +148,7 @@ class Constants(object):
             Constants._properties['min_dictionary_word_count']
         Constants.MIN_DICTIONARY_WORD_COUNT =\
             Constants._properties['max_dictionary_word_count']
+        Constants.MAX_SENTENCES = Constants._properties['max_sentences']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'

@@ -102,7 +102,7 @@ class LdaBasedContext:
         lower_than_beta_count = 0.0
         non_contextual_topics = set()
         for topic in range(self.num_topics):
-            print('topic: %d' % topic)
+            # print('topic: %d' % topic)
             weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
                 topic, self.records)
             specific_weighted_frq = \
@@ -114,7 +114,7 @@ class LdaBasedContext:
 
             if weighted_frq < Constants.LDA_ALPHA:
                 non_contextual_topics.add(topic)
-                print('non-contextual_topic: %d' % topic)
+                # print('non-contextual_topic: %d' % topic)
                 lower_than_alpha_count += 1.0
 
             if generic_weighted_frq == 0:
@@ -129,7 +129,7 @@ class LdaBasedContext:
             if self.lda_beta_comparison_operator(ratio, Constants.LDA_BETA):
                 non_contextual_topics.add(topic)
                 lower_than_beta_count += 1.0
-                print('non-contextual_topic: %d' % topic)
+                # print('non-contextual_topic: %d' % topic)
 
             topic_ratio_map[topic] = ratio
 
@@ -158,7 +158,7 @@ class LdaBasedContext:
         print('topics lower than alpha: %d' % lower_than_alpha_count)
         print('topics lower than beta: %d' % lower_than_beta_count)
         self.context_rich_topics = sorted_topics
-        # print(self.context_rich_topics)
+        print(self.context_rich_topics)
         self.max_words = []
         for topic in self.context_rich_topics:
             self.max_words.append(
