@@ -10,13 +10,15 @@ __author__ = 'fpena'
 class ReviewsClassifier:
 
     def __init__(self):
-        self.num_features = 2
+        self.num_features = None
         self.classifier = LogisticRegression(C=100)
         self.min_values = None
         self.max_values = None
 
     def train(self, records):
 
+        self.num_features =\
+            len(review_metrics_extractor.get_review_metrics(records[0]))
         metrics = numpy.zeros((len(records), self.num_features))
 
         for index in range(len(records)):
@@ -53,3 +55,17 @@ class ReviewsClassifier:
                 label = Constants.GENERIC
 
             record[Constants.PREDICTED_CLASS_FIELD] = label
+
+    def score(self, records):
+        metrics = numpy.zeros((len(records), self.num_features))
+        for index in range(len(records)):
+            metrics[index] = \
+                review_metrics_extractor.get_review_metrics(records[index])
+
+        review_metrics_extractor.normalize_matrix_by_columns(
+            metrics, self.min_values, self.max_values)
+
+        labels = \
+            numpy.array([record['specific'] == 'yes' for record in records])
+
+        return self.classifier.score(metrics, labels)
