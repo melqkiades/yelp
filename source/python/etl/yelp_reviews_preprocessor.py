@@ -51,25 +51,64 @@ class YelpReviewsPreprocessor:
     def lemmatize_reviews(records):
         print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        index = 0
+        record_index = 0
+        max_sentences = 1
         for record in records:
 
-            print('\rindex: %d/%d' % (index, len(records))),
+            print('\rrecord index: %d/%d' % (record_index, len(records))),
 
-            tagged_words =\
-                nlp_utils.lemmatize_text(record[Constants.TEXT_FIELD])
+            if Constants.MAX_SENTENCES is None:
+                tagged_words =\
+                    nlp_utils.lemmatize_text(record[Constants.TEXT_FIELD])
+            else:
+                sentences = nlp_utils.get_sentences(record[Constants.TEXT_FIELD])
+                sentence_index = 0
+                tagged_words = []
+                for sentence in sentences:
+                    # print(sentence_index, sentence)
+                    if sentence_index >= max_sentences:
+                        break
+                    tagged_words.extend(nlp_utils.lemmatize_sentence(sentence))
+                    # print(tagged_words)
+                    sentence_index += 1
+
             record[Constants.POS_TAGS_FIELD] = tagged_words
-            index += 1
+            record_index += 1
         print('')
 
+    # def classify_reviews(self):
+    #     print('%s: classify reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    #     dataset = Constants.ITEM_TYPE
+    #     folder = Constants.DATASET_FOLDER
+    #     training_records_file = folder +\
+    #         'classified_' + dataset + '_reviews.json'
+    #     training_records = ETLUtils.load_json_file(training_records_file)
+    #     self.lemmatize_reviews(training_records)
+    #
+    #     classifier = ReviewsClassifier()
+    #     classifier.train(training_records)
+    #     classifier.label_json_reviews(self.records)
 
     def classify_reviews(self):
         print('%s: classify reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         dataset = Constants.ITEM_TYPE
         folder = Constants.DATASET_FOLDER
+        file_name_suffix =\
+            '' if Constants.MAX_SENTENCES is None else '_sentences'
         training_records_file = folder +\
-            'classified_' + dataset + '_reviews.json'
+            'classified_' + dataset + '_reviews' + file_name_suffix + '.json'
         training_records = ETLUtils.load_json_file(training_records_file)
+
+        if Constants.MAX_SENTENCES is not None:
+            training_records = [
+                record for record in training_records
+                if record['sentence_index'] < Constants.MAX_SENTENCES
+            ]
+            for record in training_records:
+                record['specific'] = \
+                    'yes' if record['sentence_type'] == 'specific' else 'no'
+            print('num training records', len(training_records))
+
         self.lemmatize_reviews(training_records)
 
         classifier = ReviewsClassifier()
@@ -173,6 +212,8 @@ class YelpReviewsPreprocessor:
         self.shuffle_records()
         # self.pos_tag_reviews(self.records)
         self.lemmatize_reviews(self.records)
+        for record in self.records[:10]:
+            print(record[Constants.POS_TAGS_FIELD])
         self.classify_reviews()
         self.build_bag_of_words()
 
