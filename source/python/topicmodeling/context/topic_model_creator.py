@@ -16,12 +16,7 @@ from utils.constants import Constants
 
 def get_topic_model_file_path(cycle_index, fold_index):
 
-    if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
-        all_topics = 'alltopics_'
-    else:
-        all_topics = ''
-
-    topic_model_file = Constants.ITEM_TYPE + '_' + all_topics +\
+    topic_model_file = Constants.ITEM_TYPE + '_' +\
         'topic_model_cycle:' +\
         str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
         '_fold:' + str(fold_index+1) + '|' +\
@@ -47,10 +42,7 @@ def create_topic_model(records, cycle_index, fold_index):
         print('topic model already exists')
         return
 
-    if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
-        topic_model = train_all_topics_model(records)
-    else:
-        topic_model = train_context_topics_model(records)
+    topic_model = train_context_topics_model(records)
 
     with open(topic_model_file_path, 'wb') as write_file:
         pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
@@ -72,16 +64,6 @@ def train_context_topics_model(records):
     lda_based_context.generate_review_corpus()
     lda_based_context.build_topic_model()
     lda_based_context.update_reviews_with_topics()
-
-    print('%s: Trained LDA Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    return lda_based_context
-
-
-def train_all_topics_model(records):
-    print('%s: train all topics model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    lda_based_context = LdaBasedContext(records)
-    lda_based_context.get_all_topics()
 
     print('%s: Trained LDA Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 

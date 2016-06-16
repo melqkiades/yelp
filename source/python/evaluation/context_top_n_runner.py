@@ -242,16 +242,11 @@ class ContextTopNRunner(object):
             print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
             lda_based_context = LdaBasedContext(self.train_records)
+            lda_based_context.generate_review_corpus()
+            lda_based_context.build_topic_model()
+            lda_based_context.update_reviews_with_topics()
 
-            if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
-                lda_based_context.get_all_topics()
-            else:
-                lda_based_context.generate_review_corpus()
-                lda_based_context.build_topic_model()
-                lda_based_context.update_reviews_with_topics()
-
-        if Constants.REVIEW_TYPE != Constants.ALL_TOPICS:
-            lda_based_context.get_context_rich_topics()
+        lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 

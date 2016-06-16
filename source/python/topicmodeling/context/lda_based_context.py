@@ -95,6 +95,23 @@ class LdaBasedContext:
         the topic and the second position indicates the specific/generic
         frequency ratio
         """
+        if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
+            topic_ratio_map = {}
+
+            for topic in range(self.num_topics):
+                topic_ratio_map[topic] = 1
+
+            # export_all_topics(self.topic_model)
+            # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+            sorted_topics = sorted(
+                topic_ratio_map.items(), key=operator.itemgetter(1),
+                reverse=True)
+
+            self.context_rich_topics = sorted_topics
+            print('all_topics')
+            print('context topics: %d' % len(topic_ratio_map))
+            return sorted_topics
 
         # numpy.random.seed(0)
         topic_ratio_map = {}
@@ -163,41 +180,6 @@ class LdaBasedContext:
         for topic in self.context_rich_topics:
             self.max_words.append(
                 self.topic_model.show_topic(topic[0], 1)[0][1])
-
-        return sorted_topics
-
-    def get_all_topics(self):
-        """
-        Returns a list with all the topics after training the LDA model with all
-        the reviews (specific + generic)
-
-        :rtype: list[(int, float)]
-        :return: a list of pairs where the first position of the pair indicates
-        the topic and the second position has a 1.0 value (this is just to have
-        the results with the same format as the get_context_rich_topics()
-        method)
-        """
-
-        corpus = [record[Constants.CORPUS_FIELD] for record in self.records]
-
-        self.topic_model = lda_context_utils.build_topic_model_from_corpus(
-            corpus, self.dictionary)
-
-        lda_context_utils.update_reviews_with_topics(
-            self.topic_model, corpus, self.records, Constants.LDA_EPSILON)
-
-        topic_ratio_map = {}
-
-        for topic in range(self.num_topics):
-            topic_ratio_map[topic] = 1
-
-        # export_all_topics(self.topic_model)
-        # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-        sorted_topics = sorted(
-            topic_ratio_map.items(), key=operator.itemgetter(1), reverse=True)
-
-        self.context_rich_topics = sorted_topics
 
         return sorted_topics
 
