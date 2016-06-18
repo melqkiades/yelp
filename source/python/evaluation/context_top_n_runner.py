@@ -9,13 +9,18 @@ import cPickle as pickle
 import uuid
 import gc
 import numpy
+from fastFM import als
+from fastFM import mcmc
+from fastFM import sgd
+from sklearn.preprocessing import OneHotEncoder
+
 from etl import ETLUtils
 from etl import libfm_converter
 from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
+from recommenders import fastfm_recommender
 from topicmodeling.context import topic_model_creator
-from topicmodeling.context import lda_context_utils
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
 from utils.constants import Constants
@@ -72,7 +77,7 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         '-test',
         test_file,
         '-dim',
-        '1,1,' + str(Constants.LIBFM_NUM_FACTORS),
+        '1,1,' + str(Constants.FM_NUM_FACTORS),
         '-out',
         predictions_file
     ]
@@ -134,6 +139,7 @@ class ContextTopNRunner(object):
         self.train_records = None
         self.test_records = None
         self.records_to_predict = None
+        self.predictions = None
         self.top_n_evaluator = None
         self.headers = None
         self.important_records = None
@@ -159,12 +165,13 @@ class ContextTopNRunner(object):
         self.context_rich_topics = []
         self.context_topics_map = None
 
-        os.remove(self.csv_train_file)
-        os.remove(self.csv_test_file)
-        os.remove(self.context_predictions_file)
-        os.remove(self.context_train_file)
-        os.remove(self.context_test_file)
-        os.remove(self.context_log_file)
+        if Constants.SOLVER == Constants.LIBFM:
+            os.remove(self.csv_train_file)
+            os.remove(self.csv_test_file)
+            os.remove(self.context_predictions_file)
+            os.remove(self.context_train_file)
+            os.remove(self.context_test_file)
+            os.remove(self.context_log_file)
 
         self.csv_train_file = None
         self.csv_test_file = None
@@ -371,18 +378,57 @@ class ContextTopNRunner(object):
         print('Exported LibFM files: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     def predict(self):
+        if Constants.SOLVER == Constants.LIBFM:
+            self.prepare()
+            self.predict_libfm()
+        elif Constants.SOLVER == Constants.FASTFM:
+            self.predict_fastfm()
+
+    def predict_fastfm(self):
+
+        if Constants.USE_CONTEXT:
+            for record in self.records_to_predict:
+                important_record = record[Constants.REVIEW_ID_FIELD]
+                record[Constants.CONTEXT_TOPICS_FIELD] = \
+                    self.context_topics_map[important_record]
+
+        all_records = self.train_records + self.records_to_predict
+        x_matrix, y_vector = fastfm_recommender.records_to_matrix(
+            all_records, self.context_rich_topics)
+
+        encoder = OneHotEncoder(categorical_features=[0, 1], sparse=True)
+        encoder.fit(x_matrix)
+
+        x_train = encoder.transform(x_matrix[:len(self.train_records)])
+        y_train = y_vector[:len(self.train_records)]
+        x_test = encoder.transform(x_matrix[len(self.train_records):])
+
+        if Constants.FASTFM_METHOD == 'mcmc':
+            # solver = mcmc.FMRegression(n_iter=num_iters, rank=num_factors)
+            solver = mcmc.FMRegression(rank=Constants.FM_NUM_FACTORS)
+            self.predictions = solver.fit_predict(x_train, y_train, x_test)
+        elif Constants.FASTFM_METHOD == 'als':
+            solver = als.FMRegression(rank=Constants.FM_NUM_FACTORS)
+            solver.fit(x_train, y_train)
+            self.predictions = solver.predict(x_test)
+        elif Constants.FASTFM_METHOD == 'sgd':
+            solver = sgd.FMRegression(rank=Constants.FM_NUM_FACTORS)
+            solver.fit(x_train, y_train)
+            self.predictions = solver.predict(x_test)
+
+    def predict_libfm(self):
         print('predict: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         run_libfm(
             self.context_train_file, self.context_test_file,
             self.context_predictions_file, self.context_log_file)
+        self.predictions = rmse_calculator.read_targets_from_txt(
+            self.context_predictions_file)
 
     def evaluate(self):
         print('evaluate: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        predictions = rmse_calculator.read_targets_from_txt(
-            self.context_predictions_file)
-        self.top_n_evaluator.evaluate(predictions)
+        self.top_n_evaluator.evaluate(self.predictions)
         recall = self.top_n_evaluator.recall
 
         print('Recall: %f' % recall)
@@ -430,7 +476,6 @@ class ContextTopNRunner(object):
                 if Constants.USE_CONTEXT:
                     lda_based_context = self.train_topic_model(i, j)
                     self.find_reviews_topics(lda_based_context)
-                self.prepare()
                 self.predict()
                 self.evaluate()
                 recall = self.top_n_evaluator.recall

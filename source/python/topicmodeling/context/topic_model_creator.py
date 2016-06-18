@@ -5,6 +5,8 @@ import time
 import traceback
 from multiprocessing import Pool
 import cPickle as pickle
+
+import itertools
 import numpy
 from os.path import expanduser
 
@@ -225,6 +227,10 @@ def main():
 
 # start = time.time()
 # create_single_topic_model(0, 0)
+# num_cycles = Constants.NUM_CYCLES
+# num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+# for cycle, fold in itertools.product(range(num_cycles), range(num_folds)):
+#     create_single_topic_model(cycle, fold)
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)

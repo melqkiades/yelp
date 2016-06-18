@@ -14,7 +14,7 @@ lda_model_passes: 10
 lda_model_iterations: 500
 lda_multicore: False
 libfm_seed: 0
-libfm_num_factors : 50
+fm_num_factors : 50
 cross_validation_num_folds: 5
 use_context: True
 shuffle_data: True
@@ -28,3 +28,5 @@ lemmatize: True
 min_dictionary_word_count: 5
 max_dictionary_word_count: 0.2
 max_sentences: 1
+solver: fastfm
+fastfm_method: als

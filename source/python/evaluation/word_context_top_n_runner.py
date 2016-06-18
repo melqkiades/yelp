@@ -67,7 +67,7 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         '-test',
         test_file,
         '-dim',
-        '1,1,' + str(Constants.LIBFM_NUM_FACTORS),
+        '1,1,' + str(Constants.FM_NUM_FACTORS),
         '-out',
         predictions_file
     ]

@@ -38,6 +38,8 @@ class Constants(object):
     SPECIFIC = 'specific'
     GENERIC = 'generic'
     ALL_TOPICS = 'all_topics'
+    LIBFM = 'libfm'
+    FASTFM = 'fastfm'
 
     # Folders
     DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
@@ -60,7 +62,7 @@ class Constants(object):
     LDA_MODEL_ITERATIONS = _properties['lda_model_iterations']
     LDA_MULTICORE = _properties['lda_multicore']
     LIBFM_SEED = _properties['libfm_seed']
-    LIBFM_NUM_FACTORS = _properties['libfm_num_factors']
+    FM_NUM_FACTORS = _properties['fm_num_factors']
     CROSS_VALIDATION_NUM_FOLDS =\
         _properties['cross_validation_num_folds']
     SHUFFLE_DATA = _properties['shuffle_data']
@@ -75,6 +77,8 @@ class Constants(object):
     MIN_DICTIONARY_WORD_COUNT = _properties['min_dictionary_word_count']
     MAX_DICTIONARY_WORD_COUNT = _properties['max_dictionary_word_count']
     MAX_SENTENCES = _properties['max_sentences']
+    SOLVER = _properties['solver']
+    FASTFM_METHOD = _properties['fastfm_method']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -129,7 +133,7 @@ class Constants(object):
             Constants._properties['lda_model_iterations']
         Constants.LDA_MULTICORE = Constants._properties['lda_multicore']
         Constants.LIBFM_SEED = Constants._properties['libfm_seed']
-        Constants.LIBFM_NUM_FACTORS = Constants._properties['libfm_num_factors']
+        Constants.FM_NUM_FACTORS = Constants._properties['libfm_num_factors']
         Constants.CROSS_VALIDATION_NUM_FOLDS =\
             Constants._properties['cross_validation_num_folds']
         Constants.SHUFFLE_DATA = Constants._properties['shuffle_data']
@@ -149,6 +153,8 @@ class Constants(object):
         Constants.MIN_DICTIONARY_WORD_COUNT =\
             Constants._properties['max_dictionary_word_count']
         Constants.MAX_SENTENCES = Constants._properties['max_sentences']
+        Constants.SOLVER = Constants._properties['solver']
+        Constants.FASTFM_METHOD = Constants._properties['fastfm_method']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
