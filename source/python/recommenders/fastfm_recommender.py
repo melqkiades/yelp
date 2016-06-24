@@ -4,8 +4,6 @@ from fastFM import mcmc, als
 import numpy
 from gensim import corpora
 from gensim.models import ldamodel
-from nltk import RegexpTokenizer
-from nltk.corpus import stopwords
 from sklearn.preprocessing import OneHotEncoder
 
 from utils.constants import Constants
@@ -233,6 +231,18 @@ def train_test_records_to_matrix(train_records, test_records):
 
 
 def records_to_matrix(records, context_rich_topics=None):
+    """
+    Converts the given records into a numpy matrix, transforming given each
+    string value an integer ID
+
+    :param records: a list of dictionaries with the reviews information
+    :type context_rich_topics list[(float, float)]
+    :param context_rich_topics: a list that indicates which are the
+    context-rich topics. The list contains pairs, in which the first position
+    indicates the topic ID, and the second position, the ratio of the topic.
+    :return: a numpy matrix with all the independent variables (X) and a numpy
+    vector with all the dependent variables (y)
+    """
 
     matrix = []
     y = []
@@ -282,6 +292,15 @@ def records_to_matrix(records, context_rich_topics=None):
 
 
 def predict(train_records, test_records):
+    """
+    Makes a prediction for the testing set based on the topic probability vector
+    of each record and the rating. The topic model is built using the training
+    set. This function uses the FastFM Factorization Machines Module for Python
+
+    :param train_records: the training set
+    :param test_records: the testing set
+    :return: a list with the predictions for the testing set
+    """
 
     records = train_records + test_records
 
@@ -312,66 +331,12 @@ def predict(train_records, test_records):
     return y_pred
 
 
-def create_bag_of_words(document_list):
-    """
-    Creates a bag of words representation of the document list given. It removes
-    the punctuation and the stop words.
-
-    :type document_list: list[str]
-    :param document_list:
-    :rtype: list[list[str]]
-    :return:
-    """
-    tokenizer = RegexpTokenizer(r'\w+')
-    cached_stop_words = set(stopwords.words("english"))
-    body = []
-    processed = []
-
-    for i in range(0, len(document_list)):
-        body.append(document_list[i].lower())
-
-    for entry in body:
-        row = tokenizer.tokenize(entry)
-        processed.append(
-            [word for word in row if word not in cached_stop_words])
-
-    return processed
-
-
-def train_lda(reviews):
-
-    bag_of_words = create_bag_of_words(reviews)
-    dictionary = corpora.Dictionary(bag_of_words)
-    corpus = [dictionary.doc2bow(text) for text in bag_of_words]
-    topic_model = ldamodel.LdaModel(
-        corpus, id2word=dictionary,
-        num_topics=num_topics,
-        passes=Constants.LDA_MODEL_PASSES,
-        iterations=Constants.LDA_MODEL_ITERATIONS)
-
-    print(bag_of_words)
-    print(corpus)
-    for i in range(num_topics):
-        print(topic_model.show_topic(i, topn=2))
-
-    return topic_model, dictionary
-
-
-def test_reviews_lda(reviews):
-
-    topic_model, dictionary = train_lda(reviews)
-    query = dictionary.doc2bow(["summer", "solo"])
-    print(query)
-
-    text = "solo"
-    bow = create_bag_of_words([text])
-    print(bow)
-    query = dictionary.doc2bow(bow[0])
-    print(query)
-    print(topic_model.get_document_topics(query))
-
-
 def preprocess_records(train_records, test_records):
+    """
+    Creates a bag of words and a corpus for each record and creates a dictionary
+    based on all the text contained in the records
+    """
+
     records = train_records + test_records
 
     all_words = []
@@ -391,6 +356,11 @@ def preprocess_records(train_records, test_records):
 
 
 def find_lda_context(train_records, test_records):
+    """
+    Uses the training records to create a topic model and then updates both
+    the training and testing records with a vector of probabilities for each
+    topic from the recently created topic model
+    """
 
     dictionary = preprocess_records(train_records, test_records)
     corpus = [record[Constants.CORPUS_FIELD] for record in train_records]
@@ -422,6 +392,11 @@ def find_lda_context(train_records, test_records):
 
 
 def predict_with_lda(train_records, test_records):
+    """
+    Creates a topic model using the training records and based on the
+    probability vector for each document on each record, and the rating makes
+    a prediction for every element on the testing records set
+    """
 
     numpy.random.seed(0)
     find_lda_context(train_records, test_records)
