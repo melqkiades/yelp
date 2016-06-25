@@ -133,7 +133,7 @@ class Constants(object):
             Constants._properties['lda_model_iterations']
         Constants.LDA_MULTICORE = Constants._properties['lda_multicore']
         Constants.LIBFM_SEED = Constants._properties['libfm_seed']
-        Constants.FM_NUM_FACTORS = Constants._properties['libfm_num_factors']
+        Constants.FM_NUM_FACTORS = Constants._properties['fm_num_factors']
         Constants.CROSS_VALIDATION_NUM_FOLDS =\
             Constants._properties['cross_validation_num_folds']
         Constants.SHUFFLE_DATA = Constants._properties['shuffle_data']
