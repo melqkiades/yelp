@@ -7,6 +7,16 @@ import operator
 from gensim import corpora
 from nltk import PerceptronTagger
 from nltk.corpus import stopwords
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import NuSVC
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from unbalanced_dataset.combine import SMOTEENN
+from unbalanced_dataset.combine import SMOTETomek
+from unbalanced_dataset.over_sampling import RandomOverSampler
+from unbalanced_dataset.over_sampling import SMOTE
 
 from etl import ETLUtils
 from nlp import nlp_utils
@@ -19,6 +29,31 @@ class YelpReviewsPreprocessor:
     def __init__(self):
         self.records = None
         self.dictionary = None
+
+        ratio = 'auto'
+        verbose = False
+        classifier = 'random_forest'
+        sampler = 'smote-enn'
+        classifiers = {
+              'logistic_regression': LogisticRegression(C=100),
+              'svc': SVC(),
+              'kneighbors': KNeighborsClassifier(n_neighbors=10),
+              'decision_tree': DecisionTreeClassifier(),
+              'nu_svc': NuSVC(),
+              'random_forest': RandomForestClassifier(n_estimators=100)
+          }
+        samplers = {
+              'random_over_sampler': RandomOverSampler(ratio, verbose=verbose),
+              'smote_regular': SMOTE(ratio, verbose=verbose, kind='regular'),
+              'smote_bl1': SMOTE(ratio, verbose=verbose, kind='borderline1'),
+              'smote_bl2': SMOTE(ratio, verbose=verbose, kind='borderline2'),
+              'smote_tomek': SMOTETomek(ratio, verbose=verbose),
+              'smote-enn': SMOTEENN(ratio, verbose=verbose)
+          }
+        self.classifier = classifiers[classifier]
+        self.sampler = samplers[sampler]
+        classifiers = None
+        samplers = None
 
     @staticmethod
     def plant_seeds():
@@ -49,13 +84,21 @@ class YelpReviewsPreprocessor:
 
     @staticmethod
     def lemmatize_reviews(records):
+        """
+        Performs a POS tagging on the text contained in the reviews and
+        additionally finds the lemma of each word in the review
+
+        :type records: list[dict]
+        :param records: a list of dictionaries with the reviews
+        """
+
         print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         record_index = 0
         max_sentences = 1
         for record in records:
 
-            print('\rrecord index: %d/%d' % (record_index, len(records))),
+            # print('\rrecord index: %d/%d' % (record_index, len(records))),
 
             if Constants.MAX_SENTENCES is None:
                 tagged_words =\
@@ -74,20 +117,7 @@ class YelpReviewsPreprocessor:
 
             record[Constants.POS_TAGS_FIELD] = tagged_words
             record_index += 1
-        print('')
-
-    # def classify_reviews(self):
-    #     print('%s: classify reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    #     dataset = Constants.ITEM_TYPE
-    #     folder = Constants.DATASET_FOLDER
-    #     training_records_file = folder +\
-    #         'classified_' + dataset + '_reviews.json'
-    #     training_records = ETLUtils.load_json_file(training_records_file)
-    #     self.lemmatize_reviews(training_records)
-    #
-    #     classifier = ReviewsClassifier()
-    #     classifier.train(training_records)
-    #     classifier.label_json_reviews(self.records)
+        # print('')
 
     def classify_reviews(self):
         print('%s: classify reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -111,7 +141,7 @@ class YelpReviewsPreprocessor:
 
         self.lemmatize_reviews(training_records)
 
-        classifier = ReviewsClassifier()
+        classifier = ReviewsClassifier(self.classifier, self.sampler)
         classifier.train(training_records)
         classifier.label_json_reviews(self.records)
 
@@ -190,6 +220,10 @@ class YelpReviewsPreprocessor:
         self.records = ETLUtils.load_json_file(records_file)
 
     def count_specific_generic_ratio(self):
+        """
+        Prints the proportion of specific and generic documents
+        """
+
         specific_count = 0.0
         generic_count = 0.0
 

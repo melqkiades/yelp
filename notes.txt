@@ -75,3 +75,13 @@
 - When facing problems with LaTeX cache on UNIX, and it tells you it can't find a file or something, use this to clear the bibtex cache
   rm -rf `biber --cache`
 - If getting the AssertionError message when using FastFM, then it should be because the size of trainX and trainY is not the same
+- If matplotlib is not showing in Python, try to change the backend using the following
+  matplotlib.rcParams['backend'] = "Qt4Agg"
+  The backend can also be modified from the matplotlibrc file, the path of this file can be found using
+  import matplotlib
+  matplotlib.matplotlib_fname()
+  More information can be found in 
+  http://matplotlib.org/users/customizing.html
+  Also use this line right after importing matplotlib
+  mpl.use('TkAgg')
+

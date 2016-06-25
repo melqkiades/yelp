@@ -1,5 +1,4 @@
 import numpy
-from sklearn.linear_model import LogisticRegression
 
 from topicmodeling.context import review_metrics_extractor
 from utils.constants import Constants
@@ -9,20 +8,30 @@ __author__ = 'fpena'
 
 class ReviewsClassifier:
 
-    def __init__(self):
+    def __init__(self, classifier, sampler=None):
         self.num_features = None
-        self.classifier = LogisticRegression(C=100)
         self.min_values = None
         self.max_values = None
+        self.classifier = classifier
+        self.sampler = sampler
 
-    def train(self, records):
+    def transform(self, records):
+        """
+        Transforms the reviews into a numpy matrix so that they can be easily
+        processed by the functions available in scikit-learn
 
-        self.num_features =\
+        :type records: list[dict]
+        :param records: a list of dictionaries with the reviews
+        :return: a matrix with the independent variables (X) and a vector with
+        the dependent variables (y)
+        """
+
+        self.num_features = \
             len(review_metrics_extractor.get_review_metrics(records[0]))
         metrics = numpy.zeros((len(records), self.num_features))
 
         for index in range(len(records)):
-            metrics[index] =\
+            metrics[index] = \
                 review_metrics_extractor.get_review_metrics(records[index])
 
         self.min_values = metrics.min(axis=0)
@@ -30,8 +39,19 @@ class ReviewsClassifier:
         review_metrics_extractor.normalize_matrix_by_columns(
             metrics, self.min_values, self.max_values)
 
-        labels =\
+        labels = \
             numpy.array([record['specific'] == 'yes' for record in records])
+
+        return metrics, labels
+
+    def train(self, records):
+
+        metrics, labels = self.transform(records)
+
+        if self.sampler is None:
+            return metrics, labels
+        metrics, labels = self.sampler.fit_transform(metrics, labels)
+
         self.classifier.fit(metrics, labels)
 
     def predict(self, records):
