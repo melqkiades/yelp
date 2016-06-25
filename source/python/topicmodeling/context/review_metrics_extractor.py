@@ -49,7 +49,6 @@ def get_review_metrics(record):
     if log_words == 0:
         verbs_ratio = 0
         past_verbs_ratio2 = 0
-        time_words_ratio = 0
         personal_pronouns_ratio = 0
     else:
         verbs_ratio = log_verbs / log_words
@@ -57,9 +56,9 @@ def get_review_metrics(record):
         # time_words_ratio = log_time_words / log_words
         personal_pronouns_ratio = log_personal_pronouns / log_words
 
-    # result = [log_sentences, log_words, log_past_verbs, log_verbs, past_verbs_ratio, log_personal_pronouns, personal_pronouns_ratio, past_verbs_ratio2]#, log_time_words, time_words_ratio]
+    result = [log_sentences, log_words, log_past_verbs, log_verbs, past_verbs_ratio, verbs_ratio, log_personal_pronouns, personal_pronouns_ratio, past_verbs_ratio2]#, log_time_words, time_words_ratio]
     # result = [log_sentences]
-    result = [log_words, log_past_verbs]
+    # result = [log_personal_pronouns, log_past_verbs, log_words]
     # result = [time_words_ratio, personal_pronouns_ratio]
     # result = [log_past_verbs]
     # result = [log_verbs]
@@ -83,8 +82,8 @@ def normalize_matrix_by_columns(matrix, min_values=None, max_values=None):
     if min_values is None:
         min_values = matrix.min(axis=0)
 
-    print('max values', max_values)
-    print('min values', min_values)
+    # print('max values', max_values)
+    # print('min values', min_values)
 
     for index in range(matrix.shape[1]):
         matrix[:, index] -= min_values[index]
