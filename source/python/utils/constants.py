@@ -79,6 +79,10 @@ class Constants(object):
     MAX_SENTENCES = _properties['max_sentences']
     SOLVER = _properties['solver']
     FASTFM_METHOD = _properties['fastfm_method']
+    EVALUATION_METRIC = _properties['evaluation_metric']
+    RESAMPLER = _properties['resampler']
+    DOCUMENT_CLASSIFIER = _properties['document_classifier']
+    DOCUMENT_CLASSIFIER_SEED = _properties['document_classifier_seed']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -155,6 +159,12 @@ class Constants(object):
         Constants.MAX_SENTENCES = Constants._properties['max_sentences']
         Constants.SOLVER = Constants._properties['solver']
         Constants.FASTFM_METHOD = Constants._properties['fastfm_method']
+        Constants.EVALUATION_METRIC = Constants._properties['evaluation_metric']
+        Constants.RESAMPLER = Constants._properties['resampler']
+        Constants.DOCUMENT_CLASSIFIER =\
+            Constants._properties['document_classifier']
+        Constants.DOCUMENT_CLASSIFIER_SEED =\
+            Constants._properties['document_classifier_seed']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'

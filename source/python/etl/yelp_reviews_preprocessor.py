@@ -32,26 +32,36 @@ class YelpReviewsPreprocessor:
 
         ratio = 'auto'
         verbose = False
-        classifier = 'random_forest'
-        sampler = 'smote-enn'
+        resampler = Constants.RESAMPLER
+        classifier = Constants.DOCUMENT_CLASSIFIER
+        random_state = Constants.DOCUMENT_CLASSIFIER_SEED
         classifiers = {
-              'logistic_regression': LogisticRegression(C=100),
-              'svc': SVC(),
-              'kneighbors': KNeighborsClassifier(n_neighbors=10),
-              'decision_tree': DecisionTreeClassifier(),
-              'nu_svc': NuSVC(),
-              'random_forest': RandomForestClassifier(n_estimators=100)
-          }
+            'logistic_regression': LogisticRegression(C=100),
+            'svc': SVC(),
+            'kneighbors': KNeighborsClassifier(n_neighbors=10),
+            'decision_tree': DecisionTreeClassifier(),
+            'nu_svc': NuSVC(),
+            'random_forest': RandomForestClassifier(n_estimators=100)
+        }
         samplers = {
-              'random_over_sampler': RandomOverSampler(ratio, verbose=verbose),
-              'smote_regular': SMOTE(ratio, verbose=verbose, kind='regular'),
-              'smote_bl1': SMOTE(ratio, verbose=verbose, kind='borderline1'),
-              'smote_bl2': SMOTE(ratio, verbose=verbose, kind='borderline2'),
-              'smote_tomek': SMOTETomek(ratio, verbose=verbose),
-              'smote-enn': SMOTEENN(ratio, verbose=verbose)
-          }
+            'random_over_sampler': RandomOverSampler(
+            ratio, random_state=random_state, verbose=verbose),
+            'smote_regular': SMOTE(
+                ratio, random_state=random_state, verbose=verbose,
+                kind='regular'),
+            'smote_bl1': SMOTE(
+                ratio, random_state=random_state,verbose=verbose,
+                kind='borderline1'),
+            'smote_bl2': SMOTE(
+                ratio, random_state=random_state, verbose=verbose,
+                kind='borderline2'),
+            'smote_tomek': SMOTETomek(
+                ratio, random_state=random_state, verbose=verbose),
+            'smote-enn': SMOTEENN(
+                ratio, random_state=random_state, verbose=verbose)
+        }
         self.classifier = classifiers[classifier]
-        self.sampler = samplers[sampler]
+        self.resampler = samplers[resampler]
         classifiers = None
         samplers = None
 
@@ -91,16 +101,14 @@ class YelpReviewsPreprocessor:
         :type records: list[dict]
         :param records: a list of dictionaries with the reviews
         """
-
         print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         record_index = 0
-        max_sentences = 1
+        max_sentences = Constants.MAX_SENTENCES
         for record in records:
-
             # print('\rrecord index: %d/%d' % (record_index, len(records))),
 
-            if Constants.MAX_SENTENCES is None:
+            if max_sentences is None:
                 tagged_words =\
                     nlp_utils.lemmatize_text(record[Constants.TEXT_FIELD])
             else:
@@ -108,11 +116,9 @@ class YelpReviewsPreprocessor:
                 sentence_index = 0
                 tagged_words = []
                 for sentence in sentences:
-                    # print(sentence_index, sentence)
-                    if sentence_index >= max_sentences:
+                    if max_sentences is not None and sentence_index >= max_sentences:
                         break
                     tagged_words.extend(nlp_utils.lemmatize_sentence(sentence))
-                    # print(tagged_words)
                     sentence_index += 1
 
             record[Constants.POS_TAGS_FIELD] = tagged_words
@@ -141,7 +147,7 @@ class YelpReviewsPreprocessor:
 
         self.lemmatize_reviews(training_records)
 
-        classifier = ReviewsClassifier(self.classifier, self.sampler)
+        classifier = ReviewsClassifier(self.classifier, self.resampler)
         classifier.train(training_records)
         classifier.label_json_reviews(self.records)
 
@@ -196,7 +202,7 @@ class YelpReviewsPreprocessor:
                 self.dictionary.doc2bow(record[Constants.BOW_FIELD])
 
     def export_records(self):
-        print('%s: export records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        print('%s: get_records_to_predict_topn records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.dictionary.save(Constants.DICTIONARY_FILE)
         ETLUtils.save_json_file(
             Constants.FULL_PROCESSED_RECORDS_FILE, self.records)
@@ -246,8 +252,8 @@ class YelpReviewsPreprocessor:
         self.shuffle_records()
         # self.pos_tag_reviews(self.records)
         self.lemmatize_reviews(self.records)
-        for record in self.records[:10]:
-            print(record[Constants.POS_TAGS_FIELD])
+        # for record in self.records[:10]:
+        #     print(record[Constants.POS_TAGS_FIELD])
         self.classify_reviews()
         self.build_bag_of_words()
 

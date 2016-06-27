@@ -7,7 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import tree
-from sklearn.svm import NuSVC, LinearSVC
+from sklearn.svm import NuSVC
+from topicmodeling.context import topic_model_creator
 
 from sklearn.svm import SVC
 
@@ -17,9 +18,9 @@ from unbalanced_dataset.combine import SMOTETomek
 from unbalanced_dataset.combine import SMOTEENN
 
 from etl import ETLUtils
-from topicmodeling.context.reviews_classifier import ReviewsClassifier
+from etl.yelp_reviews_preprocessor import YelpReviewsPreprocessor
 from utils.constants import Constants
-from sklearn.cross_validation import cross_val_predict, StratifiedKFold
+from sklearn.cross_validation import StratifiedKFold
 from nlp import nlp_utils
 from topicmodeling.context import review_metrics_extractor
 from sklearn.linear_model import LogisticRegression
@@ -56,85 +57,6 @@ def load_records():
         ]
 
     return records
-
-
-def lemmatize_reviews(records):
-    """
-    Performs a POS tagging on the text contained in the reviews and additionally
-    finds the lemma of each word in the review
-
-    :type records: list[dict]
-    :param records: a list of dictionaries with the reviews
-    """
-    print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    record_index = 0
-    max_sentences = 1
-    for record in records:
-        #         print('\rrecord index: %d/%d' % (record_index, len(records))),
-
-        sentences = nlp_utils.get_sentences(record[Constants.TEXT_FIELD])
-        sentence_index = 0
-        tagged_words = []
-        for sentence in sentences:
-            if sentence_index >= max_sentences:
-                break
-            tagged_words.extend(nlp_utils.lemmatize_sentence(sentence))
-            sentence_index += 1
-
-        record[Constants.POS_TAGS_FIELD] = tagged_words
-        record_index += 1
-        #     print('')
-
-
-def evaluate_classifiers():
-    records = load_records()
-    print(len(records))
-    print(records[0])
-    lemmatize_reviews(records)
-
-    for record in records:
-        record['specific'] =\
-            'yes' if record['sentence_type'] == 'specific' else 'no'
-
-    num_folds = 5
-    split = 1 - (1/float(num_folds))
-
-    classifiers = [
-        DummyClassifier(strategy='most_frequent', random_state=0),
-        DummyClassifier(strategy='stratified', random_state=0),
-        DummyClassifier(strategy='uniform', random_state=0),
-        DummyClassifier(strategy='constant', random_state=0, constant=True),
-        LogisticRegression(C=100),
-        # SVC(C=1.0, kernel='rbf'),
-        SVC(C=1.0, kernel='linear'),
-        KNeighborsClassifier(n_neighbors=10),
-        tree.DecisionTreeClassifier(),
-        NuSVC(),
-        LinearSVC()
-    ]
-
-    predictions = [[] for _ in range(len(classifiers))]
-    scores = [[] for _ in range(len(classifiers))]
-
-    for c in range(len(classifiers)):
-
-        for i in range(num_folds):
-            cv_start = float(i) / num_folds
-            train_records, test_records =\
-                ETLUtils.split_train_test(records, split=split, start=cv_start)
-
-            reviews_classifier = ReviewsClassifier(classifiers[c])
-            # reviews_classifier.classifier = classifiers[c]
-            reviews_classifier.train(train_records)
-            scores[c].append(reviews_classifier.score(test_records))
-            predictions[c].append((reviews_classifier.predict(test_records)))
-
-    for classifier, score in zip(classifiers, scores):
-        print("Mean(scores)=%.5f\tStddev(scores)=%.5f" % (numpy.mean(score), numpy.std(score)))
-
-    for prediction in predictions:
-        print(prediction)
 
 
 def transform(records):
@@ -185,13 +107,23 @@ def resample(x_matrix, y_vector, sampler_type):
 
     verbose = False
     ratio = 'auto'
+    random_state = 0
     samplers = {
-        'random_over_sampler': RandomOverSampler(ratio=ratio, verbose=verbose),
-        'smote_regular': SMOTE(ratio=ratio, verbose=verbose, kind='regular'),
-        'smote_bl1': SMOTE(ratio=ratio, verbose=verbose, kind='borderline1'),
-        'smote_bl2': SMOTE(ratio=ratio, verbose=verbose, kind='borderline2'),
-        'smote_tomek': SMOTETomek(ratio=ratio, verbose=verbose),
-        'smoteenn': SMOTEENN(ratio=ratio, verbose=verbose)
+        'random_over_sampler': RandomOverSampler(
+            ratio=ratio, verbose=verbose),
+        'smote_regular': SMOTE(
+            ratio=ratio, random_state=random_state, verbose=verbose,
+            kind='regular'),
+        'smote_bl1': SMOTE(
+            ratio=ratio, random_state=random_state, verbose=verbose,
+            kind='borderline1'),
+        'smote_bl2': SMOTE(
+            ratio=ratio, random_state=random_state, verbose=verbose,
+            kind='borderline2'),
+        'smote_tomek': SMOTETomek(
+            ratio=ratio, random_state=random_state, verbose=verbose),
+        'smoteenn': SMOTEENN(
+            ratio=ratio, random_state=random_state, verbose=verbose)
     }
 
     sampler = samplers[sampler_type]
@@ -298,7 +230,8 @@ def preprocess_records(records):
 
     print('length after: %d' % len(records))
 
-    lemmatize_reviews(records)
+    # lemmatize_reviews(records)
+    YelpReviewsPreprocessor.lemmatize_reviews(records)
 
 
 def plot_roc_curve(y_true, y_predictions):
@@ -372,11 +305,14 @@ def print_confusion_matrix(y_true, y_predictions):
 
 
 def test_classifier(x_matrix, y_vector, sampler_type, my_classifier):
+    topic_model_creator.plant_seeds()
+
     results = {
         'resampler': sampler_type,
         'classifier': type(my_classifier).__name__
     }
     resampled_x, resampled_y = resample(x_matrix, y_vector, sampler_type)
+    print('num samples: %d' % len(resampled_y))
 
     y_predictions, y_true_values = cross_validation_predict(
         my_classifier, resampled_x, resampled_y, 10, sampler_type, 'predict')
@@ -422,6 +358,7 @@ def cross_validation_predict(
 
 
 def main():
+    topic_model_creator.plant_seeds()
 
     my_resamplers = [
         None,
@@ -447,18 +384,30 @@ def main():
         RandomForestClassifier(n_estimators=100)
     ]
 
-    # my_classifier = LogisticRegression(C=100)
-    my_records = load_records()
-    preprocess_records(my_records)
-    x_matrix, y_vector = transform(my_records)
+    max_sentences_list = [None, 1]
 
-    count_specific_generic(my_records)
+    num_cyles = len(my_resamplers) * len(my_classifiers) * len(max_sentences_list)
+    index = 1
 
     results_list = []
-    for resampler, classifier in itertools.product(my_resamplers, my_classifiers):
-        classification_results =\
-            test_classifier(x_matrix, y_vector, resampler, classifier)
-        results_list.append(classification_results)
+
+    for max_sentences in max_sentences_list:
+
+        Constants.MAX_SENTENCES = max_sentences
+        my_records = load_records()
+        preprocess_records(my_records)
+        x_matrix, y_vector = transform(my_records)
+
+        count_specific_generic(my_records)
+
+        for resampler, classifier in itertools.product(my_resamplers, my_classifiers):
+
+            print('Cycle %d/%d' % (index, num_cyles))
+
+            classification_results =\
+                test_classifier(x_matrix, y_vector, resampler, classifier)
+            results_list.append(classification_results)
+            index += 1
 
     for results in results_list:
         print(results)
