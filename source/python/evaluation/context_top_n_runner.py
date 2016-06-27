@@ -224,8 +224,11 @@ class ContextTopNRunner(object):
         print('shuffle: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         random.shuffle(self.original_records)
 
-    def export(self):
-        print('export: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    def get_records_to_predict_topn(self):
+        print(
+            'get_records_to_predict_topn: %s'
+            % time.strftime("%Y/%m/%d-%H:%M:%S")
+        )
 
         with open(Constants.USER_ITEM_MAP_FILE, 'rb') as read_file:
             user_item_map = pickle.load(read_file)
@@ -238,6 +241,25 @@ class ContextTopNRunner(object):
         self.important_records = self.top_n_evaluator.important_records
         self.test_records = None
         gc.collect()
+
+    def get_records_to_predict_rmse(self):
+        print(
+            'get_records_to_predict_rmse: %s' %
+            time.strftime("%Y/%m/%d-%H:%M:%S")
+        )
+        self.important_records = self.test_records
+        self.records_to_predict = self.test_records
+        self.test_records = None
+        gc.collect()
+
+    def get_records_to_predict(self):
+
+        if Constants.EVALUATION_METRIC == 'topn_recall':
+            self.get_records_to_predict_topn()
+        elif Constants.EVALUATION_METRIC == 'rmse':
+            self.get_records_to_predict_rmse()
+        else:
+            raise ValueError('Unrecognized evaluation metric')
 
     def train_topic_model(self, cycle_index, fold_index):
 
@@ -258,25 +280,6 @@ class ContextTopNRunner(object):
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         return lda_based_context
-
-    # def load_topic_model(self, i, j):
-    #     print('load topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    #
-    #     lda_based_context = LdaBasedContext(self.train_records)
-    #     if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
-    #         lda_based_context.get_all_topics()
-    #     else:
-    #         lda_based_context.generate_review_corpus()
-    #         lda_context_utils.build_topic_model_from_corpus(
-    #             lda_based_context.specific_corpus,
-    #             lda_based_context.specific_dictionary)
-    #         lda_based_context.get_context_rich_topics()
-    #     self.context_rich_topics = lda_based_context.context_rich_topics
-    #
-    #     # lda_based_context = topic_model_creator.load_topic_model(i, j)
-    #     # self.context_rich_topics = lda_based_context.context_rich_topics
-    #
-    #     return lda_based_context
 
     def find_reviews_topics(self, lda_based_context):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -301,8 +304,8 @@ class ContextTopNRunner(object):
         self.important_records = None
         gc.collect()
 
-    def prepare(self):
-        print('prepare: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    def prepare_records_for_libfm(self):
+        print('prepare_records_for_libfm: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         self.headers = build_headers(self.context_rich_topics)
 
@@ -356,7 +359,7 @@ class ContextTopNRunner(object):
 
                 writer.writerow(row)
 
-        self.records_to_predict = None
+        # self.records_to_predict = None
         self.context_topics_map = None
         self.context_rich_topics = None
         gc.collect()
@@ -376,13 +379,6 @@ class ContextTopNRunner(object):
             suffix='.libfm')
 
         print('Exported LibFM files: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    def predict(self):
-        if Constants.SOLVER == Constants.LIBFM:
-            self.prepare()
-            self.predict_libfm()
-        elif Constants.SOLVER == Constants.FASTFM:
-            self.predict_fastfm()
 
     def predict_fastfm(self):
 
@@ -425,8 +421,15 @@ class ContextTopNRunner(object):
         self.predictions = rmse_calculator.read_targets_from_txt(
             self.context_predictions_file)
 
-    def evaluate(self):
-        print('evaluate: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    def predict(self):
+        if Constants.SOLVER == Constants.LIBFM:
+            self.prepare_records_for_libfm()
+            self.predict_libfm()
+        elif Constants.SOLVER == Constants.FASTFM:
+            self.predict_fastfm()
+
+    def evaluate_topn(self):
+        print('evaluate_topn: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         self.top_n_evaluator.evaluate(self.predictions)
         recall = self.top_n_evaluator.recall
@@ -437,15 +440,36 @@ class ContextTopNRunner(object):
 
         return recall
 
+    def evaluate_rmse(self):
+        print('evaluate_topn: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        true_values = [
+            record[Constants.RATING_FIELD] for record in self.records_to_predict
+        ]
+
+        rmse = rmse_calculator.calculate_rmse(true_values, self.predictions)
+
+        print('RMSE: %f' % rmse)
+        return rmse
+
+    def evaluate(self):
+
+        if Constants.EVALUATION_METRIC == 'topn_recall':
+            return self.evaluate_topn()
+        elif Constants.EVALUATION_METRIC == 'rmse':
+            return self.evaluate_rmse()
+        else:
+            raise ValueError('Unrecognized evaluation metric')
+
     def perform_cross_validation(self):
 
         print(Constants._properties)
 
         self.plant_seeds()
 
-        total_recall = 0.0
-        total_specific_recall = 0.0
-        total_generic_recall = 0.0
+        total_metric = 0.0
+        # total_specific_recall = 0.0
+        # total_generic_recall = 0.0
         total_cycle_time = 0.0
         num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
@@ -472,18 +496,18 @@ class ContextTopNRunner(object):
                 self.train_records, self.test_records =\
                     ETLUtils.split_train_test_copy(
                         self.records, split=split, start=cv_start)
-                self.export()
+                self.get_records_to_predict()
                 if Constants.USE_CONTEXT:
                     lda_based_context = self.train_topic_model(i, j)
                     self.find_reviews_topics(lda_based_context)
                 self.predict()
-                self.evaluate()
-                recall = self.top_n_evaluator.recall
-                specific_recall = self.top_n_evaluator.specific_recall
-                generic_recall = self.top_n_evaluator.generic_recall
-                total_recall += recall
-                total_specific_recall += specific_recall
-                total_generic_recall += generic_recall
+                metric = self.evaluate()
+                # recall = self.top_n_evaluator.recall
+                # specific_recall = self.top_n_evaluator.specific_recall
+                # generic_recall = self.top_n_evaluator.generic_recall
+                total_metric += metric
+                # total_specific_recall += specific_recall
+                # total_generic_recall += generic_recall
 
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
@@ -491,20 +515,20 @@ class ContextTopNRunner(object):
                 self.clear()
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
-        average_recall = total_recall / total_iterations
-        average_specific_recall = total_specific_recall / total_iterations
-        average_generic_recall = total_generic_recall / total_iterations
+        metric_average = total_metric / total_iterations
+        # average_specific_recall = total_specific_recall / total_iterations
+        # average_generic_recall = total_generic_recall / total_iterations
         average_cycle_time = total_cycle_time / total_iterations
-        print('average recall: %f' % average_recall)
-        print('average specific recall: %f' % average_specific_recall)
-        print('average generic recall: %f' % average_generic_recall)
+        print('average rmse: %f' % metric_average)
+        # print('average specific recall: %f' % average_specific_recall)
+        # print('average generic recall: %f' % average_generic_recall)
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
+        #
         results = copy.deepcopy(Constants._properties)
-        results['recall'] = average_recall
-        results['specific_recall'] = average_specific_recall
-        results['generic_recall'] = average_generic_recall
+        results[Constants.EVALUATION_METRIC] = metric_average
+        # results['specific_recall'] = average_specific_recall
+        # results['generic_recall'] = average_generic_recall
         results['cycle_time'] = average_cycle_time
         results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
