@@ -190,10 +190,7 @@ def generate_file_with_commands():
     code_path = constants.CODE_FOLDER[:-1]
     python_path = "PYTHONPATH='" + code_path + "' "
     python_command = "stdbuf -oL nohup python "
-    review_type = ''
-    if Constants.REVIEW_TYPE is not None:
-        review_type = Constants.REVIEW_TYPE + "-"
-    base_file_name = "topicmodel-" + review_type + Constants.ITEM_TYPE
+    base_file_name = "topicmodel-" + Constants.ITEM_TYPE
     log_file = " > ~/logs/" + base_file_name + "-%d-%d.log"
     commands_dir = expanduser("~") + "/tmp/"
     commands_file = commands_dir + base_file_name + ".sh"

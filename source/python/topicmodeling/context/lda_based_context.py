@@ -95,7 +95,7 @@ class LdaBasedContext:
         the topic and the second position indicates the specific/generic
         frequency ratio
         """
-        if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
+        if Constants.TOPIC_WEIGHTING_METHOD == Constants.ALL_TOPICS:
             self.topic_ratio_map = {}
 
             for topic in range(self.num_topics):
