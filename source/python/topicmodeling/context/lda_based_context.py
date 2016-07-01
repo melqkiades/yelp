@@ -96,21 +96,21 @@ class LdaBasedContext:
         frequency ratio
         """
         if Constants.REVIEW_TYPE == Constants.ALL_TOPICS:
-            topic_ratio_map = {}
+            self.topic_ratio_map = {}
 
             for topic in range(self.num_topics):
-                topic_ratio_map[topic] = 1
+                self.topic_ratio_map[topic] = 1
 
             # export_all_topics(self.topic_model)
             # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
             sorted_topics = sorted(
-                topic_ratio_map.items(), key=operator.itemgetter(1),
+                self.topic_ratio_map.items(), key=operator.itemgetter(1),
                 reverse=True)
 
             self.context_rich_topics = sorted_topics
             print('all_topics')
-            print('context topics: %d' % len(topic_ratio_map))
+            print('context topics: %d' % len(self.topic_ratio_map))
             return sorted_topics
 
         # numpy.random.seed(0)
