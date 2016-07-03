@@ -25,6 +25,7 @@ class LdaBasedContext:
         self.topics = range(self.num_topics)
         self.topic_model = None
         self.context_rich_topics = None
+        self.topic_weighted_frequency_map = None
         self.topic_ratio_map = None
         self.topic_statistics_map = None
         self.dictionary = None
@@ -97,9 +98,11 @@ class LdaBasedContext:
         """
         if Constants.TOPIC_WEIGHTING_METHOD == Constants.ALL_TOPICS:
             self.topic_ratio_map = {}
+            self.topic_weighted_frequency_map = {}
 
             for topic in range(self.num_topics):
                 self.topic_ratio_map[topic] = 1
+                self.topic_weighted_frequency_map[topic] = 1
 
             # export_all_topics(self.topic_model)
             # print('%s: exported topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -110,11 +113,12 @@ class LdaBasedContext:
 
             self.context_rich_topics = sorted_topics
             print('all_topics')
-            print('context topics: %d' % len(self.topic_ratio_map))
+            print('context topics: %d' % len(self.context_rich_topics))
             return sorted_topics
 
         # numpy.random.seed(0)
         topic_ratio_map = {}
+        self.topic_weighted_frequency_map = {}
         lower_than_alpha_count = 0.0
         lower_than_beta_count = 0.0
         non_contextual_topics = set()
@@ -149,6 +153,7 @@ class LdaBasedContext:
                 # print('non-contextual_topic: %d' % topic)
 
             topic_ratio_map[topic] = ratio
+            self.topic_weighted_frequency_map[topic] = weighted_frq
 
         self.topic_ratio_map = copy.deepcopy(topic_ratio_map)
 

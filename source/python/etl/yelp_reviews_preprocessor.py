@@ -101,7 +101,7 @@ class YelpReviewsPreprocessor:
         :type records: list[dict]
         :param records: a list of dictionaries with the reviews
         """
-        # print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         record_index = 0
         for record in records:
