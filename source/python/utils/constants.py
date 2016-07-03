@@ -122,7 +122,6 @@ class Constants(object):
 
     @staticmethod
     def update_properties(new_properties):
-        Constants._properties.update(new_properties)
 
         Constants.ITEM_TYPE = Constants._properties['business_type']
         Constants.REVIEW_TYPE = Constants._properties['review_type']
@@ -168,6 +167,8 @@ class Constants(object):
             Constants._properties['document_classifier']
         Constants.DOCUMENT_CLASSIFIER_SEED =\
             Constants._properties['document_classifier_seed']
+
+        Constants._properties.update(new_properties)
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
