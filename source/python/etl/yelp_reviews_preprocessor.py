@@ -147,7 +147,6 @@ class YelpReviewsPreprocessor:
     def lemmatize_records(self):
 
         if Constants.DOCUMENT_LEVEL == 'review':
-            self.pos_tag_reviews(self.records)
             self.records = self.lemmatize_reviews(self.records)
         elif Constants.DOCUMENT_LEVEL == 'sentence' or\
                 isinstance(Constants.DOCUMENT_LEVEL, (int, long)):
