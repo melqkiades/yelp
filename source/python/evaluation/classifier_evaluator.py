@@ -49,11 +49,11 @@ def load_records():
     records = ETLUtils.load_json_file(records_file)
 
     # Take only the first sentence
-    # max_sentences = 1
-    if Constants.MAX_SENTENCES is not None:
+    # document_level = 1
+    if isinstance(Constants.DOCUMENT_LEVEL, (int, long)):
         records = [
             record for record in records
-            if record['sentence_index'] < Constants.MAX_SENTENCES
+            if record['sentence_index'] < Constants.DOCUMENT_LEVEL
         ]
 
     return records
@@ -293,7 +293,7 @@ def print_confusion_matrix(y_true, y_predictions):
 
     metrics = {
         'dataset': Constants.ITEM_TYPE,
-        'max_sentences': Constants.MAX_SENTENCES,
+        'document_level': Constants.DOCUMENT_LEVEL,
         'accuracy': accuracy,
         'precision': precision,
         'recall': recall,
@@ -384,16 +384,16 @@ def main():
         RandomForestClassifier(n_estimators=100)
     ]
 
-    max_sentences_list = [None, 1]
+    document_levels = ['review', 'sentence', 1]
 
-    num_cyles = len(my_resamplers) * len(my_classifiers) * len(max_sentences_list)
+    num_cyles = len(my_resamplers) * len(my_classifiers) * len(document_levels)
     index = 1
 
     results_list = []
 
-    for max_sentences in max_sentences_list:
+    for document_level in document_levels:
 
-        Constants.MAX_SENTENCES = max_sentences
+        Constants.DOCUMENT_LEVEL = document_level
         my_records = load_records()
         preprocess_records(my_records)
         x_matrix, y_vector = transform(my_records)

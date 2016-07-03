@@ -27,7 +27,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
         '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
         '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
         '_bow:' + str(Constants.BOW_TYPE) +\
-        ('' if Constants.MAX_SENTENCES is None else '_sentences') +\
+        '_document_level:' + str(Constants.DOCUMENT_LEVEL) +\
         '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 

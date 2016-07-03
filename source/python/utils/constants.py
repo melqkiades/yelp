@@ -76,7 +76,7 @@ class Constants(object):
     LEMMATIZE = _properties['lemmatize']
     MIN_DICTIONARY_WORD_COUNT = _properties['min_dictionary_word_count']
     MAX_DICTIONARY_WORD_COUNT = _properties['max_dictionary_word_count']
-    MAX_SENTENCES = _properties['max_sentences']
+    DOCUMENT_LEVEL = _properties['document_level']
     SOLVER = _properties['solver']
     FASTFM_METHOD = _properties['fastfm_method']
     EVALUATION_METRIC = _properties['evaluation_metric']
@@ -90,17 +90,20 @@ class Constants(object):
     #                ITEM_TYPE + 's_shuffled_tagged.json'
     RECORDS_FILE =\
         DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's.json'
+    CLASSIFIED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE +\
+        '_reviews' + ('' if DOCUMENT_LEVEL == 'review' else '_sentences') +\
+        '.json'
     PROCESSED_RECORDS_FILE =\
         CACHE_FOLDER + ITEM_TYPE + '_processed_reviews' +\
         ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        ('' if MAX_SENTENCES is None else '_sentences') + '.json'
+        '_' + str(DOCUMENT_LEVEL) + '.json'
     FULL_PROCESSED_RECORDS_FILE =\
         CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews' + \
         ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        ('' if MAX_SENTENCES is None else '_sentences') + '.json'
+        '_' + str(DOCUMENT_LEVEL) + '.json'
     DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary' + \
         ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        ('' if MAX_SENTENCES is None else '_sentences') + '.pkl'
+        '_' + str(DOCUMENT_LEVEL) + '.pkl'
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     CSV_RESULTS_FILE = DATASET_FOLDER + \
         ITEM_TYPE + '_results.csv'
@@ -156,7 +159,7 @@ class Constants(object):
             Constants._properties['min_dictionary_word_count']
         Constants.MIN_DICTIONARY_WORD_COUNT =\
             Constants._properties['max_dictionary_word_count']
-        Constants.MAX_SENTENCES = Constants._properties['max_sentences']
+        Constants.DOCUMENT_LEVEL = Constants._properties['document_level']
         Constants.SOLVER = Constants._properties['solver']
         Constants.FASTFM_METHOD = Constants._properties['fastfm_method']
         Constants.EVALUATION_METRIC = Constants._properties['evaluation_metric']

@@ -1,6 +1,6 @@
 # Properties for the recommender system
 business_type: restaurant
-review_type: all_topics
+review_type:
 topn_n: 10
 topn_num_items: 270
 random_seed: 0
@@ -21,13 +21,16 @@ shuffle_data: True
 num_cores:
 cache_topic_model: True
 text_sampling_proportion:
+# Possible values: Probability, binary, all_topics
 topic_weighting_method: probability
 lda_beta_comparison_operator: lt
 bow_type: NN
 lemmatize: True
 min_dictionary_word_count: 5
 max_dictionary_word_count: 0.2
-max_sentences: 1
+# Possible values: review, sentence or integer numer indicating the number of
+# sentences to use (1 is 1st sentence, 2 is 1st and 2nd, etc.)
+document_level: review
 solver: libfm
 fastfm_method: mcmc
 evaluation_metric: topn_recall

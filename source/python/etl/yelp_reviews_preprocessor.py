@@ -45,12 +45,12 @@ class YelpReviewsPreprocessor:
         }
         samplers = {
             'random_over_sampler': RandomOverSampler(
-            ratio, random_state=random_state, verbose=verbose),
+                ratio, random_state=random_state, verbose=verbose),
             'smote_regular': SMOTE(
                 ratio, random_state=random_state, verbose=verbose,
                 kind='regular'),
             'smote_bl1': SMOTE(
-                ratio, random_state=random_state,verbose=verbose,
+                ratio, random_state=random_state, verbose=verbose,
                 kind='borderline1'),
             'smote_bl2': SMOTE(
                 ratio, random_state=random_state, verbose=verbose,
@@ -101,51 +101,81 @@ class YelpReviewsPreprocessor:
         :type records: list[dict]
         :param records: a list of dictionaries with the reviews
         """
-        print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        # print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         record_index = 0
-        max_sentences = Constants.MAX_SENTENCES
         for record in records:
-            # print('\rrecord index: %d/%d' % (record_index, len(records))),
+            #
 
-            if max_sentences is None:
-                tagged_words =\
-                    nlp_utils.lemmatize_text(record[Constants.TEXT_FIELD])
-            else:
-                sentences = nlp_utils.get_sentences(record[Constants.TEXT_FIELD])
-                sentence_index = 0
-                tagged_words = []
-                for sentence in sentences:
-                    if max_sentences is not None and sentence_index >= max_sentences:
-                        break
-                    tagged_words.extend(nlp_utils.lemmatize_sentence(sentence))
-                    sentence_index += 1
+            tagged_words =\
+                nlp_utils.lemmatize_text(record[Constants.TEXT_FIELD])
 
             record[Constants.POS_TAGS_FIELD] = tagged_words
             record_index += 1
+
+        return records
         # print('')
+
+    @staticmethod
+    def lemmatize_sentences(records):
+        print('%s: lemmatize sentences' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        sentence_records = []
+        record_index = 0
+        document_level = Constants.DOCUMENT_LEVEL
+        for record in records:
+            sentences = \
+                nlp_utils.get_sentences(record[Constants.TEXT_FIELD])
+            sentence_index = 0
+            for sentence in sentences:
+                if isinstance(document_level, (int, float)) and\
+                        sentence_index >= document_level:
+                    break
+                tagged_words = nlp_utils.lemmatize_sentence(sentence)
+                sentence_record = {}
+                sentence_record.update(record)
+                sentence_record[Constants.TEXT_FIELD] = sentence
+                sentence_record['sentence_index'] = sentence_index
+                sentence_record[Constants.POS_TAGS_FIELD] = tagged_words
+                sentence_records.append(sentence_record)
+                sentence_index += 1
+                # print(sentence_record)
+            record_index += 1
+            # print('\rrecord index: %d/%d' % (record_index, len(records))),
+        return sentence_records
+
+    def lemmatize_records(self):
+
+        if Constants.DOCUMENT_LEVEL == 'review':
+            self.pos_tag_reviews(self.records)
+            self.records = self.lemmatize_reviews(self.records)
+        elif Constants.DOCUMENT_LEVEL == 'sentence' or\
+                isinstance(Constants.DOCUMENT_LEVEL, (int, long)):
+            self.records = self.lemmatize_sentences(self.records)
 
     def classify_reviews(self):
         print('%s: classify reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        dataset = Constants.ITEM_TYPE
-        folder = Constants.DATASET_FOLDER
-        file_name_suffix =\
-            '' if Constants.MAX_SENTENCES is None else '_sentences'
-        training_records_file = folder +\
-            'classified_' + dataset + '_reviews' + file_name_suffix + '.json'
-        training_records = ETLUtils.load_json_file(training_records_file)
+        print(Constants.CLASSIFIED_RECORDS_FILE)
+        training_records =\
+            ETLUtils.load_json_file(Constants.CLASSIFIED_RECORDS_FILE)
 
-        if Constants.MAX_SENTENCES is not None:
+        # If document level set to sentence (can be either 'sentence' or int)
+        document_level = Constants.DOCUMENT_LEVEL
+        if document_level != 'review':
+
+            if document_level == 'sentence':
+                document_level = float("inf")
+
             training_records = [
                 record for record in training_records
-                if record['sentence_index'] < Constants.MAX_SENTENCES
+                if record['sentence_index'] < document_level
             ]
             for record in training_records:
                 record['specific'] = \
                     'yes' if record['sentence_type'] == 'specific' else 'no'
             print('num training records', len(training_records))
 
-        self.lemmatize_reviews(training_records)
+        training_records = self.lemmatize_reviews(training_records)
 
         classifier = ReviewsClassifier(self.classifier, self.resampler)
         classifier.train(training_records)
@@ -202,7 +232,9 @@ class YelpReviewsPreprocessor:
                 self.dictionary.doc2bow(record[Constants.BOW_FIELD])
 
     def export_records(self):
-        print('%s: get_records_to_predict_topn records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        print(
+            '%s: get_records_to_predict_topn records' %
+            time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.dictionary.save(Constants.DICTIONARY_FILE)
         ETLUtils.save_json_file(
             Constants.FULL_PROCESSED_RECORDS_FILE, self.records)
@@ -210,7 +242,8 @@ class YelpReviewsPreprocessor:
         ETLUtils.save_json_file(Constants.PROCESSED_RECORDS_FILE, self.records)
 
     def drop_unnecessary_fields(self):
-        print('%s: drop unnecessary fields' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        print(
+            '%s: drop unnecessary fields' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         unnecessary_fields = [
             Constants.TEXT_FIELD,
@@ -243,6 +276,11 @@ class YelpReviewsPreprocessor:
             specific_count / len(self.records) * 100))
         print('Generic reviews: %f%%' % (
             generic_count / len(self.records) * 100))
+        print('Specific reviews: %d' % specific_count)
+        print('Generic reviews: %d' % generic_count)
+
+        # for i in [0, 10, 100, 200, 300, 1000, 2000, 3000, 4000]:
+        #     print(self.records[i])
 
     def full_cycle(self):
         print(Constants._properties)
@@ -250,10 +288,8 @@ class YelpReviewsPreprocessor:
         self.plant_seeds()
         self.load_records()
         self.shuffle_records()
-        # self.pos_tag_reviews(self.records)
-        self.lemmatize_reviews(self.records)
-        # for record in self.records[:10]:
-        #     print(record[Constants.POS_TAGS_FIELD])
+        self.lemmatize_records()
+        print('total_records: %d' % len(self.records))
         self.classify_reviews()
         self.build_bag_of_words()
 
@@ -269,16 +305,8 @@ def main():
     reviews_preprocessor = YelpReviewsPreprocessor()
     reviews_preprocessor.full_cycle()
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
-
-
-# 1. Shuffle the records
-# 2. Tag the reviews as specific or generic
-# 3. Extract the nouns, and add them as a bag of words in the JSON file
-# 4. Drop any unnecessary fields
-# 5. Build dictionary using only nouns and save dictionary
-
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
