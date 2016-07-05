@@ -305,17 +305,16 @@ class ContextTopNRunner(object):
         gc.collect()
 
     def prepare_records_for_libfm(self):
-        print('prepare_records_for_libfm: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        print('prepare_records_for_libfm: %s' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         self.headers = build_headers(self.context_rich_topics)
 
-        if Constants.USE_CONTEXT is True:
-
-            if Constants.REVIEW_TYPE == Constants.SPECIFIC or \
-                            Constants.REVIEW_TYPE == Constants.GENERIC:
-                self.train_records = ETLUtils.filter_records(
-                    self.train_records, Constants.PREDICTED_CLASS_FIELD,
-                    [Constants.REVIEW_TYPE])
+        if Constants.REVIEW_TYPE == Constants.SPECIFIC or \
+                Constants.REVIEW_TYPE == Constants.GENERIC:
+            self.train_records = ETLUtils.filter_records(
+                self.train_records, Constants.PREDICTED_CLASS_FIELD,
+                [Constants.REVIEW_TYPE])
 
         with open(self.csv_train_file, 'w') as out_file:
             writer = csv.writer(out_file)
@@ -438,7 +437,8 @@ class ContextTopNRunner(object):
         print('Specific recall: %f' % self.top_n_evaluator.specific_recall)
         print('Generic recall: %f' % self.top_n_evaluator.generic_recall)
 
-        return recall
+        return recall, self.top_n_evaluator.specific_recall,\
+            self.top_n_evaluator.generic_recall
 
     def evaluate_rmse(self):
         print('evaluate_topn: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -447,10 +447,33 @@ class ContextTopNRunner(object):
             record[Constants.RATING_FIELD] for record in self.records_to_predict
         ]
 
+        specific_true_values = []
+        specific_predictions = []
+        generic_true_values = []
+        generic_predictions = []
+
+        index = 0
+        for record, prediction in zip(
+                self.records_to_predict, self.predictions):
+            if record[Constants.PREDICTED_CLASS_FIELD] == 'specific':
+                specific_true_values.append(record[Constants.RATING_FIELD])
+                specific_predictions.append(prediction)
+            elif record[Constants.PREDICTED_CLASS_FIELD] == 'generic':
+                generic_true_values.append(record[Constants.RATING_FIELD])
+                generic_predictions.append(prediction)
+            index += 1
+
         rmse = rmse_calculator.calculate_rmse(true_values, self.predictions)
+        specific_rmse = rmse_calculator.calculate_rmse(
+            specific_true_values, specific_predictions)
+        generic_rmse = rmse_calculator.calculate_rmse(
+            generic_true_values, generic_predictions)
 
         print('RMSE: %f' % rmse)
-        return rmse
+        print('Specific RMSE: %f' % specific_rmse)
+        print('Generic RMSE: %f' % generic_rmse)
+
+        return rmse, specific_rmse, generic_rmse
 
     def evaluate(self):
 
@@ -468,8 +491,8 @@ class ContextTopNRunner(object):
         self.plant_seeds()
 
         total_metric = 0.0
-        # total_specific_recall = 0.0
-        # total_generic_recall = 0.0
+        total_specific_metric = 0.0
+        total_generic_metric = 0.0
         total_cycle_time = 0.0
         num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
@@ -501,13 +524,10 @@ class ContextTopNRunner(object):
                     lda_based_context = self.train_topic_model(i, j)
                     self.find_reviews_topics(lda_based_context)
                 self.predict()
-                metric = self.evaluate()
-                # recall = self.top_n_evaluator.recall
-                # specific_recall = self.top_n_evaluator.specific_recall
-                # generic_recall = self.top_n_evaluator.generic_recall
+                metric, specific_metric, generic_metric = self.evaluate()
                 total_metric += metric
-                # total_specific_recall += specific_recall
-                # total_generic_recall += generic_recall
+                total_specific_metric += specific_metric
+                total_generic_metric += generic_metric
 
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
@@ -515,13 +535,15 @@ class ContextTopNRunner(object):
                 self.clear()
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
+        metric_name = Constants.EVALUATION_METRIC
         metric_average = total_metric / total_iterations
-        # average_specific_recall = total_specific_recall / total_iterations
-        # average_generic_recall = total_generic_recall / total_iterations
+        average_specific_metric = total_specific_metric / total_iterations
+        average_generic_metric = total_generic_metric / total_iterations
         average_cycle_time = total_cycle_time / total_iterations
-        print('average rmse: %f' % metric_average)
-        # print('average specific recall: %f' % average_specific_recall)
-        # print('average generic recall: %f' % average_generic_recall)
+        print('average %s: %f' % (metric_name, metric_average))
+        print(
+            'average specific %s: %f' % (metric_name, average_specific_metric))
+        print('average generic %s: %f' % (metric_name, average_generic_metric))
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         #
