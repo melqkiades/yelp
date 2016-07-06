@@ -549,8 +549,8 @@ class ContextTopNRunner(object):
         #
         results = copy.deepcopy(Constants._properties)
         results[Constants.EVALUATION_METRIC] = metric_average
-        # results['specific_recall'] = average_specific_recall
-        # results['generic_recall'] = average_generic_recall
+        results['specific_' + metric_name] = average_specific_metric
+        results['generic_' + metric_name] = average_generic_metric
         results['cycle_time'] = average_cycle_time
         results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
