@@ -140,7 +140,8 @@ def create_bag_of_words(document_list):
     cached_stop_words = set(stopwords.words("english"))
     cached_stop_words |= {
         't', 'didn', 'doesn', 'haven', 'don', 'aren', 'isn', 've', 'll',
-        'couldn', 'm', 'hasn', 'hadn', 'won', 'shouldn', 's', 'wasn'}
+        'couldn', 'm', 'hasn', 'hadn', 'won', 'shouldn', 's', 'wasn',
+        'wouldn'}
     body = []
     processed = []
 
