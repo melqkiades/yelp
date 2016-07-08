@@ -1,218 +1,13 @@
 import copy
-import json
-import os
 import time
 
 import itertools
-
-import nltk
-import numpy
+import xlsxwriter
 from pandas import DataFrame
 
 from etl import ETLUtils
 from topicmodeling.context import topic_model_creator
 from utils.constants import Constants
-
-single_restaurant_context_words = {
-    "ball",
-    "bf",
-    "birthday",
-    "boyfriend",
-    "breakfast",
-    "brunch",
-    "car",
-    "cars",
-    "casual",
-    "christmas",
-    "college",
-    "companion",
-    "conversation",
-    "coupon",
-    "coupons",
-    "coworker",
-    "dad",
-    "date",
-    "daughter",
-    "deal",
-    "deliver",
-    "dinner",
-    "discount",
-    "drive",
-    "driven",
-    "driving",
-    "event",
-    "families",
-    "father",
-    "football",
-    "friday",
-    "friend",
-    "friends",
-    "game",
-    "games",
-    "gf",
-    "girlfriend",
-    "girls",
-    "grandma",
-    "group",
-    "groupon",
-    "happy",
-    "hour",
-    "husband",
-    "inside",
-    "karaoke",
-    "kid",
-    "kids",
-    "ladies",
-    "lunch",
-    "lunch",
-    "meeting",
-    "men",
-    "mom",
-    "monday",
-    "morning",
-    "morning",
-    "mother",
-    "night",
-    "night",
-    "nights",
-    "outdoor",
-    "outside",
-    "parking",
-    "party",
-    "patio",
-    "romantic",
-    "saturday",
-    "school",
-    "son",
-    "sports",
-    "summer",
-    "sunday",
-    "takeout",
-    "thanksgiving",
-    "thru",
-    "tuesday",
-    "tv",
-    "tvs",
-    "vacation",
-    "valet",
-    "wednesday",
-    "weekday",
-    "weekend",
-    "wife",
-    "women",
-    "work",
-    "young",
-}
-
-single_hotel_context_words = {
-    "airport",
-    "anniversary",
-    "april",
-    "attended",
-    "august",
-    "autumn",
-    "bike",
-    "birthday"
-    "boyfriend",
-    "bus",
-    "business",
-    "car",
-    "carts",
-    "children",
-    "christmas",
-    "colleagues",
-    "conference",
-    "convention",
-    "course",
-    "crowd",
-    "date",
-    "december",
-    "dog",
-    "dogs",
-    "driving",
-    "engagement",
-    "facial",
-    "family",
-    "february",
-    "fiance",
-    "fiancee",
-    "fitness",
-    "flight",
-    "football",
-    "friday",
-    "friend",
-    "friends",
-    "game",
-    "games",
-    "girlfriend",
-    "golf",
-    "grandfather",
-    "grandma",
-    "grandmother",
-    "grandpa",
-    "grandparents",
-    "group",
-    "groupon",
-    "honeymoon",
-    "horse",
-    "hubby",
-    "husband",
-    "january",
-    "june",
-    "july",
-    "kids",
-    "lazy",
-    "march",
-    "marriage",
-    "married",
-    "massage",
-    "may",
-    "mom",
-    "monday",
-    "music",
-    "nightlife",
-    "november",
-    "october",
-    "parents",
-    "parking",
-    "party",
-    "partying",
-    "pet",
-    "pets",
-    "relax",
-    "relaxed",
-    "relaxing",
-    "reservation",
-    "rest",
-    "romance",
-    "romantic",
-    "saturday",
-    "september",
-    "shuttle",
-    "spring",
-    "staycation",
-    "steam",
-    "summer",
-    "sunday",
-    "tennis",
-    "thanksgiving",
-    "thursday",
-    "tournament",
-    "training",
-    "transportation",
-    "treatment",
-    "trip",
-    "tuesday",
-    "vacation",
-    "valet",
-    "wedding",
-    "wednesday",
-    "weekday",
-    "weekend",
-    "wife",
-    "winter",
-    "work"
-}
 
 
 grouped_hotel_context_words = {
@@ -233,9 +28,9 @@ grouped_hotel_context_words = {
                  'boyfriend', 'bf', 'gf', 'hubby', 'husband', 'wife',
                  'fiance', 'fiancee', 'weekend', 'getaway', 'romance'},
     'anniversary': {'husband', 'wife', 'weekend', 'anniversary', 'hubby', '@'},
-    'gambling': {'gamble', 'casino', 'slot', 'machine', 'roulette', '@'},
+    'gambling': {'gamble', 'casino', 'slot', 'roulette', '@', '@@'},
     'party': {'party', 'friend', 'music', 'group', 'nightlife', 'dj'},
-    'business': {'busines', 'work', 'job', 'colleague', 'coworker', '@'},
+    'business': {'business', 'work', 'job', 'colleague', 'coworker', '@'},
     'parking': {'car', 'parking', 'valet', 'driver', '@', '@@'},
     'season': {'winter', 'spring', 'summer', 'fall', 'autumn', '@'},
     'month': {'january', 'february', 'march', 'april', 'may', 'june',
@@ -301,12 +96,26 @@ context_words = {
     'restaurant': grouped_restaurant_context_words
 }
 
+hotel_context_words = set()
+for groups in grouped_hotel_context_words.values():
+    hotel_context_words |= groups
+
+restaurant_context_words = set()
+for groups in grouped_restaurant_context_words.values():
+    restaurant_context_words |= groups
+
+all_context_words = {
+    'hotel': hotel_context_words,
+    'restaurant': restaurant_context_words
+}
+
+
 
 def load_topic_model(cycle_index, fold_index):
 
     print(Constants._properties)
 
-    print('%s: export topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    print('%s: get_records_to_predict_topn topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
     lda_based_context =\
         topic_model_creator.load_topic_model(cycle_index, fold_index)
     print('%s: loaded topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -314,6 +123,7 @@ def load_topic_model(cycle_index, fold_index):
     lda_based_context.epsilon = Constants.LDA_EPSILON
     lda_based_context.update_reviews_with_topics()
     lda_based_context.get_context_rich_topics()
+    print('epsilon', lda_based_context.epsilon)
 
     return lda_based_context
 
@@ -345,18 +155,9 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     headers = [
         'topic_id',
         'ratio',
+        'weighted_frequency',
         'score',
-        # 'words_ratio',
-        # 'past_verbs_ratio',
-        # 'frq',
-        # 'specific_frq',
-        # 'generic_frq',
-        # 'log_words',
-        # 'specific_log_words',
-        # 'generic_log_words',
-        # 'log_past_verbs',
-        # 'specific_log_past_verbs',
-        # 'generic_log_past_verbs'
+        'combined_scores'
     ]
 
     for i in range(num_words):
@@ -364,8 +165,8 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
 
     results = []
 
-    topic_statistics_map = lda_based_context.topic_statistics_map
     topic_ratio_map = lda_based_context.topic_ratio_map
+    print(topic_ratio_map)
 
     num_reviews = len(lda_based_context.records)
     num_specific_reviews = len(lda_based_context.specific_reviews)
@@ -381,35 +182,17 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
         result = {}
         result['topic_id'] = topic
         result['ratio'] = topic_ratio_map[topic]
+        result['weighted_frequency'] =\
+            lda_based_context.topic_weighted_frequency_map[topic]
         result.update(split_topic(
             lda_based_context.topic_model.print_topic(topic, topn=num_words)))
         results.append(result)
+    topic_model_score = analyze_topics(results, lda_based_context)
 
-    # for topic in topic_statistics_map.keys():
-    #
-    #     # pri
-    #
-    #     result = {}
-    #     result['topic_id'] = topic
-    #     result['ratio'] = topic_statistics_map[topic]['frequency_ratio']
-    #     result['words_ratio'] = topic_statistics_map[topic]['words_ratio']
-    #     result['past_verbs_ratio'] = topic_statistics_map[topic]['past_verbs_ratio']
-    #     result['frq'] = topic_statistics_map[topic]['weighted_frq']['review_frequency']
-    #     result['specific_frq'] = topic_statistics_map[topic]['specific_weighted_frq']['review_frequency']
-    #     result['generic_frq'] = topic_statistics_map[topic]['generic_weighted_frq']['review_frequency']
-    #     result['log_words'] = topic_statistics_map[topic]['weighted_frq']['log_words_frequency']
-    #     result['specific_log_words'] = topic_statistics_map[topic]['specific_weighted_frq']['log_words_frequency']
-    #     result['generic_log_words'] = topic_statistics_map[topic]['generic_weighted_frq']['log_words_frequency']
-    #     result['log_past_verbs'] = topic_statistics_map[topic]['weighted_frq']['log_past_verbs_frequency']
-    #     result['specific_log_past_verbs'] = topic_statistics_map[topic]['specific_weighted_frq']['log_past_verbs_frequency']
-    #     result['generic_log_past_verbs'] = topic_statistics_map[topic]['generic_weighted_frq']['log_past_verbs_frequency']
-    #     result.update(split_topic(lda_based_context.topic_model.print_topic(topic, topn=num_words)))
-    #
-    #     # print(lda_based_context.topic_model.print_topic(topic, topn=num_words))
-    #     results.append(result)
-    analyze_topics(results, lda_based_context)
-    #
+    generate_excel_file(results)
     # ETLUtils.save_csv_file(file_name, results, headers)
+
+    return topic_model_score
 
 
 def split_topic(topic_string):
@@ -420,11 +203,13 @@ def split_topic(topic_string):
     :param topic_string:
     """
 
-    context_words = None
+    context_words = []
     if Constants.ITEM_TYPE == 'hotel':
-        context_words = single_hotel_context_words
-    if Constants.ITEM_TYPE == 'restaurant':
-        context_words = single_restaurant_context_words
+        for values in grouped_hotel_context_words.values():
+            context_words.extend(values)
+    elif Constants.ITEM_TYPE == 'restaurant':
+        for values in grouped_restaurant_context_words.values():
+            context_words.extend(values)
 
     words_dict = {}
     index = 0
@@ -452,173 +237,87 @@ def analyze_topics(topic_data, lda_based_context):
     # print(data_frame.head())
     # print(data_frame)
 
+    context_topic_threshold = 0.1
+
     scores = {}
-    scores['all_ratio_mean_score'] = data_frame['score'].mean()
-    scores['high_ratio_mean_score'] = data_frame[data_frame.ratio > 1.0]['score'].mean()
-    scores['low_ratio_mean_score'] = data_frame[data_frame.ratio < 1.0]['score'].mean()
-    scores['all_ratio_count'] = data_frame[data_frame.score > 0.0]['topic_id'].count()
-    scores['high_ratio_count'] = data_frame[(data_frame.ratio > 1.0) & (data_frame.score > 0.0)]['topic_id'].count()
-    scores['low_ratio_count'] = data_frame[(data_frame.ratio < 1.0) & (data_frame.score > 0.0)]['topic_id'].count()
-    scores['num_context_topics'] = len(lda_based_context.context_rich_topics)
+    num_topics = Constants.LDA_NUM_TOPICS
+    scores['num_topics'] = num_topics
+    all_ratio_mean_score = data_frame[
+        data_frame.weighted_frequency > Constants.LDA_ALPHA]['score'].mean()
+    scores['all_ratio_mean_score'] = all_ratio_mean_score
+    high_ratio_mean_score = data_frame[(data_frame.ratio > 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
+    low_ratio_mean_score = data_frame[(data_frame.ratio < 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
+    # scores['all_ratio_count'] = data_frame[data_frame.score > 0.1]['topic_id'].count()
+    high_ratio_count = data_frame[
+        (data_frame.ratio > 1.0) & (data_frame.score > context_topic_threshold) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['topic_id'].count()
+    low_ratio_count = data_frame[
+        (data_frame.ratio < 1.0) & (data_frame.score > context_topic_threshold) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['topic_id'].count()
+    num_context_topics = len(lda_based_context.context_rich_topics)
+    scores['num_context_topics'] = num_context_topics
+    scores['document_level'] = Constants.DOCUMENT_LEVEL
+    scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
+    scores['alpha'] = Constants.LDA_ALPHA
+    scores['epsilon'] = Constants.LDA_EPSILON
 
-    high_ratio_count = float(
-        data_frame[data_frame.ratio > 1.0]['score'].count())
-    low_ratio_count = float(data_frame[data_frame.ratio < 1.0]['score'].count())
+    high_ratio_count2 = float(
+        data_frame[(data_frame.ratio > 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].count())
+    low_ratio_count2 = float(data_frame[(data_frame.ratio < 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].count())
 
-    scores['weighted_high_ratio_count'] = float(scores['high_ratio_count'] / high_ratio_count)
-    scores['weighted_low_ratio_count'] = float(scores['low_ratio_count'] / low_ratio_count)
+    weighted_high_ratio_count = float(high_ratio_count / high_ratio_count2)
+    weighted_low_ratio_count = float(low_ratio_count / low_ratio_count2)
+    weighted_ratio_count =\
+        (weighted_high_ratio_count / weighted_low_ratio_count)\
+        if weighted_low_ratio_count != 0\
+        else 'N/A'
+    scores['weighted_ratio_count'] = weighted_ratio_count
+    score_ratio =\
+        (high_ratio_mean_score / low_ratio_mean_score)\
+        if low_ratio_mean_score != 0\
+        else 'N/A'
+    scores['score_ratio'] = score_ratio
+    scores['combined_score'] =\
+        (all_ratio_mean_score * score_ratio * num_context_topics / num_topics)\
+        if all_ratio_mean_score != 'N/A' and score_ratio != 'N/A'\
+        else 'N/A'
 
     results = copy.deepcopy(Constants._properties)
     results.update(scores)
 
-    # write_results_to_json(results)
-
     print('all mean score: %f' % scores['all_ratio_mean_score'])
-    print('greater than 1.0 mean score: %f' % scores['high_ratio_mean_score'])
-    print('lower than 1.0 mean score: %f' % scores['low_ratio_mean_score'])
-    print('all ratio count: %f' % scores['all_ratio_count'])
-    print('greater than 1.0 count: %f' % scores['high_ratio_count'])
-    print('lower than 1.0 count: %f' % scores['low_ratio_count'])
-    print('weighted greater than 1.0 count: %f' % (float(scores['high_ratio_count'] / high_ratio_count)))
-    print('weighted lower than 1.0 count: %f' % (float(scores['low_ratio_count'] / low_ratio_count)))
-    # print('\nN/A')
-    # print(data_frame[data_frame.ratio == 'N/A'].mean())
-    # print('\n> 1.0')
-    # print(data_frame[(data_frame.ratio > 1.0) & (data_frame.ratio != 'N/A')].mean())
-    # print('\n< 1.0')
-    # print(data_frame[(data_frame.ratio < 1.0) & (data_frame.ratio != 'N/A')].mean())
-    # print('\nN/A')
-    # print(data_frame[data_frame.ratio == 'N/A'].mean())
+    # print('greater than 1.0 mean score: %f' % scores['high_ratio_mean_score'])
+    # print('lower than 1.0 mean score: %f' % scores['low_ratio_mean_score'])
+    # print('all ratio count: %f' % scores['all_ratio_count'])
+    # print('greater than 1.0 count: %f' % scores['high_ratio_count'])
+    # print('lower than 1.0 count: %f' % scores['low_ratio_count'])
+    # print('weighted greater than 1.0 count: %f' % scores['weighted_high_ratio_count'])
+    # print('weighted lower than 1.0 count: %f' % scores['weighted_low_ratio_count'])
+    print('weighted ratio:', scores['weighted_ratio_count'])
+    print('score ratio:', scores['score_ratio'])
+    print('combined score:', scores['combined_score'])
+
+    # write_results(results)
+
+    return scores
 
 
-def analyze_manual_topics():
-    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
-
-    context_topics = context_words[Constants.ITEM_TYPE]
-    topic_counts = {'all': {}, 'specific': {}, 'generic': {}}
-    review_type_counts = {Constants.SPECIFIC: 0.0, Constants.GENERIC: 0.0}
-    ratio_counts = {}
-
-    # Init counts
-    for review_type in topic_counts:
-        for topic in context_topics:
-            topic_counts[review_type][topic] = 0.0
-
-    for topic in context_topics:
-        ratio_counts[topic] = 0.0
-
-    # my_records = [
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.SPECIFIC,
-    #      Constants.BOW_FIELD: ['room']},
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.SPECIFIC,
-    #      Constants.BOW_FIELD: ['room']},
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.SPECIFIC,
-    #      Constants.BOW_FIELD: ['pool']},
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
-    #      Constants.BOW_FIELD: ['room']},
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
-    #      Constants.BOW_FIELD: ['room']},
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
-    #      Constants.BOW_FIELD: ['room']},
-    #     {Constants.PREDICTED_CLASS_FIELD: Constants.GENERIC,
-    #      Constants.BOW_FIELD: ['staff']},
-    # ]
-
-    index = 0
-    for record in records:
-
-        review_type = record[Constants.PREDICTED_CLASS_FIELD]
-        review_type_counts[review_type] += 1
-
-        # print('\n***************************************')
-        # print(record[Constants.TEXT_FIELD])
-        # print(index, record[Constants.PREDICTED_CLASS_FIELD], record[Constants.BOW_FIELD])
-
-        for topic, topic_words in context_topics.items():
-            if len(topic_words.intersection(record[Constants.BOW_FIELD])) > 0:
-                topic_counts['all'][topic] += 1
-                topic_counts[review_type][topic] += 1
-
-        index += 1
-
-    for topic in context_topics:
-        specific_topic_count = topic_counts[Constants.SPECIFIC][topic]
-        total_specific_count = review_type_counts[Constants.SPECIFIC]
-        specific_weighted = specific_topic_count / total_specific_count
-
-        generic_topic_count = topic_counts[Constants.GENERIC][topic]
-        total_generic_count = review_type_counts[Constants.GENERIC]
-        generic_weighted = generic_topic_count / total_generic_count
-        # print('specific_weighted', specific_weighted)
-        # print('generic_weighted', generic_weighted)
-        ratio_counts[topic] = specific_weighted / generic_weighted
-
-    print(review_type_counts)
-    print(topic_counts)
-    print(ratio_counts)
-
-
-def write_results_to_json(results):
-    file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
+def write_results(results):
+    json_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
                 Constants.ITEM_TYPE + \
                 '.json'
-    print(file_name)
+    csv_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
+                Constants.ITEM_TYPE + \
+                '.csv'
+    print(json_file_name)
+    print(csv_file_name)
 
-    if not os.path.exists(file_name):
-        with open(file_name, 'w') as f:
-            json.dump(results, f)
-            f.write('\n')
-    else:
-        with open(file_name, 'a') as f:
-            json.dump(results, f)
-            f.write('\n')
-
-
-# start = time.time()
-#
-# # epsilon_list = [0.001, 0.005, 0.01, 0.03, 0.05, 0.07, 0.1, 0.35, 0.5]
-# epsilon_list = [0.001]
-# # alpha_list = [0.005, 0.01, 0.02, 0.05, 0.07, 0.1, 0.15, 0.2]
-# alpha_list = [0.005]
-# num_cycles = len(epsilon_list) * len(alpha_list)
-# cycle_index = 1
-#
-# export_topics(0, 0)
-#
-# for epsilon, alpha in itertools.product(epsilon_list, alpha_list):
-#     print('cycle_index: %d/%d' % (cycle_index, num_cycles))
-#     export_topics(0, 0, epsilon, alpha)
-#     cycle_index += 1
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
-
-tagger = nltk.PerceptronTagger()
-
-time_list = []
-accurate_dict = {}
-approximate_dict = {'NN': 0, 'JJ': 0, 'VB': 0}
-
-for word in single_restaurant_context_words:
-    cycle_start = time.time()
-    tagged_word = tagger.tag([word])[0]
-    time_list.append(time.time() - cycle_start)
-
-    word_tag = tagged_word[1]
-    if word_tag not in accurate_dict:
-        accurate_dict[word_tag] = 0
-    accurate_dict[word_tag] += 1
-
-    if word_tag.startswith('NN'):
-        approximate_dict['NN'] += 1
-    elif word_tag.startswith('JJ'):
-        approximate_dict['JJ'] += 1
-    elif word_tag.startswith('VB'):
-        approximate_dict['VB'] += 1
-    else:
-        if word_tag not in approximate_dict:
-            approximate_dict[word_tag] = 0
-        approximate_dict[word_tag] += 1
+    # if not os.path.exists(json_file_name):
+    #     with open(json_file_name, 'w') as f:
+    #         json.dump(results, f)
+    #         f.write('\n')
+    # else:
+    #     with open(json_file_name, 'a') as f:
+    #         json.dump(results, f)
+    #         f.write('\n')
 
 
 def see_topic_analysis_results():
@@ -641,17 +340,120 @@ def see_topic_analysis_results():
         index += 1
 
 
-# see_topic_analysis_results()
+def generate_excel_file(records):
+    my_context_words = []
+    if Constants.ITEM_TYPE == 'hotel':
+        for values in grouped_hotel_context_words.values():
+            my_context_words.extend(values)
+    elif Constants.ITEM_TYPE == 'restaurant':
+        for values in grouped_restaurant_context_words.values():
+            my_context_words.extend(values)
 
-# print(accurate_dict)
-# print(approximate_dict)
-#
-# print('average cycle time: %f' % numpy.mean(time_list))
+    workbook = xlsxwriter.Workbook('/Users/fpena/tmp/conditional_format-5.xlsx')
+    worksheet7 = workbook.add_worksheet()
+
+    yellow_format = workbook.add_format()
+    yellow_format.set_pattern(1)  # This is optional when using a solid fill.
+    yellow_format.set_bg_color('yellow')
+
+    cyan_format = workbook.add_format()
+    cyan_format.set_pattern(1)  # This is optional when using a solid fill.
+    cyan_format.set_bg_color('cyan')
+
+    green_format = workbook.add_format()
+    green_format.set_pattern(1)  # This is optional when using a solid fill.
+    green_format.set_bg_color('green')
+
+    num_words = 10
+    headers = [
+        'topic_id',
+        'ratio',
+        'score',
+        'weighted_frequency'
+    ]
+    for i in range(num_words):
+        headers.append('word' + str(i))
+
+    data = [[record[column] for column in headers] for record in records]
+    headers = [{'header': header} for header in headers]
+    num_topics = Constants.LDA_NUM_TOPICS
+    print(data)
+    print(headers)
+
+    # worksheet7.add_table('B2:N52', {'data': data, 'columns': headers})
+
+    for row_index, row_data in enumerate(data):
+        for column_index, cell_value in enumerate(row_data[:4]):
+            worksheet7.write(row_index + 2, column_index + 1, cell_value)
+
+    # Add words
+    for row_index, row_data in enumerate(data):
+        for column_index, cell_value in enumerate(row_data[4:]):
+            word = cell_value.split('*')[1]
+            if word in my_context_words:
+                worksheet7.write(row_index + 2, column_index + 5, cell_value.decode('utf-8'), cyan_format)
+            else:
+                worksheet7.write(row_index + 2, column_index + 5, cell_value.decode('utf-8'))
+
+    worksheet7.conditional_format(2, 3, num_topics + 1, 3, {'type': 'cell',
+                                             'criteria': '>=',
+                                             'value': 0.1,
+                                             'format': yellow_format})
+
+    worksheet7.add_table(1, 1, num_topics + 1, 14, {'columns': headers})
+    # worksheet7.add_table('B2:N302', {'columns': headers})
+
+    # Set widths
+    worksheet7.set_column(1, 1, 7)
+    worksheet7.set_column(3, 3, 7)
+    worksheet7.set_column(4, 4, 8)
+    worksheet7.set_column(5, 15, 14)
+    workbook.close()
+
+
+def main():
+    # export_topics(0, 0)
+    topic_model_scores = []
+    epsilon_list = [0.001, 0.005, 0.01, 0.03, 0.05, 0.07, 0.1, 0.35, 0.5]
+    # epsilon_list = [0.01]
+    alpha_list = [0.0]
+    num_topics_list = [30, 50, 75, 100, 150, 300]
+    # # num_topics_list = [150]
+    # document_level_list = ['review', 'sentence', 1]
+    document_level_list = [1]
+    # topic_weighting_methods = ['binary', 'probability']
+    topic_weighting_methods = ['probability']
+    num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
+                 len(document_level_list) * len(topic_weighting_methods)
+    cycle_index = 1
+    for epsilon, alpha, num_topics, document_level, topic_weighting_method in itertools.product(
+            epsilon_list, alpha_list, num_topics_list, document_level_list, topic_weighting_methods):
+        print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
+        new_dict = {
+            'lda_num_topics': num_topics,
+            'document_level': document_level,
+            'topic_weighting_method': topic_weighting_method,
+            'lda_alpha': alpha,
+            'lda_epsilon': epsilon
+        }
+        Constants.update_properties(new_dict)
+        topic_model_score = export_topics(0, 0)
+        topic_model_scores.append(topic_model_score)
+        cycle_index += 1
+    #
+    csv_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
+                    Constants.ITEM_TYPE + \
+                    '.csv'
+    print(csv_file_name)
+    ETLUtils.save_csv_file(csv_file_name, topic_model_scores, topic_model_scores[0].keys())
+
 
 # start = time.time()
-# analyze_manual_topics()
-# # load_topic_model(0, 0)
+# main()
+# export_topics(0, 0)
 # end = time.time()
 # total_time = end - start
-# print("Total time = %f seconds" % total_time)
+# print("%s: Total time = %f seconds" % (time.strftime("%Y/%m/%d-%H:%M:%S"), total_time))
+
+# generate_excel_file()
 
