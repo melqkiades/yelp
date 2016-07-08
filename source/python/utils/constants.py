@@ -83,6 +83,7 @@ class Constants(object):
     RESAMPLER = _properties['resampler']
     DOCUMENT_CLASSIFIER = _properties['document_classifier']
     DOCUMENT_CLASSIFIER_SEED = _properties['document_classifier_seed']
+    TEST_CONTEXT_REVIEWS_ONLY = _properties['test_context_reviews_only']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -167,6 +168,8 @@ class Constants(object):
             Constants._properties['document_classifier']
         Constants.DOCUMENT_CLASSIFIER_SEED =\
             Constants._properties['document_classifier_seed']
+        Constants.TEST_CONTEXT_REVIEWS_ONLY =\
+            Constants.TEST_CONTEXT_REVIEWS_ONLY
 
         Constants._properties.update(new_properties)
 

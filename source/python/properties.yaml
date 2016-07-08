@@ -1,22 +1,22 @@
 # Properties for the recommender system
-business_type: restaurant
+business_type: hotel
 review_type:
 topn_n: 10
 topn_num_items: 270
 random_seed: 0
 numpy_random_seed: 0
-num_cycles: 1
-lda_alpha: 0.005
+num_cycles: 10
+lda_alpha: 0.0
 lda_beta: 1.0
-lda_epsilon: 0.01
-lda_num_topics: 50
+lda_epsilon: 0.05
+lda_num_topics: 150
 lda_model_passes: 10
 lda_model_iterations: 500
 lda_multicore: False
 libfm_seed: 0
 fm_num_factors : 50
-cross_validation_num_folds: 50
-use_context: False
+cross_validation_num_folds: 5
+use_context: True
 shuffle_data: True
 num_cores:
 cache_topic_model: True
@@ -30,10 +30,11 @@ min_dictionary_word_count: 5
 max_dictionary_word_count: 0.2
 # Possible values: review, sentence or integer numer indicating the number of
 # sentences to use (1 is 1st sentence, 2 is 1st and 2nd, etc.)
-document_level: review
+document_level: 1
 solver: libfm
 fastfm_method: mcmc
 evaluation_metric: topn_recall
 resampler: smote-enn
 document_classifier: random_forest
 document_classifier_seed: 0
+test_context_reviews_only: True

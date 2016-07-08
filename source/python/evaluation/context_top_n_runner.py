@@ -12,6 +12,7 @@ import numpy
 from fastFM import als
 from fastFM import mcmc
 from fastFM import sgd
+from gensim import corpora
 from sklearn.preprocessing import OneHotEncoder
 
 from etl import ETLUtils
@@ -20,6 +21,7 @@ from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
 from recommenders import fastfm_recommender
+from topicmodeling.context import topic_model_analyzer
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from tripadvisor.fourcity import extractor
@@ -239,6 +241,13 @@ class ContextTopNRunner(object):
         self.top_n_evaluator.initialize(user_item_map)
         self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
         self.important_records = self.top_n_evaluator.important_records
+
+        if Constants.TEST_CONTEXT_REVIEWS_ONLY:
+            self.important_records = self.filter_context_words(
+                self.important_records)
+
+            self.top_n_evaluator.important_records = self.important_records
+            self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
         self.test_records = None
         gc.collect()
 
@@ -248,7 +257,12 @@ class ContextTopNRunner(object):
             time.strftime("%Y/%m/%d-%H:%M:%S")
         )
         self.important_records = self.test_records
-        self.records_to_predict = self.test_records
+
+        if Constants.TEST_CONTEXT_REVIEWS_ONLY:
+            self.important_records = self.filter_context_words(
+                self.test_records)
+
+        self.records_to_predict = self.important_records
         self.test_records = None
         gc.collect()
 
@@ -301,8 +315,88 @@ class ContextTopNRunner(object):
             self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] =\
                 context_topics
 
+        # self.train_records = self.filter_context_words(self.train_records)
+        # self.print_context_topics(self.important_records)
+
         self.important_records = None
         gc.collect()
+
+    @staticmethod
+    def print_context_topics(records):
+        dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
+
+        no_context_records = []
+        context_records = []
+
+        for record in records:
+            words = []
+            corpus = record[Constants.CORPUS_FIELD]
+
+            for element in corpus:
+                word_id = element[0]
+                word = dictionary[word_id]
+                words.append(word + ' (' + str(word_id) + ')')
+
+            context_topics = record[Constants.CONTEXT_TOPICS_FIELD]
+            print('words: %s' % ', '.join(words))
+            print('text: %s' % record[Constants.TEXT_FIELD])
+            print('bow', record[Constants.BOW_FIELD])
+            print('pos tags', record[Constants.POS_TAGS_FIELD])
+            print(record[Constants.TOPICS_FIELD])
+            # print(record[Constants.CONTEXT_TOPICS_FIELD])
+            print(dict((k, v) for k, v in context_topics.items() if v > 0.0))
+            print('')
+
+        print('important records: %d' % len(records))
+        print('context records: %d' % len(context_records))
+        print('no context records: %d' % len(no_context_records))
+
+    @staticmethod
+    def filter_context_words(records):
+        """
+        Takes a list of records and based on the 'corpus' field looks at which
+        records have contextual words (the ones that appear in the manually
+        defined set in topics_analyzer.all_context_words) and returns a list
+        with those records
+
+        :param records: a list of reviews
+        :return: a list of the records that contain contextual words
+        """
+        dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
+
+        no_context_records = []
+        context_records = []
+        item_type = Constants.ITEM_TYPE
+        print(topic_model_analyzer.all_context_words[item_type])
+
+        for record in records:
+            words = []
+            context_corpus = []
+            context_words = []
+            corpus = record[Constants.CORPUS_FIELD]
+
+            for element in corpus:
+                word_id = element[0]
+                word = dictionary[word_id]
+                words.append(word + ' (' + str(word_id) + ')')
+                if word in topic_model_analyzer.all_context_words[item_type]:
+                    context_corpus.append(element)
+                    context_words.append(word + ' (' + str(word_id) + ')')
+            record[Constants.CORPUS_FIELD] = context_corpus
+
+            if len(context_corpus) == 0:
+                no_context_records.append(record)
+            else:
+                context_records.append(record)
+
+            # print('words: %s' % ', '.join(words))
+            # print('context words: %s' % ', '.join(context_words))
+            # print('context corpus', context_corpus)
+
+        print('important records: %d' % len(records))
+        print('context records: %d' % len(context_records))
+        print('no context records: %d' % len(no_context_records))
+        return context_records
 
     def prepare_records_for_libfm(self):
         print('prepare_records_for_libfm: %s' %
