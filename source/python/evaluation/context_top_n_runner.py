@@ -247,7 +247,8 @@ class ContextTopNRunner(object):
                 self.important_records)
 
             self.top_n_evaluator.important_records = self.important_records
-            self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
+            self.records_to_predict =\
+                self.top_n_evaluator.get_records_to_predict()
         self.test_records = None
         gc.collect()
 
@@ -305,15 +306,8 @@ class ContextTopNRunner(object):
 
         self.context_topics_map = {}
         for record in self.important_records:
-            topic_distribution = record[Constants.TOPICS_FIELD]
-            context_topics = {}
-            for i in self.context_rich_topics:
-                topic_id = 'topic' + str(i[0])
-                context_topics[topic_id] = topic_distribution[i[0]]
-
-            record[Constants.CONTEXT_TOPICS_FIELD] = context_topics
-            self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] =\
-                context_topics
+            self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] = \
+                record[Constants.CONTEXT_TOPICS_FIELD]
 
         # self.train_records = self.filter_context_words(self.train_records)
         # self.print_context_topics(self.important_records)
@@ -325,8 +319,7 @@ class ContextTopNRunner(object):
     def print_context_topics(records):
         dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
 
-        no_context_records = []
-        context_records = []
+        all_context_topics = set()
 
         for record in records:
             words = []
@@ -338,18 +331,26 @@ class ContextTopNRunner(object):
                 words.append(word + ' (' + str(word_id) + ')')
 
             context_topics = record[Constants.CONTEXT_TOPICS_FIELD]
+            used_context_topics =\
+                dict((k, v) for k, v in context_topics.items() if v > 0.0)
+            all_context_topics |= set(used_context_topics.keys())
+
             print('words: %s' % ', '.join(words))
             print('text: %s' % record[Constants.TEXT_FIELD])
             print('bow', record[Constants.BOW_FIELD])
-            print('pos tags', record[Constants.POS_TAGS_FIELD])
+            # print('pos tags', record[Constants.POS_TAGS_FIELD])
             print(record[Constants.TOPICS_FIELD])
-            # print(record[Constants.CONTEXT_TOPICS_FIELD])
-            print(dict((k, v) for k, v in context_topics.items() if v > 0.0))
-            print('')
+            # # print(record[Constants.CONTEXT_TOPICS_FIELD])
+            print(used_context_topics)
+            # print('')
 
-        print('important records: %d' % len(records))
-        print('context records: %d' % len(context_records))
-        print('no context records: %d' % len(no_context_records))
+        # print('important records: %d' % len(records))
+        # print('context records: %d' % len(context_records))
+        # print('no context records: %d' % len(no_context_records))
+        # print('all used context words', all_context_words)
+        print('all used context topics', all_context_topics)
+        # print('all used context words count: %d' % len(all_context_words))
+        print('all used context topics: %d' % len(all_context_topics))
 
     @staticmethod
     def filter_context_words(records):
@@ -367,7 +368,7 @@ class ContextTopNRunner(object):
         no_context_records = []
         context_records = []
         item_type = Constants.ITEM_TYPE
-        print(topic_model_analyzer.all_context_words[item_type])
+        # print(topic_model_analyzer.all_context_words[item_type])
 
         for record in records:
             words = []

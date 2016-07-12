@@ -5,7 +5,6 @@ import operator
 from gensim import corpora
 
 from topicmodeling.context import lda_context_utils
-from topicmodeling.context import context_utils
 from utils.constants import Constants
 
 __author__ = 'fpena'
@@ -197,10 +196,20 @@ class LdaBasedContext:
             )
             record[Constants.TOPICS_FIELD] = topic_distribution
 
+            # We calculate the sum of the probabilities of the contextual topics
+            # to then normalize the contextual vector
+            context_topics_sum = 0.0
+            for i in self.context_rich_topics:
+                context_topics_sum += topic_distribution[i[0]]
+
             topics_map = {}
             for i in self.context_rich_topics:
                 topic_id = 'topic' + str(i[0])
-                topics_map[topic_id] = topic_distribution[i[0]]
+                if context_topics_sum > 0:
+                    topics_map[topic_id] =\
+                        topic_distribution[i[0]] / context_topics_sum
+                else:
+                    topics_map[topic_id] = 0.0
 
             record[Constants.CONTEXT_TOPICS_FIELD] = topics_map
 
