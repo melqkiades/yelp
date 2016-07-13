@@ -81,7 +81,9 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         '-test',
         test_file,
         '-dim',
-        '1,1,' + str(Constants.FM_NUM_FACTORS),
+        ','.join(map(str,
+                     [Constants.FM_USE_BIAS, Constants.FM_USE_1WAY_INTERACTIONS,
+                      Constants.FM_NUM_FACTORS])),
         '-out',
         predictions_file
     ]
