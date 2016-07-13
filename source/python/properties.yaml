@@ -14,7 +14,6 @@ lda_model_passes: 10
 lda_model_iterations: 500
 lda_multicore: False
 libfm_seed: 0
-fm_num_factors : 50
 cross_validation_num_folds: 5
 use_context: True
 shuffle_data: True
@@ -38,3 +37,8 @@ resampler: smote-enn
 document_classifier: random_forest
 document_classifier_seed: 0
 test_context_reviews_only: True
+# Use a feature with the sum of all the non-contextual topic probabilities
+use_no_context_topics_sum: False
+fm_num_factors: 10
+fm_use_bias: True
+fm_use_1way_interactions: True

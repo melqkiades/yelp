@@ -42,6 +42,8 @@ def build_headers(context_rich_topics):
     for topic in context_rich_topics:
         topic_id = 'topic' + str(topic[0])
         headers.append(topic_id)
+    if Constants.USE_NO_CONTEXT_TOPICS_SUM:
+        headers.append('nocontexttopics')
     return headers
 
 
@@ -423,10 +425,13 @@ class ContextTopNRunner(object):
                     row.append(record[header])
 
                 if Constants.USE_CONTEXT is True:
+                    context_topics = record[Constants.CONTEXT_TOPICS_FIELD]
                     for topic in self.context_rich_topics:
-                        context_topics = record[Constants.CONTEXT_TOPICS_FIELD]
                         # print('context_topics', context_topics)
                         row.append(context_topics['topic' + str(topic[0])])
+
+                    if Constants.USE_NO_CONTEXT_TOPICS_SUM:
+                        row.append(context_topics['nocontexttopics'])
 
                 writer.writerow(row)
 
@@ -445,11 +450,14 @@ class ContextTopNRunner(object):
                     row.append(record[header])
 
                 if Constants.USE_CONTEXT is True:
+                    important_record = record[Constants.REVIEW_ID_FIELD]
+                    context_topics = \
+                        self.context_topics_map[important_record]
                     for topic in self.context_rich_topics:
-                        important_record = record[Constants.REVIEW_ID_FIELD]
-                        context_topics =\
-                            self.context_topics_map[important_record]
                         row.append(context_topics['topic' + str(topic[0])])
+
+                    if Constants.USE_NO_CONTEXT_TOPICS_SUM:
+                        row.append(context_topics['nocontexttopics'])
 
                 writer.writerow(row)
 

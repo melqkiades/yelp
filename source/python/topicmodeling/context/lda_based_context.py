@@ -207,9 +207,11 @@ class LdaBasedContext:
                 topic_id = 'topic' + str(i[0])
                 if context_topics_sum > 0:
                     topics_map[topic_id] =\
-                        topic_distribution[i[0]] / context_topics_sum
+                        topic_distribution[i[0]] / 1.0
                 else:
                     topics_map[topic_id] = 0.0
+
+            topics_map['nocontexttopics'] = 1 - context_topics_sum
 
             record[Constants.CONTEXT_TOPICS_FIELD] = topics_map
 

@@ -84,6 +84,9 @@ class Constants(object):
     DOCUMENT_CLASSIFIER = _properties['document_classifier']
     DOCUMENT_CLASSIFIER_SEED = _properties['document_classifier_seed']
     TEST_CONTEXT_REVIEWS_ONLY = _properties['test_context_reviews_only']
+    USE_NO_CONTEXT_TOPICS_SUM = _properties['use_no_context_topics_sum']
+    FM_USE_BIAS = int(_properties['fm_use_bias'])
+    FM_USE_1WAY_INTERACTIONS = int(_properties['fm_use_1way_interactions'])
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -168,8 +171,14 @@ class Constants(object):
             Constants._properties['document_classifier']
         Constants.DOCUMENT_CLASSIFIER_SEED =\
             Constants._properties['document_classifier_seed']
-        Constants.TEST_CONTEXT_REVIEWS_ONLY =\
-            Constants.TEST_CONTEXT_REVIEWS_ONLY
+        Constants.TEST_CONTEXT_REVIEWS_ONLY = \
+            Constants._properties['test_context_reviews_only']
+        Constants.USE_NO_CONTEXT_TOPICS_SUM = \
+            Constants._properties['use_no_context_topics_sum']
+        Constants.FM_USE_BIAS = \
+            int(Constants._properties['fm_use_bias'])
+        Constants.FM_USE_1WAY_INTERACTIONS = \
+            int(Constants._properties['fm_use_1way_interactions'])
 
         Constants._properties.update(new_properties)
 
