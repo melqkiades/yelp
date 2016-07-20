@@ -84,6 +84,10 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         ','.join(map(str,
                      [Constants.FM_USE_BIAS, Constants.FM_USE_1WAY_INTERACTIONS,
                       Constants.FM_NUM_FACTORS])),
+        '-init_stdev',
+        str(Constants.FM_INIT_STDEV),
+        '-iter',
+        str(Constants.FM_ITERATIONS),
         '-out',
         predictions_file
     ]
@@ -595,9 +599,9 @@ class ContextTopNRunner(object):
 
         self.plant_seeds()
 
-        total_metric = 0.0
-        total_specific_metric = 0.0
-        total_generic_metric = 0.0
+        metric_list = []
+        specific_metric_list = []
+        generic_metric_list = []
         total_cycle_time = 0.0
         num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
@@ -630,9 +634,11 @@ class ContextTopNRunner(object):
                     self.find_reviews_topics(lda_based_context)
                 self.predict()
                 metric, specific_metric, generic_metric = self.evaluate()
-                total_metric += metric
-                total_specific_metric += specific_metric
-                total_generic_metric += generic_metric
+                metric_list.append(metric)
+                specific_metric_list.append(specific_metric)
+                generic_metric_list.append(generic_metric)
+                print('Accumulated ' + Constants.EVALUATION_METRIC + ': %f' %
+                      numpy.mean(metric_list))
 
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
@@ -641,14 +647,16 @@ class ContextTopNRunner(object):
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
         metric_name = Constants.EVALUATION_METRIC
-        metric_average = total_metric / total_iterations
-        average_specific_metric = total_specific_metric / total_iterations
-        average_generic_metric = total_generic_metric / total_iterations
+        metric_average = numpy.mean(metric_list)
+        metric_stdev = numpy.std(metric_list)
+        average_specific_metric = numpy.mean(specific_metric_list)
+        average_generic_metric = numpy.mean(generic_metric_list)
         average_cycle_time = total_cycle_time / total_iterations
         print('average %s: %f' % (metric_name, metric_average))
         print(
             'average specific %s: %f' % (metric_name, average_specific_metric))
         print('average generic %s: %f' % (metric_name, average_generic_metric))
+        print('standard deviation %s: %f' % (metric_name, metric_stdev))
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         #
@@ -656,11 +664,14 @@ class ContextTopNRunner(object):
         results[Constants.EVALUATION_METRIC] = metric_average
         results['specific_' + metric_name] = average_specific_metric
         results['generic_' + metric_name] = average_generic_metric
+        results[metric_name + '_stdev'] = metric_stdev
         results['cycle_time'] = average_cycle_time
         results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
         write_results_to_csv(results)
         write_results_to_json(results)
+
+        return results
 
 
 def run_tests():

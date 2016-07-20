@@ -40,5 +40,7 @@ test_context_reviews_only: True
 # Use a feature with the sum of all the non-contextual topic probabilities
 use_no_context_topics_sum: False
 fm_num_factors: 10
-fm_use_bias: True
-fm_use_1way_interactions: True
+fm_use_bias: False
+fm_use_1way_interactions: False
+fm_iterations: 100
+fm_init_stdev: 0.1
