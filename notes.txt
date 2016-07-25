@@ -84,4 +84,12 @@
   http://matplotlib.org/users/customizing.html
   Also use this line right after importing matplotlib
   mpl.use('TkAgg')
+- If the following error appears when using hyperotp:
+  ImportError: No module named bson
+  Just do conda install pymongo
+- Whenever the next error appears:
+  'module' object has no attribute 'Connection' hyperopt
+  do
+  conda remove pymongo
+  conda install pymongo=2.8
 

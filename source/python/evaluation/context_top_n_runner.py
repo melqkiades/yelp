@@ -297,8 +297,8 @@ class ContextTopNRunner(object):
             lda_based_context.generate_review_corpus()
             lda_based_context.build_topic_model()
             lda_based_context.update_reviews_with_topics()
+            lda_based_context.get_context_rich_topics()
 
-        lda_based_context.get_context_rich_topics()
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -628,6 +628,8 @@ class ContextTopNRunner(object):
                 self.train_records, self.test_records =\
                     ETLUtils.split_train_test_copy(
                         self.records, split=split, start=cv_start)
+                # subsample_size = int(len(self.train_records)*0.5)
+                # self.train_records = self.train_records[:subsample_size]
                 self.get_records_to_predict()
                 if Constants.USE_CONTEXT:
                     lda_based_context = self.train_topic_model(i, j)
@@ -691,12 +693,9 @@ def run_tests():
         test_cycle += 1
 
 
-start = time.time()
-
-my_context_top_n_runner = ContextTopNRunner()
-my_context_top_n_runner.perform_cross_validation()
-# run_tests()
-# parallel_context_top_n()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# my_context_top_n_runner = ContextTopNRunner()
+# my_context_top_n_runner.perform_cross_validation()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)

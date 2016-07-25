@@ -66,6 +66,7 @@ def train_context_topics_model(records):
     lda_based_context.generate_review_corpus()
     lda_based_context.build_topic_model()
     lda_based_context.update_reviews_with_topics()
+    lda_based_context.get_context_rich_topics()
 
     print('%s: Trained LDA Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 

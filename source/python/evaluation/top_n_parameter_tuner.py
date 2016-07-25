@@ -1,44 +1,16 @@
 import os
 import time
-import cPickle as pickle
+import dill as pickle
+
 from hyperopt import fmin
-from hyperopt import STATUS_OK
-from hyperopt import rand
 from hyperopt import hp
 from hyperopt import tpe
-from hyperopt import Trials
-
-from evaluation.context_top_n_runner import ContextTopNRunner
-from utils.constants import Constants
+from hyperopt.mongoexp import MongoTrials
 
 import matplotlib
 matplotlib.rcParams['backend'] = "Qt4Agg"
 import matplotlib.pyplot as plt
 
-
-# def my_function(x):
-#
-#     print(x)
-#
-#     squared_x = x ** 2
-#     result = {
-#         'loss': squared_x,
-#         'status': STATUS_OK,
-#         # -- store other results like this
-#         'eval_time': time.time(),
-#         'other_stuff': {'type': None, 'value': [0, 1, 2]},
-#     }
-#     return result
-#
-#
-# print(my_function(5))
-
-# trials = Trials()
-#
-# best = fmin(
-#     my_function, space=hp.uniform('x', -10, 10), algo=rand.suggest,
-#     # my_function, space=hp.choice('letter', ['a', 'b']), algo=rand.suggest,
-#     max_evals=10, trials=trials)
 
 def fibonacci(n):
 
@@ -59,14 +31,15 @@ def fibonacci(n):
     return sequence
 
 
-def update_parameters(args):
+def run_recommender(args):
+    import sys
+    # sys.path.append('/Users/fpena/UCC/Thesis/projects/yelp/source/python')
+    sys.path.append('/home/fpena/yelp/source/python')
+    from utils.constants import Constants
+    from evaluation.context_top_n_runner import ContextTopNRunner
 
+    print('\n\n************************\n************************\n')
     print('args', args)
-
-    # parameters = {
-    #     'fm_num_factors': args[0],
-    #     'fm_iterations': args[1]
-    # }
 
     use_context = args['use_context']
 
@@ -80,17 +53,12 @@ def update_parameters(args):
         parameters.update({'lda_num_topics': args['lda_num_topics']})
 
     Constants.update_properties(parameters)
-
-
-def run_recommender(args):
-    print('\n\n************************\n************************\n')
-
-    update_parameters(args)
+    # Finish updating parameters
 
     my_context_top_n_runner = ContextTopNRunner()
     results = my_context_top_n_runner.perform_cross_validation()
     results['loss'] = -results[Constants.EVALUATION_METRIC]
-    results['status'] = STATUS_OK
+    results['status'] = 'ok'
 
     print('loss', results['loss'])
 
@@ -99,7 +67,11 @@ def run_recommender(args):
 
 def tune_parameters():
 
-    trials = Trials()
+    # trials = Trials()
+    from utils.constants import Constants
+    mongo_url =\
+        'mongo://localhost:1234/' + Constants.ITEM_TYPE + '_context_db/jobs'
+    trials = MongoTrials(mongo_url, exp_key='exp1')
 
     # space = \
         # [
@@ -114,28 +86,28 @@ def tune_parameters():
                 'fm_num_factors': hp.choice('nocontext_num_factors', fibonacci(13)[1:]),
                 'fm_iterations': hp.quniform('nocontext_iterations', 50, 500, 50)
             },
-            {
-                'use_context': True,
-                'fm_num_factors': hp.choice('context_num_factors', fibonacci(13)[1:]),
-                'fm_iterations': hp.quniform('context_iterations', 50, 500, 50),
-                'lda_num_topics': hp.choice('lda_num_topics', [30, 50, 75, 100, 150, 300])
-            },
+            # {
+            #     'use_context': True,
+            #     'fm_num_factors': hp.choice('context_num_factors', fibonacci(13)[1:]),
+            #     'fm_iterations': hp.quniform('context_iterations', 50, 500, 50),
+            #     'lda_num_topics': hp.choice('lda_num_topics', [30, 50, 75, 100, 150, 300])
+            # },
         ])
 
     best = fmin(
         run_recommender, space=space, algo=tpe.suggest,
-        max_evals=300, trials=trials)
+        max_evals=100, trials=trials)
 
-    print('\n\n')
-
-    for trial in trials:
-        # print(trial)
-        print(trial['misc']['vals'], trial['result']['loss'])
+    # print('\n\n')
+    #
+    # for trial in trials:
+    #     # print(trial)
+    #     print(trial['misc']['vals'], trial['result']['loss'])
     print('best', best, min(trials.losses()))
-
-    trials_path = os.path.expanduser('~/tmp/trials-context.pkl')
-    with open(trials_path, 'wb') as write_file:
-        pickle.dump(trials, write_file, pickle.HIGHEST_PROTOCOL)
+    #
+    # trials_path = os.path.expanduser('~/tmp/trials-context-2.pkl')
+    # with open(trials_path, 'wb') as write_file:
+    #     pickle.dump(trials, write_file, pickle.HIGHEST_PROTOCOL)
 
 
 def plot_trials():
@@ -192,19 +164,8 @@ def plot_trials():
 
     plt.show()
 
-# start = time.time()
-# tune_parameters()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
-
-# print(fibonacci(13))
-#
-# print('best', best)
-# print(trials.trials)
-# print(trials.results)
-# print(trials.losses())
-# print(trials.statuses())
-
-plot_trials()
-
+start = time.time()
+tune_parameters()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
