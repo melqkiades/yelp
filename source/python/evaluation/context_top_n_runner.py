@@ -247,16 +247,22 @@ class ContextTopNRunner(object):
             self.records, self.test_records, Constants.ITEM_TYPE, 10,
             Constants.TOPN_NUM_ITEMS)
         self.top_n_evaluator.initialize(user_item_map)
-        self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
         self.important_records = self.top_n_evaluator.important_records
 
         if Constants.TEST_CONTEXT_REVIEWS_ONLY:
             self.important_records = self.filter_context_words(
                 self.important_records)
 
-            self.top_n_evaluator.important_records = self.important_records
             self.records_to_predict =\
                 self.top_n_evaluator.get_records_to_predict()
+
+        if Constants.MAX_SAMPLE_TEST_SET is not None:
+            print('important_records %d' % len(self.important_records))
+            self.important_records = random.sample(
+                self.important_records, Constants.MAX_SAMPLE_TEST_SET)
+
+        self.top_n_evaluator.important_records = self.important_records
+        self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
         self.test_records = None
         gc.collect()
 
@@ -658,7 +664,8 @@ class ContextTopNRunner(object):
         print(
             'average specific %s: %f' % (metric_name, average_specific_metric))
         print('average generic %s: %f' % (metric_name, average_generic_metric))
-        print('standard deviation %s: %f' % (metric_name, metric_stdev))
+        print('standard deviation %s: %f (%f%%)' %
+              (metric_name, metric_stdev, (metric_stdev/metric_average*100)))
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         #

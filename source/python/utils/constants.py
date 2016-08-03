@@ -89,6 +89,7 @@ class Constants(object):
     FM_USE_1WAY_INTERACTIONS = int(_properties['fm_use_1way_interactions'])
     FM_ITERATIONS = _properties['fm_iterations']
     FM_INIT_STDEV = _properties['fm_init_stdev']
+    MAX_SAMPLE_TEST_SET = _properties['max_sample_test_set']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -184,6 +185,8 @@ class Constants(object):
             int(Constants._properties['fm_use_1way_interactions'])
         Constants.FM_ITERATIONS = Constants._properties['fm_iterations']
         Constants.FM_INIT_STDEV = Constants._properties['fm_init_stdev']
+        Constants.MAX_SAMPLE_TEST_SET =\
+            Constants._properties['max_sample_test_set']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
