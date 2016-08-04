@@ -5,7 +5,7 @@ topn_n: 10
 topn_num_items: 270
 random_seed: 0
 numpy_random_seed: 0
-num_cycles: 10
+num_cycles: 1
 lda_alpha: 0.0
 lda_beta: 1.0
 lda_epsilon: 0.05
@@ -14,11 +14,11 @@ lda_model_passes: 10
 lda_model_iterations: 500
 lda_multicore: False
 libfm_seed: 0
-cross_validation_num_folds: 5
+cross_validation_num_folds: 10
 use_context: True
 shuffle_data: True
 num_cores:
-cache_topic_model: True
+cache_topic_model: False
 text_sampling_proportion:
 # Possible values: Probability, binary, all_topics
 topic_weighting_method: probability
@@ -45,3 +45,11 @@ fm_use_1way_interactions: False
 fm_iterations: 100
 fm_init_stdev: 0.1
 max_sample_test_set:
+nested_cross_validation_cycle: 8
+# Possible values: nested_validate, nested_test, simple
+# Here the dataset is split into 3 sets, train, validate and test
+# nested_validate means that the train set is used to train data and validate
+# set to test
+# nested_test means that the train+validate sets are use to train data and test
+# set to test
+cross_validation_strategy: nested_test

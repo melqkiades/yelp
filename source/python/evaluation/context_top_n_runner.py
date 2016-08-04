@@ -599,11 +599,11 @@ class ContextTopNRunner(object):
         else:
             raise ValueError('Unrecognized evaluation metric')
 
-    def perform_cross_validation(self):
+    def perform_cross_validation(self, records):
 
         print(Constants._properties)
 
-        self.plant_seeds()
+        # self.plant_seeds()
 
         metric_list = []
         specific_metric_list = []
@@ -614,7 +614,7 @@ class ContextTopNRunner(object):
         total_iterations = num_cycles * num_folds
         split = 1 - (1/float(num_folds))
 
-        self.load()
+        # self.load()
 
         for i in range(num_cycles):
 
@@ -622,7 +622,7 @@ class ContextTopNRunner(object):
 
             if Constants.SHUFFLE_DATA:
                 self.shuffle()
-            self.records = copy.deepcopy(self.original_records)
+            self.records = copy.deepcopy(records)
 
             for j in range(num_folds):
 
@@ -682,6 +682,26 @@ class ContextTopNRunner(object):
 
         return results
 
+    def run(self):
+
+        self.plant_seeds()
+        self.load()
+
+        records = self.original_records
+
+        if Constants.CROSS_VALIDATION_STRATEGY == 'nested_validate':
+            num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+            cycle = Constants.NESTED_CROSS_VALIDATION_CYCLE
+            split = 1 - (1/float(num_folds))
+            cv_start = float(cycle) / num_folds
+            records, _ = ETLUtils.split_train_test(
+                self.original_records, split, cv_start)
+            self.perform_cross_validation(records)
+        elif Constants.CROSS_VALIDATION_STRATEGY == 'nested_test':
+            self.perform_cross_validation(records)
+        else:
+            raise ValueError('Unknown cross-validation strategy')
+
 
 def run_tests():
 
@@ -702,7 +722,7 @@ def run_tests():
 
 # start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
-# my_context_top_n_runner.perform_cross_validation()
+# my_context_top_n_runner.run()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)

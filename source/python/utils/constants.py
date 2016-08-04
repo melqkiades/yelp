@@ -90,6 +90,8 @@ class Constants(object):
     FM_ITERATIONS = _properties['fm_iterations']
     FM_INIT_STDEV = _properties['fm_init_stdev']
     MAX_SAMPLE_TEST_SET = _properties['max_sample_test_set']
+    NESTED_CROSS_VALIDATION_CYCLE = _properties['nested_cross_validation_cycle']
+    CROSS_VALIDATION_STRATEGY = _properties['cross_validation_strategy']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -187,6 +189,10 @@ class Constants(object):
         Constants.FM_INIT_STDEV = Constants._properties['fm_init_stdev']
         Constants.MAX_SAMPLE_TEST_SET =\
             Constants._properties['max_sample_test_set']
+        Constants.NESTED_CROSS_VALIDATION_CYCLE = \
+            Constants._properties['nested_cross_validation_cycle']
+        Constants.CROSS_VALIDATION_STRATEGY = \
+            Constants._properties['cross_validation_strategy']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
