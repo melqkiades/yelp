@@ -7,7 +7,8 @@ import subprocess
 __author__ = 'fpena'
 
 
-CODE_FOLDER = '/Users/fpena/UCC/Thesis/projects/yelp/source/python/'
+CODE_FOLDER = '/home/fpena/yelp/source/python/'
+# CODE_FOLDER = '/Users/fpena/UCC/Thesis/projects/yelp/source/python/'
 PROPERTIES_FILE = CODE_FOLDER + 'properties.yaml'
 
 
@@ -42,8 +43,10 @@ class Constants(object):
     FASTFM = 'fastfm'
 
     # Folders
-    DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
-    LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
+    DATASET_FOLDER = '/home/fpena/data/'
+    LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
+    # DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
+    # LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
     GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 
     _properties = load_properties()

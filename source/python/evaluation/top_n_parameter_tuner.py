@@ -44,19 +44,19 @@ def run_recommender(args):
     use_context = args['use_context']
 
     parameters = {
-        'fm_init_stdev': args['fm_init_stdev'],
+        # 'fm_init_stdev': args['fm_init_stdev'],
         'fm_iterations': int(args['fm_iterations']),
         'fm_num_factors': int(args['fm_num_factors']),
         'fm_use_1way_interactions': args['fm_use_1way_interactions'],
         'fm_use_bias': args['fm_use_bias'],
-        'lda_alpha': args['lda_alpha'],
-        'lda_beta': args['lda_beta'],
+        # 'lda_alpha': args['lda_alpha'],
+        # 'lda_beta': args['lda_beta'],
         'lda_epsilon': args['lda_epsilon'],
         'lda_model_iterations': int(args['lda_model_iterations']),
-        'lda_model_passes': int(args['lda_model_passes']),
+        # 'lda_model_passes': int(args['lda_model_passes']),
         'lda_num_topics': int(args['lda_num_topics']),
-        'topic_weighting_method': args['topic_weighting_method'],
-        'use_no_context_topics_sum': args['use_no_context_topics_sum'],
+        # 'topic_weighting_method': args['topic_weighting_method'],
+        # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
         'use_context': use_context
     }
 
@@ -67,7 +67,7 @@ def run_recommender(args):
     # Finish updating parameters
 
     my_context_top_n_runner = ContextTopNRunner()
-    results = my_context_top_n_runner.perform_cross_validation()
+    results = my_context_top_n_runner.run()
     results['loss'] = -results[Constants.EVALUATION_METRIC]
     results['status'] = 'ok'
 
@@ -80,15 +80,16 @@ def tune_parameters():
 
     # trials = Trials()
     from utils.constants import Constants
+
+    context_name = '_context' if Constants.USE_CONTEXT else '_nocontext'
+    cycle = '_' + str(Constants.NESTED_CROSS_VALIDATION_CYCLE)
+
     mongo_url =\
-        'mongo://localhost:1234/' + Constants.ITEM_TYPE + '_context_db_full/jobs'
+        'mongo://localhost:1234/' +\
+        Constants.ITEM_TYPE + context_name + '_db_nested' + cycle + '/jobs'
     trials = MongoTrials(mongo_url, exp_key='exp1')
 
-    # space = \
-        # [
-        # hp.choice('nocontext_num_factors', fibonacci(13)[1:]),
-        # hp.quniform('nocontext_iterations', 50, 500, 50)
-    # ]
+    print('Connected to %s' % mongo_url)
 
     space =\
         hp.choice('use_context', [
@@ -98,22 +99,29 @@ def tune_parameters():
         #         'fm_iterations': hp.quniform('nocontext_iterations', 50, 500, 50)
         #     },
             {
-                'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
-                'fm_iterations': hp.quniform('fm_context_iterations', 50, 500, 1),
-                'fm_num_factors': hp.choice('fm_context_num_factors', fibonacci(13)[1:]),
+                # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
+                'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
+                'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 50, 1),
                 'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
                 'fm_use_bias': hp.choice('use_bias', [True, False]),
-                'lda_alpha': hp.uniform('lda_alpha', 0, 1),
-                'lda_beta': hp.uniform('lda_beta', 0, 2),
-                'lda_epsilon': hp.uniform('lda_epsilon', 0, 1),
+                # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
+                # 'lda_beta': hp.uniform('lda_beta', 0, 2),
+                'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
                 'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
-                'lda_model_passes': hp.quniform('lda_model_passes', 1, 10, 1),
-                'lda_num_topics': hp.quniform('lda_num_topics', 5, 600, 1),
-                'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
-                'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
+                # 'lda_model_passes': hp.quniform('lda_model_passes', 1, 10, 1),
+                'lda_num_topics': hp.quniform('lda_num_topics', 1, 600, 1),
+                # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
+                # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
                 'use_context': True
             },
         ])
+
+    if not Constants.USE_CONTEXT:
+        space = [
+            hp.choice('nocontext_num_factors',
+                      hp.quniform('fm_context_num_factors', 0, 50, 1)),
+            hp.quniform('nocontext_iterations', 50, 500, 50)
+        ]
 
     best = fmin(
         run_recommender, space=space, algo=tpe.suggest,

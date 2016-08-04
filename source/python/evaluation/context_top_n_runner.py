@@ -9,9 +9,9 @@ import cPickle as pickle
 import uuid
 import gc
 import numpy
-from fastFM import als
-from fastFM import mcmc
-from fastFM import sgd
+# from fastFM import als
+# from fastFM import mcmc
+# from fastFM import sgd
 from gensim import corpora
 from sklearn.preprocessing import OneHotEncoder
 
@@ -20,7 +20,7 @@ from etl import libfm_converter
 from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
-from recommenders import fastfm_recommender
+# from recommenders import fastfm_recommender
 from topicmodeling.context import topic_model_analyzer
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.lda_based_context import LdaBasedContext
@@ -258,8 +258,13 @@ class ContextTopNRunner(object):
 
         if Constants.MAX_SAMPLE_TEST_SET is not None:
             print('important_records %d' % len(self.important_records))
-            self.important_records = random.sample(
-                self.important_records, Constants.MAX_SAMPLE_TEST_SET)
+            if len(self.important_records) > Constants.MAX_SAMPLE_TEST_SET:
+                self.important_records = random.sample(
+                    self.important_records, Constants.MAX_SAMPLE_TEST_SET)
+            else:
+                message = 'WARNING max_sample_test_set is greater than the ' \
+                          'number of important records'
+                print(message)
 
         self.top_n_evaluator.important_records = self.important_records
         self.records_to_predict = self.top_n_evaluator.get_records_to_predict()
