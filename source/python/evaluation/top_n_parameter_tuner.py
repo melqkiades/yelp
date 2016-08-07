@@ -41,27 +41,34 @@ def run_recommender(args):
     print('\n\n************************\n************************\n')
     print('args', args)
 
-    use_context = args['use_context']
-
-    parameters = {
-        # 'fm_init_stdev': args['fm_init_stdev'],
-        'fm_iterations': int(args['fm_iterations']),
-        'fm_num_factors': int(args['fm_num_factors']),
-        'fm_use_1way_interactions': args['fm_use_1way_interactions'],
-        'fm_use_bias': args['fm_use_bias'],
-        # 'lda_alpha': args['lda_alpha'],
-        # 'lda_beta': args['lda_beta'],
-        'lda_epsilon': args['lda_epsilon'],
-        'lda_model_iterations': int(args['lda_model_iterations']),
-        # 'lda_model_passes': int(args['lda_model_passes']),
-        'lda_num_topics': int(args['lda_num_topics']),
-        # 'topic_weighting_method': args['topic_weighting_method'],
-        # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
-        'use_context': use_context
-    }
-
-    # if use_context:
-    #     parameters.update({'lda_num_topics': args['lda_num_topics']})
+    if Constants.USE_CONTEXT:
+        parameters = {
+            'business_type': args['business_type'],
+            # 'fm_init_stdev': args['fm_init_stdev'],
+            'fm_iterations': int(args['fm_iterations']),
+            'fm_num_factors': int(args['fm_num_factors']),
+            'fm_use_1way_interactions': args['fm_use_1way_interactions'],
+            'fm_use_bias': args['fm_use_bias'],
+            # 'lda_alpha': args['lda_alpha'],
+            # 'lda_beta': args['lda_beta'],
+            'lda_epsilon': args['lda_epsilon'],
+            'lda_model_iterations': int(args['lda_model_iterations']),
+            # 'lda_model_passes': int(args['lda_model_passes']),
+            'lda_num_topics': int(args['lda_num_topics']),
+            # 'topic_weighting_method': args['topic_weighting_method'],
+            # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
+            'use_context': args['use_context']
+        }
+    else:
+        parameters = {
+            'business_type': args['business_type'],
+            # 'fm_init_stdev': args['fm_init_stdev'],
+            'fm_iterations': int(args['fm_iterations']),
+            'fm_num_factors': int(args['fm_num_factors']),
+            'fm_use_1way_interactions': args['fm_use_1way_interactions'],
+            'fm_use_bias': args['fm_use_bias'],
+            'use_context': args['use_context']
+        }
 
     Constants.update_properties(parameters)
     # Finish updating parameters
@@ -93,12 +100,8 @@ def tune_parameters():
 
     space =\
         hp.choice('use_context', [
-        #     {
-        #         'use_context': False,
-        #         'fm_num_factors': hp.choice('nocontext_num_factors', fibonacci(13)[1:]),
-        #         'fm_iterations': hp.quniform('nocontext_iterations', 50, 500, 50)
-        #     },
             {
+                'business_type': Constants.ITEM_TYPE,
                 # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
                 'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
                 'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 50, 1),
@@ -109,7 +112,7 @@ def tune_parameters():
                 'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
                 'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
                 # 'lda_model_passes': hp.quniform('lda_model_passes', 1, 10, 1),
-                'lda_num_topics': hp.quniform('lda_num_topics', 1, 600, 1),
+                'lda_num_topics': hp.quniform('lda_num_topics', 1, 300, 1),
                 # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
                 # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
                 'use_context': True
@@ -117,11 +120,21 @@ def tune_parameters():
         ])
 
     if not Constants.USE_CONTEXT:
-        space = [
-            hp.choice('nocontext_num_factors',
-                      hp.quniform('fm_context_num_factors', 0, 50, 1)),
-            hp.quniform('nocontext_iterations', 50, 500, 50)
-        ]
+        space = \
+            hp.choice('no_context', [
+                {
+                    'business_type': Constants.ITEM_TYPE,
+                    # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
+                    'fm_iterations': hp.quniform('fm_context_iterations', 100,
+                                                 500, 1),
+                    'fm_num_factors': hp.quniform('fm_context_num_factors', 0,
+                                                  50, 1),
+                    'fm_use_1way_interactions': hp.choice(
+                        'fm_use_1way_interactions', [True, False]),
+                    'fm_use_bias': hp.choice('use_bias', [True, False]),
+                    'use_context': False
+                },
+            ])
 
     best = fmin(
         run_recommender, space=space, algo=tpe.suggest,
@@ -132,66 +145,14 @@ def tune_parameters():
     # for trial in trials:
     #     # print(trial)
     #     print(trial['misc']['vals'], trial['result']['loss'])
-    print('best', best, min(trials.losses()))
+    print('losses', trials.losses())
+    print(
+        'best', trials.best_trial['result'], trials.best_trial['misc']['vals'])
     #
     # trials_path = os.path.expanduser('~/tmp/trials-context-2.pkl')
     # with open(trials_path, 'wb') as write_file:
     #     pickle.dump(trials, write_file, pickle.HIGHEST_PROTOCOL)
 
-
-def plot_trials():
-    trials_path = os.path.expanduser('~/tmp/trials.pkl')
-    with open(trials_path, 'rb') as read_file:
-        trials = pickle.load(read_file)
-
-    f, ax = plt.subplots(1)
-
-    num_factors_list = []
-    num_iterations_list = []
-    ys = []
-    metric_name = 'recall'
-    for trial in trials.trials:
-        values = trial['misc']['vals']
-        print('values', values)
-
-        metric = -trial['result']['loss']
-        # print('num_factors', num_factors)
-        # print('num_iterations', num_iterations)
-        # print('loss', loss)
-        num_factors = values['fm_num_factors'][0]
-        num_iterations = values['fm_iterations'][0]
-        num_factors_list.append(num_factors)
-        num_iterations_list.append(num_iterations)
-        ys.append(metric)
-
-    normalized_ys = [float(i) / max(ys) for i in ys]
-
-    ax.scatter(num_factors_list, ys, s=20, linewidth=0.01, alpha=0.75)
-    ax.set_title('No context $' + metric_name + '$ $vs$ $factors$ ', fontsize=18)
-    ax.set_xlabel('$factors$', fontsize=16)
-    ax.set_ylabel('$' + metric_name + '$', fontsize=16)
-
-    num_factors_figure = os.path.expanduser('~/tmp/trials_num_factors.pdf')
-    # plt.show()
-    # plt.savefig(num_factors_figure)
-
-    f, ax = plt.subplots(1)
-    ax.scatter(num_iterations_list, ys, s=20, linewidth=0.01, alpha=0.75)
-    ax.set_title('No context $' + metric_name + '$ $vs$ $iterations$ ', fontsize=18)
-    ax.set_xlabel('$iterations$', fontsize=16)
-    ax.set_ylabel('$' + metric_name + '$', fontsize=16)
-
-    num_iterations_figure = os.path.expanduser('~/tmp/trials_num_iterations.pdf')
-
-    f, ax = plt.subplots(1)
-    ax.scatter(num_iterations_list, num_factors_list, c=normalized_ys, cmap='plasma', s=20, linewidth=0.01, alpha=0.75)
-    ax.set_title('No context $' + metric_name + '$ $vs$ $iterations$ ', fontsize=18)
-    ax.set_xlabel('$iterations$', fontsize=16)
-    ax.set_ylabel('$' + metric_name + '$', fontsize=16)
-
-    print('best', trials.best_trial['misc']['vals'], min(trials.losses()))
-
-    plt.show()
 
 start = time.time()
 tune_parameters()

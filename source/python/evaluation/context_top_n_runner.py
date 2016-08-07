@@ -13,11 +13,9 @@ import numpy
 # from fastFM import mcmc
 # from fastFM import sgd
 from gensim import corpora
-from sklearn.preprocessing import OneHotEncoder
 
 from etl import ETLUtils
 from etl import libfm_converter
-from evaluation import parameter_combinator
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
 # from recommenders import fastfm_recommender
@@ -424,11 +422,11 @@ class ContextTopNRunner(object):
 
         self.headers = build_headers(self.context_rich_topics)
 
-        if Constants.REVIEW_TYPE == Constants.SPECIFIC or \
-                Constants.REVIEW_TYPE == Constants.GENERIC:
+        if Constants.FM_REVIEW_TYPE == Constants.SPECIFIC or \
+                Constants.FM_REVIEW_TYPE == Constants.GENERIC:
             self.train_records = ETLUtils.filter_records(
                 self.train_records, Constants.PREDICTED_CLASS_FIELD,
-                [Constants.REVIEW_TYPE])
+                [Constants.FM_REVIEW_TYPE])
 
         with open(self.csv_train_file, 'w') as out_file:
             writer = csv.writer(out_file)
@@ -499,37 +497,37 @@ class ContextTopNRunner(object):
 
         print('Exported LibFM files: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    def predict_fastfm(self):
-
-        if Constants.USE_CONTEXT:
-            for record in self.records_to_predict:
-                important_record = record[Constants.REVIEW_ID_FIELD]
-                record[Constants.CONTEXT_TOPICS_FIELD] = \
-                    self.context_topics_map[important_record]
-
-        all_records = self.train_records + self.records_to_predict
-        x_matrix, y_vector = fastfm_recommender.records_to_matrix(
-            all_records, self.context_rich_topics)
-
-        encoder = OneHotEncoder(categorical_features=[0, 1], sparse=True)
-        encoder.fit(x_matrix)
-
-        x_train = encoder.transform(x_matrix[:len(self.train_records)])
-        y_train = y_vector[:len(self.train_records)]
-        x_test = encoder.transform(x_matrix[len(self.train_records):])
-
-        if Constants.FASTFM_METHOD == 'mcmc':
-            # solver = mcmc.FMRegression(n_iter=num_iters, rank=num_factors)
-            solver = mcmc.FMRegression(rank=Constants.FM_NUM_FACTORS)
-            self.predictions = solver.fit_predict(x_train, y_train, x_test)
-        elif Constants.FASTFM_METHOD == 'als':
-            solver = als.FMRegression(rank=Constants.FM_NUM_FACTORS)
-            solver.fit(x_train, y_train)
-            self.predictions = solver.predict(x_test)
-        elif Constants.FASTFM_METHOD == 'sgd':
-            solver = sgd.FMRegression(rank=Constants.FM_NUM_FACTORS)
-            solver.fit(x_train, y_train)
-            self.predictions = solver.predict(x_test)
+    # def predict_fastfm(self):
+    #
+    #     if Constants.USE_CONTEXT:
+    #         for record in self.records_to_predict:
+    #             important_record = record[Constants.REVIEW_ID_FIELD]
+    #             record[Constants.CONTEXT_TOPICS_FIELD] = \
+    #                 self.context_topics_map[important_record]
+    #
+    #     all_records = self.train_records + self.records_to_predict
+    #     x_matrix, y_vector = fastfm_recommender.records_to_matrix(
+    #         all_records, self.context_rich_topics)
+    #
+    #     encoder = OneHotEncoder(categorical_features=[0, 1], sparse=True)
+    #     encoder.fit(x_matrix)
+    #
+    #     x_train = encoder.transform(x_matrix[:len(self.train_records)])
+    #     y_train = y_vector[:len(self.train_records)]
+    #     x_test = encoder.transform(x_matrix[len(self.train_records):])
+    #
+    #     if Constants.FASTFM_METHOD == 'mcmc':
+    #         # solver = mcmc.FMRegression(n_iter=num_iters, rank=num_factors)
+    #         solver = mcmc.FMRegression(rank=Constants.FM_NUM_FACTORS)
+    #         self.predictions = solver.fit_predict(x_train, y_train, x_test)
+    #     elif Constants.FASTFM_METHOD == 'als':
+    #         solver = als.FMRegression(rank=Constants.FM_NUM_FACTORS)
+    #         solver.fit(x_train, y_train)
+    #         self.predictions = solver.predict(x_test)
+    #     elif Constants.FASTFM_METHOD == 'sgd':
+    #         solver = sgd.FMRegression(rank=Constants.FM_NUM_FACTORS)
+    #         solver.fit(x_train, y_train)
+    #         self.predictions = solver.predict(x_test)
 
     def predict_libfm(self):
         print('predict: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -544,8 +542,8 @@ class ContextTopNRunner(object):
         if Constants.SOLVER == Constants.LIBFM:
             self.prepare_records_for_libfm()
             self.predict_libfm()
-        elif Constants.SOLVER == Constants.FASTFM:
-            self.predict_fastfm()
+        # elif Constants.SOLVER == Constants.FASTFM:
+        #     self.predict_fastfm()
 
     def evaluate_topn(self):
         print('evaluate_topn: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -701,28 +699,11 @@ class ContextTopNRunner(object):
             cv_start = float(cycle) / num_folds
             records, _ = ETLUtils.split_train_test(
                 self.original_records, split, cv_start)
-            self.perform_cross_validation(records)
+            return self.perform_cross_validation(records)
         elif Constants.CROSS_VALIDATION_STRATEGY == 'nested_test':
-            self.perform_cross_validation(records)
+            return self.perform_cross_validation(records)
         else:
             raise ValueError('Unknown cross-validation strategy')
-
-
-def run_tests():
-
-    combined_parameters = parameter_combinator.hotel_context_parameters()
-
-    test_cycle = 1
-    num_tests = len(combined_parameters)
-    for properties in combined_parameters:
-        Constants.update_properties(properties)
-        context_top_n_runner = ContextTopNRunner()
-
-        print('\n\n******************\nTest %d/%d\n******************\n' %
-              (test_cycle, num_tests))
-
-        context_top_n_runner.perform_cross_validation()
-        test_cycle += 1
 
 
 # start = time.time()

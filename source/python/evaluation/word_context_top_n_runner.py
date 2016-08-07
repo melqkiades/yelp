@@ -274,10 +274,10 @@ class WordContextTopNRunner(object):
             for record in self.records_to_predict:
                 record.update(record[Constants.CONTEXT_WORDS_FIELD])
 
-            if Constants.REVIEW_TYPE:
+            if Constants.FM_REVIEW_TYPE:
                 self.train_records = ETLUtils.filter_records(
                     self.train_records, Constants.PREDICTED_CLASS_FIELD,
-                    [Constants.REVIEW_TYPE])
+                    [Constants.FM_REVIEW_TYPE])
 
             # ETLUtils.drop_fields([Constants.TOPICS_FIELD], self.train_records)
 

@@ -6,7 +6,6 @@ import traceback
 from multiprocessing import Pool
 import cPickle as pickle
 
-import itertools
 import numpy
 from os.path import expanduser
 
@@ -27,12 +26,13 @@ def get_topic_model_file_path(cycle_index, fold_index):
         '_iterations:' + str(Constants.LDA_MODEL_ITERATIONS) +\
         '_passes:' + str(Constants.LDA_MODEL_PASSES) +\
         '_bow:' + str(Constants.BOW_TYPE) +\
+        '_reviewtype:' + str(Constants.LDA_REVIEW_TYPE) +\
         '_document_level:' + str(Constants.DOCUMENT_LEVEL) +\
         '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
-def create_topic_model(records, cycle_index, fold_index):
+def create_topic_model(records, cycle_index, fold_index, check_exists=True):
 
     print('%s: Create topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -40,7 +40,7 @@ def create_topic_model(records, cycle_index, fold_index):
 
     print(topic_model_file_path)
 
-    if os.path.exists(topic_model_file_path):
+    if check_exists and os.path.exists(topic_model_file_path):
         print('topic model already exists')
         return
 
@@ -48,6 +48,8 @@ def create_topic_model(records, cycle_index, fold_index):
 
     with open(topic_model_file_path, 'wb') as write_file:
         pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
+
+    return topic_model
 
 
 def plant_seeds():
@@ -80,7 +82,7 @@ def load_topic_model(cycle_index, fold_index):
     return topic_model
 
 
-def create_single_topic_model(cycle_index, fold_index):
+def create_single_topic_model(cycle_index, fold_index, check_exists=True):
 
     print(Constants._properties)
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -99,7 +101,7 @@ def create_single_topic_model(cycle_index, fold_index):
     cv_start = float(fold_index) / num_folds
     train_records, test_records = \
         ETLUtils.split_train_test(records, split=split, start=cv_start)
-    create_topic_model(train_records, cycle_index, fold_index)
+    return create_topic_model(train_records, cycle_index, fold_index, check_exists)
 
 
 def create_topic_models():

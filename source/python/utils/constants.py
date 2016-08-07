@@ -39,6 +39,7 @@ class Constants(object):
     SPECIFIC = 'specific'
     GENERIC = 'generic'
     ALL_TOPICS = 'all_topics'
+    ALL_REVIEWS = 'all_reviews'
     LIBFM = 'libfm'
     FASTFM = 'fastfm'
 
@@ -51,7 +52,8 @@ class Constants(object):
 
     _properties = load_properties()
     ITEM_TYPE = _properties['business_type']
-    REVIEW_TYPE = _properties['review_type']
+    FM_REVIEW_TYPE = _properties['fm_review_type']
+    LDA_REVIEW_TYPE = _properties['lda_review_type']
     TOPN_N = _properties['topn_n']
     TOPN_NUM_ITEMS = _properties['topn_num_items']
     RANDOM_SEED = _properties['random_seed']
@@ -137,7 +139,8 @@ class Constants(object):
         Constants._properties.update(new_properties)
 
         Constants.ITEM_TYPE = Constants._properties['business_type']
-        Constants.REVIEW_TYPE = Constants._properties['review_type']
+        Constants.FM_REVIEW_TYPE = Constants._properties['fm_review_type']
+        Constants.LDA_REVIEW_TYPE = Constants._properties['lda_review_type']
         Constants.TOPN_N = Constants._properties['topn_n']
         Constants.TOPN_NUM_ITEMS = Constants._properties['topn_num_items']
         Constants.RANDOM_SEED = Constants._properties['random_seed']
@@ -202,6 +205,26 @@ class Constants(object):
         Constants.RECORDS_FILE =\
             Constants.DATASET_FOLDER + 'yelp_training_set_review_' +\
             Constants.ITEM_TYPE + 's_shuffled_tagged.json'
+        Constants.CLASSIFIED_RECORDS_FILE = Constants.DATASET_FOLDER + \
+            'classified_' + Constants.ITEM_TYPE + '_reviews' +\
+            ('' if Constants.DOCUMENT_LEVEL == 'review' else '_sentences') + \
+            '.json'
+        Constants.PROCESSED_RECORDS_FILE = \
+            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
+            '_processed_reviews' + \
+            ('' if Constants.BOW_TYPE is None else '_' + Constants.BOW_TYPE) + \
+            '_' + str(Constants.DOCUMENT_LEVEL) + '.json'
+        Constants.FULL_PROCESSED_RECORDS_FILE = \
+            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
+            '_full_processed_reviews' + \
+            ('' if Constants.BOW_TYPE is None else '_' + Constants.BOW_TYPE) + \
+            '_' + str(Constants.DOCUMENT_LEVEL) + '.json'
+        Constants.DICTIONARY_FILE = Constants.CACHE_FOLDER + \
+            Constants.ITEM_TYPE + '_dictionary' + \
+            ('' if Constants.BOW_TYPE is None else '_' + Constants.BOW_TYPE) + \
+            '_' + str(Constants.DOCUMENT_LEVEL) + '.pkl'
+        Constants.REVIEWS_FILE = Constants.DATASET_FOLDER + 'reviews_' + \
+            Constants.ITEM_TYPE + '_shuffled.pkl'
         Constants.CSV_RESULTS_FILE = Constants.DATASET_FOLDER + \
             Constants.ITEM_TYPE + '_results.csv'
         Constants.JSON_RESULTS_FILE = Constants.DATASET_FOLDER + \
