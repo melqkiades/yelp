@@ -1,6 +1,4 @@
-import os
 import time
-import dill as pickle
 
 from hyperopt import fmin
 from hyperopt import hp
@@ -9,7 +7,6 @@ from hyperopt.mongoexp import MongoTrials
 
 import matplotlib
 matplotlib.rcParams['backend'] = "Qt4Agg"
-import matplotlib.pyplot as plt
 
 
 def fibonacci(n):
@@ -53,7 +50,7 @@ def run_recommender(args):
             # 'lda_beta': args['lda_beta'],
             'lda_epsilon': args['lda_epsilon'],
             'lda_model_iterations': int(args['lda_model_iterations']),
-            # 'lda_model_passes': int(args['lda_model_passes']),
+            'lda_model_passes': int(args['lda_model_passes']),
             'lda_num_topics': int(args['lda_num_topics']),
             # 'topic_weighting_method': args['topic_weighting_method'],
             # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
@@ -111,8 +108,8 @@ def tune_parameters():
                 # 'lda_beta': hp.uniform('lda_beta', 0, 2),
                 'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
                 'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
-                # 'lda_model_passes': hp.quniform('lda_model_passes', 1, 10, 1),
-                'lda_num_topics': hp.quniform('lda_num_topics', 1, 300, 1),
+                'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
+                'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
                 # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
                 # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
                 'use_context': True
@@ -138,7 +135,7 @@ def tune_parameters():
 
     best = fmin(
         run_recommender, space=space, algo=tpe.suggest,
-        max_evals=100, trials=trials)
+        max_evals=1000, trials=trials)
 
     # print('\n\n')
     #
