@@ -1,4 +1,7 @@
 import copy
+import csv
+import json
+import os
 import time
 
 import itertools
@@ -109,6 +112,12 @@ all_context_words = {
     'restaurant': restaurant_context_words
 }
 
+base_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
+                Constants.ITEM_TYPE
+csv_file_name = base_file_name + '.csv'
+json_file_name = base_file_name + '.json'
+
+print(csv_file_name)
 
 
 def load_topic_model(cycle_index, fold_index):
@@ -140,7 +149,8 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
 
     Constants.update_properties(new_properties)
 
-    lda_based_context = load_topic_model(cycle_index, fold_index)
+    # lda_based_context = load_topic_model(cycle_index, fold_index)
+    lda_based_context = topic_model_creator.create_single_topic_model(cycle_index, fold_index, False)
 
     file_name = Constants.DATASET_FOLDER + 'all_reviews_topic_model_' + \
         Constants.ITEM_TYPE + '_' + \
@@ -189,8 +199,11 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
         results.append(result)
     topic_model_score = analyze_topics(results, lda_based_context)
 
-    generate_excel_file(results)
+    # generate_excel_file(results)
     # ETLUtils.save_csv_file(file_name, results, headers)
+
+    write_results_to_csv(csv_file_name, topic_model_score)
+    write_results_to_json(json_file_name, topic_model_score)
 
     return topic_model_score
 
@@ -242,9 +255,9 @@ def analyze_topics(topic_data, lda_based_context):
     scores = {}
     num_topics = Constants.LDA_NUM_TOPICS
     scores['num_topics'] = num_topics
-    all_ratio_mean_score = data_frame[
+    topic_model_score = data_frame[
         data_frame.weighted_frequency > Constants.LDA_ALPHA]['score'].mean()
-    scores['all_ratio_mean_score'] = all_ratio_mean_score
+    scores['topic_model_score'] = topic_model_score
     high_ratio_mean_score = data_frame[(data_frame.ratio > 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
     low_ratio_mean_score = data_frame[(data_frame.ratio < 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
     # scores['all_ratio_count'] = data_frame[data_frame.score > 0.1]['topic_id'].count()
@@ -258,6 +271,10 @@ def analyze_topics(topic_data, lda_based_context):
     scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
     scores['alpha'] = Constants.LDA_ALPHA
     scores['epsilon'] = Constants.LDA_EPSILON
+    scores['lda_review_type'] = Constants.LDA_REVIEW_TYPE
+    scores['lda_model_passes'] = Constants.LDA_MODEL_PASSES
+    scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
+    scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
 
     high_ratio_count2 = float(
         data_frame[(data_frame.ratio > 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].count())
@@ -269,21 +286,21 @@ def analyze_topics(topic_data, lda_based_context):
         (weighted_high_ratio_count / weighted_low_ratio_count)\
         if weighted_low_ratio_count != 0\
         else 'N/A'
-    scores['weighted_ratio_count'] = weighted_ratio_count
-    score_ratio =\
+    # scores['weighted_ratio_count'] = weighted_ratio_count
+    separation_score =\
         (high_ratio_mean_score / low_ratio_mean_score)\
         if low_ratio_mean_score != 0\
         else 'N/A'
-    scores['score_ratio'] = score_ratio
+    scores['separation_score'] = separation_score
     scores['combined_score'] =\
-        (all_ratio_mean_score * score_ratio * num_context_topics / num_topics)\
-        if all_ratio_mean_score != 'N/A' and score_ratio != 'N/A'\
+        (topic_model_score * separation_score)\
+        if topic_model_score != 'N/A' and separation_score != 'N/A'\
         else 'N/A'
 
     results = copy.deepcopy(Constants._properties)
     results.update(scores)
 
-    print('all mean score: %f' % scores['all_ratio_mean_score'])
+    print('topic model score: %f' % scores['topic_model_score'])
     # print('greater than 1.0 mean score: %f' % scores['high_ratio_mean_score'])
     # print('lower than 1.0 mean score: %f' % scores['low_ratio_mean_score'])
     # print('all ratio count: %f' % scores['all_ratio_count'])
@@ -291,8 +308,8 @@ def analyze_topics(topic_data, lda_based_context):
     # print('lower than 1.0 count: %f' % scores['low_ratio_count'])
     # print('weighted greater than 1.0 count: %f' % scores['weighted_high_ratio_count'])
     # print('weighted lower than 1.0 count: %f' % scores['weighted_low_ratio_count'])
-    print('weighted ratio:', scores['weighted_ratio_count'])
-    print('score ratio:', scores['score_ratio'])
+    # print('weighted ratio:', scores['weighted_ratio_count'])
+    print('separation score:', scores['separation_score'])
     print('combined score:', scores['combined_score'])
 
     # write_results(results)
@@ -412,40 +429,69 @@ def generate_excel_file(records):
 
 
 def main():
+
     # export_topics(0, 0)
-    topic_model_scores = []
-    epsilon_list = [0.001, 0.005, 0.01, 0.03, 0.05, 0.07, 0.1, 0.35, 0.5]
-    # epsilon_list = [0.01]
+    # epsilon_list = [0.001, 0.005, 0.01, 0.03, 0.05, 0.07, 0.1, 0.35, 0.5]
+    epsilon_list = [0.05]
     alpha_list = [0.0]
-    num_topics_list = [30, 50, 75, 100, 150, 300]
-    # # num_topics_list = [150]
+    num_topics_list = [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
+    # num_topics_list = [300]
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
     # topic_weighting_methods = ['binary', 'probability']
     topic_weighting_methods = ['probability']
+    # review_type_list = ['specific', 'generic', 'all_reviews']
+    review_type_list = ['specific']
+    lda_passes_list = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    # lda_passes_list = [1]
+    # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
+    lda_iterations_list = [50]
     num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
-                 len(document_level_list) * len(topic_weighting_methods)
+                 len(document_level_list) * len(topic_weighting_methods) *\
+                 len(review_type_list) * len(lda_passes_list) * len(lda_iterations_list)
     cycle_index = 1
-    for epsilon, alpha, num_topics, document_level, topic_weighting_method in itertools.product(
-            epsilon_list, alpha_list, num_topics_list, document_level_list, topic_weighting_methods):
+    for epsilon, alpha, num_topics, document_level, topic_weighting_method, review_type, lda_passes, lda_iterations in itertools.product(
+            epsilon_list, alpha_list, num_topics_list, document_level_list, topic_weighting_methods, review_type_list, lda_passes_list, lda_iterations_list):
         print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
         new_dict = {
             'lda_num_topics': num_topics,
             'document_level': document_level,
             'topic_weighting_method': topic_weighting_method,
             'lda_alpha': alpha,
-            'lda_epsilon': epsilon
+            'lda_epsilon': epsilon,
+            'lda_review_type': review_type,
+            'lda_model_passes': lda_passes,
+            'lda_model_iterations': lda_iterations
         }
         Constants.update_properties(new_dict)
         topic_model_score = export_topics(0, 0)
-        topic_model_scores.append(topic_model_score)
         cycle_index += 1
     #
-    csv_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
-                    Constants.ITEM_TYPE + \
-                    '.csv'
-    print(csv_file_name)
-    ETLUtils.save_csv_file(csv_file_name, topic_model_scores, topic_model_scores[0].keys())
+
+    # ETLUtils.save_csv_file(csv_file_name, topic_model_scores, topic_model_scores[0].keys())
+
+
+def write_results_to_csv(file_name, results):
+    if not os.path.exists(file_name):
+        with open(file_name, 'w') as f:
+            w = csv.DictWriter(f, results.keys())
+            w.writeheader()
+            w.writerow(results)
+    else:
+        with open(file_name, 'a') as f:
+            w = csv.DictWriter(f, results.keys())
+            w.writerow(results)
+
+
+def write_results_to_json(file_name, results):
+    if not os.path.exists(file_name):
+        with open(file_name, 'w') as f:
+            json.dump(results, f)
+            f.write('\n')
+    else:
+        with open(file_name, 'a') as f:
+            json.dump(results, f)
+            f.write('\n')
 
 
 # start = time.time()

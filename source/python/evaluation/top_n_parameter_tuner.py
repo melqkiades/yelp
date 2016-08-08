@@ -5,8 +5,6 @@ from hyperopt import hp
 from hyperopt import tpe
 from hyperopt.mongoexp import MongoTrials
 
-import matplotlib
-matplotlib.rcParams['backend'] = "Qt4Agg"
 
 
 def fibonacci(n):
@@ -142,9 +140,10 @@ def tune_parameters():
     # for trial in trials:
     #     # print(trial)
     #     print(trial['misc']['vals'], trial['result']['loss'])
-    print('losses', trials.losses())
+    print('losses', sorted(trials.losses()))
     print(
         'best', trials.best_trial['result'], trials.best_trial['misc']['vals'])
+    print('num trials: %d' % len(trials.losses()))
     #
     # trials_path = os.path.expanduser('~/tmp/trials-context-2.pkl')
     # with open(trials_path, 'wb') as write_file:
