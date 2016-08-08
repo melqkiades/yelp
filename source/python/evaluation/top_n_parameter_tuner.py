@@ -39,6 +39,7 @@ def run_recommender(args):
     if Constants.USE_CONTEXT:
         parameters = {
             'business_type': args['business_type'],
+            'topn_num_items': args['topn_num_items'],
             # 'fm_init_stdev': args['fm_init_stdev'],
             'fm_iterations': int(args['fm_iterations']),
             'fm_num_factors': int(args['fm_num_factors']),
@@ -57,6 +58,7 @@ def run_recommender(args):
     else:
         parameters = {
             'business_type': args['business_type'],
+            'topn_num_items': args['topn_num_items'],
             # 'fm_init_stdev': args['fm_init_stdev'],
             'fm_iterations': int(args['fm_iterations']),
             'fm_num_factors': int(args['fm_num_factors']),
@@ -97,9 +99,10 @@ def tune_parameters():
         hp.choice('use_context', [
             {
                 'business_type': Constants.ITEM_TYPE,
+                'topn_num_items': Constants.TOPN_NUM_ITEMS,
                 # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
                 'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
-                'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 50, 1),
+                'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 200, 1),
                 'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
                 'fm_use_bias': hp.choice('use_bias', [True, False]),
                 # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
@@ -119,6 +122,7 @@ def tune_parameters():
             hp.choice('no_context', [
                 {
                     'business_type': Constants.ITEM_TYPE,
+                    'topn_num_items': Constants.TOPN_NUM_ITEMS,
                     # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
                     'fm_iterations': hp.quniform('fm_context_iterations', 100,
                                                  500, 1),

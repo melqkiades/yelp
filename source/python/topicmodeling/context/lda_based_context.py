@@ -146,6 +146,8 @@ class LdaBasedContext:
                 lower_than_alpha_count += 1.0
 
             if generic_weighted_frq == 0:
+                # We can't know if the topic is good or not
+                non_contextual_topics.add(topic)
                 ratio = 'N/A'
                 # non_contextual_topics.add(topic)
             else:

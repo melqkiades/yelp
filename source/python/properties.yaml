@@ -1,9 +1,9 @@
 # Properties for the recommender system
-business_type: restaurant
+business_type: hotel
 fm_review_type:
 lda_review_type: specific
 topn_n: 10
-topn_num_items: 45
+topn_num_items: 270
 random_seed: 0
 numpy_random_seed: 0
 num_cycles: 1
