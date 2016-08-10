@@ -53,4 +53,4 @@ nested_cross_validation_cycle: 0
 # set to test
 # nested_test means that the train+validate sets are use to train data and test
 # set to test
-cross_validation_strategy: nested_test
+cross_validation_strategy: nested_validate

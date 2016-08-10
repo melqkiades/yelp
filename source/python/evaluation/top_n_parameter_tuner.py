@@ -6,7 +6,6 @@ from hyperopt import tpe
 from hyperopt.mongoexp import MongoTrials
 
 
-
 def fibonacci(n):
 
     a = 1
@@ -36,36 +35,30 @@ def run_recommender(args):
     print('\n\n************************\n************************\n')
     print('args', args)
 
-    if Constants.USE_CONTEXT:
-        parameters = {
-            'business_type': args['business_type'],
-            'topn_num_items': args['topn_num_items'],
-            # 'fm_init_stdev': args['fm_init_stdev'],
-            'fm_iterations': int(args['fm_iterations']),
-            'fm_num_factors': int(args['fm_num_factors']),
-            'fm_use_1way_interactions': args['fm_use_1way_interactions'],
-            'fm_use_bias': args['fm_use_bias'],
-            # 'lda_alpha': args['lda_alpha'],
-            # 'lda_beta': args['lda_beta'],
-            'lda_epsilon': args['lda_epsilon'],
-            'lda_model_iterations': int(args['lda_model_iterations']),
-            'lda_model_passes': int(args['lda_model_passes']),
-            'lda_num_topics': int(args['lda_num_topics']),
-            # 'topic_weighting_method': args['topic_weighting_method'],
-            # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
-            'use_context': args['use_context']
-        }
-    else:
-        parameters = {
-            'business_type': args['business_type'],
-            'topn_num_items': args['topn_num_items'],
-            # 'fm_init_stdev': args['fm_init_stdev'],
-            'fm_iterations': int(args['fm_iterations']),
-            'fm_num_factors': int(args['fm_num_factors']),
-            'fm_use_1way_interactions': args['fm_use_1way_interactions'],
-            'fm_use_bias': args['fm_use_bias'],
-            'use_context': args['use_context']
-        }
+
+    parameters = {
+        'business_type': args['business_type'],
+        'topn_num_items': args['topn_num_items'],
+        # 'fm_init_stdev': args['fm_init_stdev'],
+        'fm_iterations': int(args['fm_iterations']),
+        'fm_num_factors': int(args['fm_num_factors']),
+        'fm_use_1way_interactions': args['fm_use_1way_interactions'],
+        'fm_use_bias': args['fm_use_bias'],
+        # 'lda_alpha': args['lda_alpha'],
+        # 'lda_beta': args['lda_beta'],
+        # 'lda_epsilon': args['lda_epsilon'],
+        # 'lda_model_iterations': int(args['lda_model_iterations']),
+        # 'lda_model_passes': int(args['lda_model_passes']),
+        # 'lda_num_topics': int(args['lda_num_topics']),
+        # 'topic_weighting_method': args['topic_weighting_method'],
+        # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
+        'use_context': args['use_context']
+    }
+    if parameters['use_context']:
+        parameters['lda_epsilon'] = args['lda_epsilon']
+        parameters['lda_model_iterations'] = int(args['lda_model_iterations'])
+        parameters['lda_model_passes'] = int(args['lda_model_passes'])
+        parameters['lda_num_topics'] = int(args['lda_num_topics'])
 
     Constants.update_properties(parameters)
     # Finish updating parameters
@@ -113,31 +106,25 @@ def tune_parameters():
                 'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
                 # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
                 # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
-                'use_context': True
+                'use_context': Constants.USE_CONTEXT
             },
         ])
 
     if not Constants.USE_CONTEXT:
-        space = \
-            hp.choice('no_context', [
-                {
-                    'business_type': Constants.ITEM_TYPE,
-                    'topn_num_items': Constants.TOPN_NUM_ITEMS,
-                    # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
-                    'fm_iterations': hp.quniform('fm_context_iterations', 100,
-                                                 500, 1),
-                    'fm_num_factors': hp.quniform('fm_context_num_factors', 0,
-                                                  50, 1),
-                    'fm_use_1way_interactions': hp.choice(
-                        'fm_use_1way_interactions', [True, False]),
-                    'fm_use_bias': hp.choice('use_bias', [True, False]),
-                    'use_context': False
-                },
-            ])
+        unwanted_args = [
+            'lda_epsilon',
+            'lda_model_iterations',
+            'lda_model_passes',
+            'lda_num_topics'
+        ]
 
-    best = fmin(
-        run_recommender, space=space, algo=tpe.suggest,
-        max_evals=1000, trials=trials)
+        for element in space.pos_args[1].named_args[:]:
+            if element[0] in unwanted_args:
+                space.pos_args[1].named_args.remove(element)
+
+    # best = fmin(
+    #     run_recommender, space=space, algo=tpe.suggest,
+    #     max_evals=1000, trials=trials)
 
     # print('\n\n')
     #
