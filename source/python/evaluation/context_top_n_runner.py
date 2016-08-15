@@ -228,9 +228,9 @@ class ContextTopNRunner(object):
             with open(Constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
                 pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
-    def shuffle(self):
+    def shuffle(self, records):
         print('shuffle: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        random.shuffle(self.original_records)
+        random.shuffle(records)
 
     def get_records_to_predict_topn(self):
         print(
@@ -623,9 +623,9 @@ class ContextTopNRunner(object):
 
             print('\n\nCycle: %d/%d' % ((i+1), num_cycles))
 
-            if Constants.SHUFFLE_DATA:
-                self.shuffle()
             self.records = copy.deepcopy(records)
+            if Constants.SHUFFLE_DATA:
+                self.shuffle(self.records)
 
             for j in range(num_folds):
 
@@ -634,7 +634,7 @@ class ContextTopNRunner(object):
                 print('\nFold: %d/%d' % ((j+1), num_folds))
 
                 self.create_tmp_file_names()
-                self.train_records, self.test_records =\
+                self.train_records, self.test_records = \
                     ETLUtils.split_train_test_copy(
                         self.records, split=split, start=cv_start)
                 # subsample_size = int(len(self.train_records)*0.5)
@@ -697,6 +697,7 @@ class ContextTopNRunner(object):
             cycle = Constants.NESTED_CROSS_VALIDATION_CYCLE
             split = 1 - (1/float(num_folds))
             cv_start = float(cycle) / num_folds
+            print('cv_start', cv_start)
             records, _ = ETLUtils.split_train_test(
                 self.original_records, split, cv_start)
             return self.perform_cross_validation(records)
