@@ -117,6 +117,8 @@ base_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
 csv_file_name = base_file_name + '.csv'
 json_file_name = base_file_name + '.json'
 
+num_words = 10
+
 print(csv_file_name)
 
 
@@ -161,7 +163,6 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
         '-nouns-complete.csv'
     print(file_name)
 
-    num_words = 10
     headers = [
         'topic_id',
         'ratio',
@@ -381,7 +382,6 @@ def generate_excel_file(records):
     green_format.set_pattern(1)  # This is optional when using a solid fill.
     green_format.set_bg_color('green')
 
-    num_words = 10
     headers = [
         'topic_id',
         'ratio',
@@ -417,7 +417,7 @@ def generate_excel_file(records):
                                              'value': 0.1,
                                              'format': yellow_format})
 
-    worksheet7.add_table(1, 1, num_topics + 1, 14, {'columns': headers})
+    worksheet7.add_table(1, 1, num_topics + 1, 4 + num_words, {'columns': headers})
     # worksheet7.add_table('B2:N302', {'columns': headers})
 
     # Set widths
