@@ -1,3 +1,4 @@
+import copy
 import platform
 from string import strip
 
@@ -133,6 +134,10 @@ class Constants(object):
         ITEM_TYPE + '_' + 'user_item_map.pkl'
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
         ITEM_TYPE + '.pkl'
+
+    @classmethod
+    def get_properties_copy(cls):
+        return copy.deepcopy(cls._properties)
 
     @staticmethod
     def update_properties(new_properties):

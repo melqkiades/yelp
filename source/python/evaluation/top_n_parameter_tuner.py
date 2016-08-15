@@ -88,26 +88,30 @@ def tune_parameters():
 
     print('Connected to %s' % mongo_url)
 
+    params = Constants.get_properties_copy()
+    params.update({
+        'business_type': Constants.ITEM_TYPE,
+        'topn_num_items': Constants.TOPN_NUM_ITEMS,
+        'nested_cross_validation_cycle': Constants.NESTED_CROSS_VALIDATION_CYCLE,
+        # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
+        'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
+        'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 200, 1),
+        'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
+        'fm_use_bias': hp.choice('use_bias', [True, False]),
+        # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
+        # 'lda_beta': hp.uniform('lda_beta', 0, 2),
+        'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
+        'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
+        'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
+        'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
+        # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
+        # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
+        'use_context': Constants.USE_CONTEXT
+    })
+
     space =\
         hp.choice('use_context', [
-            {
-                'business_type': Constants.ITEM_TYPE,
-                'topn_num_items': Constants.TOPN_NUM_ITEMS,
-                # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
-                'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
-                'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 200, 1),
-                'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
-                'fm_use_bias': hp.choice('use_bias', [True, False]),
-                # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
-                # 'lda_beta': hp.uniform('lda_beta', 0, 2),
-                'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
-                'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
-                'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
-                'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
-                # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
-                # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
-                'use_context': Constants.USE_CONTEXT
-            },
+            params,
         ])
 
     if not Constants.USE_CONTEXT:
@@ -124,7 +128,7 @@ def tune_parameters():
 
     # best = fmin(
     #     run_recommender, space=space, algo=tpe.suggest,
-    #     max_evals=1000, trials=trials)
+    #     max_evals=100, trials=trials)
 
     # print('\n\n')
     #
@@ -133,7 +137,8 @@ def tune_parameters():
     #     print(trial['misc']['vals'], trial['result']['loss'])
     print('losses', sorted(trials.losses()))
     print(
-        'best', trials.best_trial['result'], trials.best_trial['misc']['vals'])
+        'best', trials.best_trial['result']['loss'],
+        trials.best_trial['misc']['vals'])
     print('num trials: %d' % len(trials.losses()))
     #
     # trials_path = os.path.expanduser('~/tmp/trials-context-2.pkl')
