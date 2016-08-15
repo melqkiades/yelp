@@ -36,31 +36,39 @@ def run_recommender(args):
     print('args', args)
 
 
-    parameters = {
-        'business_type': args['business_type'],
-        'topn_num_items': args['topn_num_items'],
-        # 'fm_init_stdev': args['fm_init_stdev'],
-        'fm_iterations': int(args['fm_iterations']),
-        'fm_num_factors': int(args['fm_num_factors']),
-        'fm_use_1way_interactions': args['fm_use_1way_interactions'],
-        'fm_use_bias': args['fm_use_bias'],
-        # 'lda_alpha': args['lda_alpha'],
-        # 'lda_beta': args['lda_beta'],
-        # 'lda_epsilon': args['lda_epsilon'],
-        # 'lda_model_iterations': int(args['lda_model_iterations']),
-        # 'lda_model_passes': int(args['lda_model_passes']),
-        # 'lda_num_topics': int(args['lda_num_topics']),
-        # 'topic_weighting_method': args['topic_weighting_method'],
-        # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
-        'use_context': args['use_context']
-    }
-    if parameters['use_context']:
-        parameters['lda_epsilon'] = args['lda_epsilon']
-        parameters['lda_model_iterations'] = int(args['lda_model_iterations'])
-        parameters['lda_model_passes'] = int(args['lda_model_passes'])
-        parameters['lda_num_topics'] = int(args['lda_num_topics'])
+    # parameters = {
+    #     'business_type': args['business_type'],
+    #     'topn_num_items': args['topn_num_items'],
+    #     # 'fm_init_stdev': args['fm_init_stdev'],
+    #     'fm_iterations': int(args['fm_iterations']),
+    #     'fm_num_factors': int(args['fm_num_factors']),
+    #     'fm_use_1way_interactions': args['fm_use_1way_interactions'],
+    #     'fm_use_bias': args['fm_use_bias'],
+    #     # 'lda_alpha': args['lda_alpha'],
+    #     # 'lda_beta': args['lda_beta'],
+    #     # 'lda_epsilon': args['lda_epsilon'],
+    #     # 'lda_model_iterations': int(args['lda_model_iterations']),
+    #     # 'lda_model_passes': int(args['lda_model_passes']),
+    #     # 'lda_num_topics': int(args['lda_num_topics']),
+    #     # 'topic_weighting_method': args['topic_weighting_method'],
+    #     # 'use_no_context_topics_sum': args['use_no_context_topics_sum'],
+    #     'use_context': args['use_context']
+    # }
+    # if parameters['use_context']:
+    #     parameters['lda_epsilon'] = args['lda_epsilon']
+    #     parameters['lda_model_iterations'] = int(args['lda_model_iterations'])
+    #     parameters['lda_model_passes'] = int(args['lda_model_passes'])
+    #     parameters['lda_num_topics'] = int(args['lda_num_topics'])
 
-    Constants.update_properties(parameters)
+    # Cast integer values
+    args['fm_iterations'] = int(args['fm_iterations'])
+    args['fm_num_factors'] = int(args['fm_num_factors'])
+    args['lda_model_iterations'] = int(args['lda_model_iterations'])
+    args['lda_model_passes'] = int(args['lda_model_passes'])
+    args['lda_num_topics'] = int(args['lda_num_topics'])
+
+    Constants.update_properties(args)
+
     # Finish updating parameters
 
     my_context_top_n_runner = ContextTopNRunner()
