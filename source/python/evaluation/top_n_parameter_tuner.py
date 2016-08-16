@@ -63,9 +63,10 @@ def run_recommender(args):
     # Cast integer values
     args['fm_iterations'] = int(args['fm_iterations'])
     args['fm_num_factors'] = int(args['fm_num_factors'])
-    args['lda_model_iterations'] = int(args['lda_model_iterations'])
-    args['lda_model_passes'] = int(args['lda_model_passes'])
-    args['lda_num_topics'] = int(args['lda_num_topics'])
+    if args['use_context']:
+        args['lda_model_iterations'] = int(args['lda_model_iterations'])
+        args['lda_model_passes'] = int(args['lda_model_passes'])
+        args['lda_num_topics'] = int(args['lda_num_topics'])
 
     Constants.update_properties(args)
 
