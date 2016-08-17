@@ -1,4 +1,3 @@
-import copy
 import csv
 import json
 import os
@@ -122,28 +121,11 @@ num_words = 10
 print(csv_file_name)
 
 
-def load_topic_model(cycle_index, fold_index):
-
-    print(Constants._properties)
-
-    print('%s: get_records_to_predict_topn topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    lda_based_context =\
-        topic_model_creator.load_topic_model(cycle_index, fold_index)
-    print('%s: loaded topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    # lda_based_context.epsilon = Constants.LDA_EPSILON
-    lda_based_context.epsilon = Constants.LDA_EPSILON
-    lda_based_context.update_reviews_with_topics()
-    lda_based_context.get_context_rich_topics()
-    print('epsilon', lda_based_context.epsilon)
-
-    return lda_based_context
-
-
 def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
 
     topic_model_creator.plant_seeds()
 
-    new_properties = copy.deepcopy(Constants._properties)
+    new_properties = Constants.get_properties_copy()
     if epsilon is not None:
         new_properties['lda_epsilon'] = epsilon
     if alpha is not None:
@@ -152,7 +134,8 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     Constants.update_properties(new_properties)
 
     # lda_based_context = load_topic_model(cycle_index, fold_index)
-    lda_based_context = topic_model_creator.create_single_topic_model(cycle_index, fold_index, False)
+    lda_based_context = topic_model_creator.create_single_topic_model(
+        cycle_index, fold_index, False)
 
     file_name = Constants.DATASET_FOLDER + 'all_reviews_topic_model_' + \
         Constants.ITEM_TYPE + '_' + \
@@ -185,9 +168,12 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
     print('num reviews: %d' % num_reviews)
     print('num specific reviews: %d' % num_specific_reviews)
     print('num generic reviews: %d' % num_generic_reviews)
-    print('specific reviews percentage : %f %%' % (float(num_specific_reviews) / num_reviews * 100))
-    print('generic reviews percentage : %f %%' % (float(num_generic_reviews) / num_reviews * 100))
-    print('number of contextual topics: %d' % len(lda_based_context.context_rich_topics))
+    print('specific reviews percentage : %f %%' %
+          (float(num_specific_reviews) / num_reviews * 100))
+    print('generic reviews percentage : %f %%' %
+          (float(num_generic_reviews) / num_reviews * 100))
+    print('number of contextual topics: %d' %
+          len(lda_based_context.context_rich_topics))
 
     for topic in topic_ratio_map.keys():
         result = {}
@@ -217,13 +203,13 @@ def split_topic(topic_string):
     :param topic_string:
     """
 
-    context_words = []
+    my_context_words = []
     if Constants.ITEM_TYPE == 'hotel':
         for values in grouped_hotel_context_words.values():
-            context_words.extend(values)
+            my_context_words.extend(values)
     elif Constants.ITEM_TYPE == 'restaurant':
         for values in grouped_restaurant_context_words.values():
-            context_words.extend(values)
+            my_context_words.extend(values)
 
     words_dict = {}
     index = 0
@@ -233,7 +219,7 @@ def split_topic(topic_string):
         word = topic_word.split('*')[1]
         word_score = float(topic_word.split('*')[0])
         words_dict['word' + str(index)] = topic_word.encode('utf-8')
-        if word in context_words:
+        if word in my_context_words:
             topic_score += word_score
         index += 1
 
@@ -247,11 +233,6 @@ def split_topic(topic_string):
 def analyze_topics(topic_data, lda_based_context):
 
     data_frame = DataFrame.from_dict(topic_data)
-    # data_frame.info()
-    # print(data_frame.head())
-    # print(data_frame)
-
-    context_topic_threshold = 0.1
 
     scores = {}
     num_topics = Constants.LDA_NUM_TOPICS
@@ -259,13 +240,14 @@ def analyze_topics(topic_data, lda_based_context):
     topic_model_score = data_frame[
         data_frame.weighted_frequency > Constants.LDA_ALPHA]['score'].mean()
     scores['topic_model_score'] = topic_model_score
-    high_ratio_mean_score = data_frame[(data_frame.ratio > 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
-    low_ratio_mean_score = data_frame[(data_frame.ratio < 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
-    # scores['all_ratio_count'] = data_frame[data_frame.score > 0.1]['topic_id'].count()
-    high_ratio_count = data_frame[
-        (data_frame.ratio > 1.0) & (data_frame.score > context_topic_threshold) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['topic_id'].count()
-    low_ratio_count = data_frame[
-        (data_frame.ratio < 1.0) & (data_frame.score > context_topic_threshold) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['topic_id'].count()
+    high_ratio_mean_score = data_frame[
+        (data_frame.ratio > 1.0) &
+        (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
+    low_ratio_mean_score = data_frame[
+        (data_frame.ratio < 1.0) &
+        (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
+    # scores['all_ratio_count'] =
+    #     data_frame[data_frame.score > 0.1]['topic_id'].count()
     num_context_topics = len(lda_based_context.context_rich_topics)
     scores['num_context_topics'] = num_context_topics
     scores['document_level'] = Constants.DOCUMENT_LEVEL
@@ -277,17 +259,6 @@ def analyze_topics(topic_data, lda_based_context):
     scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
     scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
 
-    high_ratio_count2 = float(
-        data_frame[(data_frame.ratio > 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].count())
-    low_ratio_count2 = float(data_frame[(data_frame.ratio < 1.0) & (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].count())
-
-    weighted_high_ratio_count = float(high_ratio_count / high_ratio_count2)
-    weighted_low_ratio_count = float(low_ratio_count / low_ratio_count2)
-    weighted_ratio_count =\
-        (weighted_high_ratio_count / weighted_low_ratio_count)\
-        if weighted_low_ratio_count != 0\
-        else 'N/A'
-    # scores['weighted_ratio_count'] = weighted_ratio_count
     separation_score =\
         (high_ratio_mean_score / low_ratio_mean_score)\
         if low_ratio_mean_score != 0\
@@ -298,64 +269,16 @@ def analyze_topics(topic_data, lda_based_context):
         if topic_model_score != 'N/A' and separation_score != 'N/A'\
         else 'N/A'
 
-    results = copy.deepcopy(Constants._properties)
+    results = Constants.get_properties_copy()
     results.update(scores)
 
     print('topic model score: %f' % scores['topic_model_score'])
-    # print('greater than 1.0 mean score: %f' % scores['high_ratio_mean_score'])
-    # print('lower than 1.0 mean score: %f' % scores['low_ratio_mean_score'])
-    # print('all ratio count: %f' % scores['all_ratio_count'])
-    # print('greater than 1.0 count: %f' % scores['high_ratio_count'])
-    # print('lower than 1.0 count: %f' % scores['low_ratio_count'])
-    # print('weighted greater than 1.0 count: %f' % scores['weighted_high_ratio_count'])
-    # print('weighted lower than 1.0 count: %f' % scores['weighted_low_ratio_count'])
-    # print('weighted ratio:', scores['weighted_ratio_count'])
     print('separation score:', scores['separation_score'])
     print('combined score:', scores['combined_score'])
 
     # write_results(results)
 
     return scores
-
-
-def write_results(results):
-    json_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
-                Constants.ITEM_TYPE + \
-                '.json'
-    csv_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
-                Constants.ITEM_TYPE + \
-                '.csv'
-    print(json_file_name)
-    print(csv_file_name)
-
-    # if not os.path.exists(json_file_name):
-    #     with open(json_file_name, 'w') as f:
-    #         json.dump(results, f)
-    #         f.write('\n')
-    # else:
-    #     with open(json_file_name, 'a') as f:
-    #         json.dump(results, f)
-    #         f.write('\n')
-
-
-def see_topic_analysis_results():
-    topic_analysis_file = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
-                          Constants.ITEM_TYPE + '.json'
-
-    results = ETLUtils.load_json_file(topic_analysis_file)
-
-    index = 0
-    for result in results:
-        score_ratio = result['high_ratio_mean_score'] / result[
-            'low_ratio_mean_score']
-        count_ratio = result['weighted_high_ratio_count'] / result[
-            'weighted_low_ratio_count']
-        print(index, score_ratio, count_ratio,
-              result['high_ratio_mean_score'],
-              result['low_ratio_mean_score'],
-              result['lda_epsilon'], result['topic_weighting_method'],
-              result['num_context_topics'], result['lda_num_topics'])
-        index += 1
 
 
 def generate_excel_file(records):
@@ -408,16 +331,22 @@ def generate_excel_file(records):
         for column_index, cell_value in enumerate(row_data[4:]):
             word = cell_value.split('*')[1]
             if word in my_context_words:
-                worksheet7.write(row_index + 2, column_index + 5, cell_value.decode('utf-8'), cyan_format)
+                worksheet7.write(
+                    row_index + 2, column_index + 5,
+                    cell_value.decode('utf-8'), cyan_format
+                )
             else:
-                worksheet7.write(row_index + 2, column_index + 5, cell_value.decode('utf-8'))
+                worksheet7.write(
+                    row_index + 2, column_index + 5, cell_value.decode('utf-8'))
 
-    worksheet7.conditional_format(2, 3, num_topics + 1, 3, {'type': 'cell',
-                                             'criteria': '>=',
-                                             'value': 0.1,
-                                             'format': yellow_format})
+    worksheet7.conditional_format(2, 3, num_topics + 1, 3, {
+        'type': 'cell',
+        'criteria': '>=',
+        'value': 0.1,
+        'format': yellow_format})
 
-    worksheet7.add_table(1, 1, num_topics + 1, 4 + num_words, {'columns': headers})
+    worksheet7.add_table(
+        1, 1, num_topics + 1, 4 + num_words, {'columns': headers})
     # worksheet7.add_table('B2:N302', {'columns': headers})
 
     # Set widths
@@ -434,24 +363,29 @@ def main():
     # epsilon_list = [0.001, 0.005, 0.01, 0.03, 0.05, 0.07, 0.1, 0.35, 0.5]
     epsilon_list = [0.05]
     alpha_list = [0.0]
-    num_topics_list = [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
-    # num_topics_list = [300]
+    # num_topics_list =\
+    #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
+    num_topics_list = [300]
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
     # topic_weighting_methods = ['binary', 'probability']
     topic_weighting_methods = ['probability']
     # review_type_list = ['specific', 'generic', 'all_reviews']
     review_type_list = ['specific']
-    lda_passes_list = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    # lda_passes_list = [1]
+    # lda_passes_list = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    lda_passes_list = [1]
     # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
     lda_iterations_list = [50]
     num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
-                 len(document_level_list) * len(topic_weighting_methods) *\
-                 len(review_type_list) * len(lda_passes_list) * len(lda_iterations_list)
+        len(document_level_list) * len(topic_weighting_methods) *\
+        len(review_type_list) * len(lda_passes_list) *\
+        len(lda_iterations_list)
     cycle_index = 1
-    for epsilon, alpha, num_topics, document_level, topic_weighting_method, review_type, lda_passes, lda_iterations in itertools.product(
-            epsilon_list, alpha_list, num_topics_list, document_level_list, topic_weighting_methods, review_type_list, lda_passes_list, lda_iterations_list):
+    for epsilon, alpha, num_topics, document_level, topic_weighting_method,\
+        review_type, lda_passes, lda_iterations in itertools.product(
+            epsilon_list, alpha_list, num_topics_list, document_level_list,
+            topic_weighting_methods, review_type_list, lda_passes_list,
+            lda_iterations_list):
         print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
         new_dict = {
             'lda_num_topics': num_topics,
@@ -464,11 +398,8 @@ def main():
             'lda_model_iterations': lda_iterations
         }
         Constants.update_properties(new_dict)
-        topic_model_score = export_topics(0, 0)
+        export_topics(0, 0)
         cycle_index += 1
-    #
-
-    # ETLUtils.save_csv_file(csv_file_name, topic_model_scores, topic_model_scores[0].keys())
 
 
 def write_results_to_csv(file_name, results):
@@ -499,7 +430,6 @@ def write_results_to_json(file_name, results):
 # export_topics(0, 0)
 # end = time.time()
 # total_time = end - start
-# print("%s: Total time = %f seconds" % (time.strftime("%Y/%m/%d-%H:%M:%S"), total_time))
+# print("Total time = %f seconds" % total_time)
 
 # generate_excel_file()
-
