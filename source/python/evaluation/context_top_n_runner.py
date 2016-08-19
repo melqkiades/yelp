@@ -685,6 +685,52 @@ class ContextTopNRunner(object):
 
         return results
 
+    def run_single_fold(self, parameters):
+
+        fold = parameters['fold']
+
+        Constants.update_properties(parameters)
+
+        print(Constants._properties)
+
+        self.plant_seeds()
+        self.load()
+
+        records = self.original_records
+
+        # self.plant_seeds()
+        total_cycle_time = 0.0
+        num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+        split = 1 - (1 / float(num_folds))
+        self.records = copy.deepcopy(records)
+        if Constants.SHUFFLE_DATA:
+            self.shuffle(self.records)
+
+        fold_start = time.time()
+        cv_start = float(fold) / num_folds
+        print('\nFold: %d/%d' % ((fold + 1), num_folds))
+
+        self.create_tmp_file_names()
+        self.train_records, self.test_records = \
+            ETLUtils.split_train_test_copy(
+                self.records, split=split, start=cv_start)
+        # subsample_size = int(len(self.train_records)*0.5)
+        # self.train_records = self.train_records[:subsample_size]
+        self.get_records_to_predict()
+        if Constants.USE_CONTEXT:
+            lda_based_context = self.train_topic_model(0, fold)
+            self.find_reviews_topics(lda_based_context)
+        self.predict()
+        metric, specific_metric, generic_metric = self.evaluate()
+
+        fold_end = time.time()
+        fold_time = fold_end - fold_start
+        total_cycle_time += fold_time
+        self.clear()
+        print("Total fold %d time = %f seconds" % ((fold + 1), fold_time))
+
+        return metric
+
     def run(self):
 
         self.plant_seeds()
@@ -707,9 +753,210 @@ class ContextTopNRunner(object):
             raise ValueError('Unknown cross-validation strategy')
 
 
-# start = time.time()
+def run_test_folds_original():
+    context_parameters = [
+        {'fold': 0, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.32274492997627074, 'lda_num_topics': 538,
+         'use_context': True, 'lda_model_passes': 1, 'use_bias': True,
+         'fm_context_num_factors': 52, 'lda_model_iterations': 61,
+         'fm_context_iterations': 211.0},
+        {'fold': 1, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.25641679450188937, 'lda_num_topics': 188,
+         'use_context': True, 'lda_model_passes': 17, 'use_bias': True,
+         'fm_context_num_factors': 33, 'lda_model_iterations': 227,
+         'fm_context_iterations': 217.0},
+        {'fold': 2, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.38882003389550224, 'lda_num_topics': 209,
+         'use_context': True, 'lda_model_passes': 53, 'use_bias': False,
+         'fm_context_num_factors': 121, 'lda_model_iterations': 370,
+         'fm_context_iterations': 112.0},
+        {'fold': 3, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.04854762952801284, 'lda_num_topics': 144,
+         'use_context': True, 'lda_model_passes': 6, 'use_bias': True,
+         'fm_context_num_factors': 44, 'lda_model_iterations': 250,
+         'fm_context_iterations': 278.0},
+        {'fold': 4, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.213170321510319, 'lda_num_topics': 886,
+         'use_context': True, 'lda_model_passes': 64, 'use_bias': True,
+         'fm_context_num_factors': 125, 'lda_model_iterations': 351,
+         'fm_context_iterations': 421.0},
+        {'fold': 5, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.40806071257617305, 'lda_num_topics': 743,
+         'use_context': True, 'lda_model_passes': 63, 'use_bias': False,
+         'fm_context_num_factors': 106, 'lda_model_iterations': 264,
+         'fm_context_iterations': 111.0},
+        {'fold': 6, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.3594891423456263, 'lda_num_topics': 682,
+         'use_context': True, 'lda_model_passes': 83, 'use_bias': False,
+         'fm_context_num_factors': 38, 'lda_model_iterations': 62,
+         'fm_context_iterations': 115.0},
+        {'fold': 7, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.3697255891944044, 'lda_num_topics': 311,
+         'use_context': True, 'lda_model_passes': 6, 'use_bias': False,
+         'fm_context_num_factors': 148, 'lda_model_iterations': 227,
+         'fm_context_iterations': 110.0},
+        {'fold': 8, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.39348352792449093, 'lda_num_topics': 191,
+         'use_context': True, 'lda_model_passes': 61, 'use_bias': False,
+         'fm_context_num_factors': 105, 'lda_model_iterations': 60,
+         'fm_context_iterations': 109.0},
+        {'fold': 9, 'fm_use_1way_interactions': False,
+         'lda_epsilon': 0.44475053702442174, 'lda_num_topics': 330,
+         'use_context': True, 'lda_model_passes': 84, 'use_bias': True,
+         'fm_context_num_factors': 70, 'lda_model_iterations': 150,
+         'fm_context_iterations': 355.0}
+    ]
+
+    nocontext_parameters = [
+        {'fold': 0, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 37, 'use_context': False,
+         'fm_context_iterations': 123.0},
+        {'fold': 1, 'fm_use_1way_interactions': False, 'use_bias': True,
+         'fm_context_num_factors': 58, 'use_context': False,
+         'fm_context_iterations': 185.0},
+        {'fold': 2, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 95, 'use_context': False,
+         'fm_context_iterations': 116.0},
+        {'fold': 3, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 182, 'use_context': False,
+         'fm_context_iterations': 109.0},
+        {'fold': 4, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 11, 'use_context': False,
+         'fm_context_iterations': 121.0},
+        {'fold': 5, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 142, 'use_context': False,
+         'fm_context_iterations': 112.0},
+        {'fold': 6, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 48, 'use_context': False,
+         'fm_context_iterations': 122.0},
+        {'fold': 7, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 111, 'use_context': False,
+         'fm_context_iterations': 112.0},
+        {'fold': 8, 'fm_use_1way_interactions': False, 'use_bias': True,
+         'fm_context_num_factors': 41, 'use_context': False,
+         'fm_context_iterations': 221.0},
+        {'fold': 9, 'fm_use_1way_interactions': False, 'use_bias': False,
+         'fm_context_num_factors': 136, 'use_context': False,
+         'fm_context_iterations': 102.0}
+    ]
+
+    no_context_results = []
+    context_results = []
+    my_context_top_n_runner = ContextTopNRunner()
+    for parameters in nocontext_parameters:
+        no_context_results.append(
+            my_context_top_n_runner.run_single_fold(parameters))
+    for parameters in context_parameters:
+        context_results.append(
+            my_context_top_n_runner.run_single_fold(parameters))
+    print('No context mean recall: %f' % numpy.mean(no_context_results))
+    print('Context mean recall: %f' % numpy.mean(context_results))
+
+
+def run_test_folds():
+
+    context_parameters = [
+        {'fold': 0, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.32274492997627074, 'lda_num_topics': 538,
+         'use_context': True, 'lda_model_passes': 1, 'use_bias': True,
+         'fm_context_num_factors': 52, 'lda_model_iterations': 61,
+         'fm_context_iterations': 211.0},
+        {'fold': 1, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.25641679450188937, 'lda_num_topics': 188,
+         'use_context': True, 'lda_model_passes': 17, 'use_bias': True,
+         'fm_context_num_factors': 33, 'lda_model_iterations': 227,
+         'fm_context_iterations': 217.0},
+        {'fold': 2, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.38882003389550224, 'lda_num_topics': 209,
+         'use_context': True, 'lda_model_passes': 53, 'use_bias': True,
+         'fm_context_num_factors': 121, 'lda_model_iterations': 370,
+         'fm_context_iterations': 112.0},
+        {'fold': 3, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.04854762952801284, 'lda_num_topics': 144,
+         'use_context': True, 'lda_model_passes': 6, 'use_bias': True,
+         'fm_context_num_factors': 44, 'lda_model_iterations': 250,
+         'fm_context_iterations': 278.0},
+        {'fold': 4, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.213170321510319, 'lda_num_topics': 886,
+         'use_context': True, 'lda_model_passes': 64, 'use_bias': True,
+         'fm_context_num_factors': 125, 'lda_model_iterations': 351,
+         'fm_context_iterations': 421.0},
+        {'fold': 5, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.40806071257617305, 'lda_num_topics': 743,
+         'use_context': True, 'lda_model_passes': 63, 'use_bias': True,
+         'fm_context_num_factors': 106, 'lda_model_iterations': 264,
+         'fm_context_iterations': 111.0},
+        {'fold': 6, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.3594891423456263, 'lda_num_topics': 682,
+         'use_context': True, 'lda_model_passes': 83, 'use_bias': True,
+         'fm_context_num_factors': 38, 'lda_model_iterations': 62,
+         'fm_context_iterations': 115.0},
+        {'fold': 7, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.3697255891944044, 'lda_num_topics': 311,
+         'use_context': True, 'lda_model_passes': 6, 'use_bias': True,
+         'fm_context_num_factors': 148, 'lda_model_iterations': 227,
+         'fm_context_iterations': 110.0},
+        {'fold': 8, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.39348352792449093, 'lda_num_topics': 191,
+         'use_context': True, 'lda_model_passes': 61, 'use_bias': True,
+         'fm_context_num_factors': 105, 'lda_model_iterations': 60,
+         'fm_context_iterations': 109.0},
+        {'fold': 9, 'fm_use_1way_interactions': True,
+         'lda_epsilon': 0.44475053702442174, 'lda_num_topics': 330,
+         'use_context': True, 'lda_model_passes': 84, 'use_bias': True,
+         'fm_context_num_factors': 70, 'lda_model_iterations': 150,
+         'fm_context_iterations': 355.0}
+    ]
+
+    nocontext_parameters = [
+        {'fold': 0, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 37, 'use_context': False,
+         'fm_context_iterations': 123.0},
+        {'fold': 1, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 58, 'use_context': False,
+         'fm_context_iterations': 185.0},
+        {'fold': 2, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 95, 'use_context': False,
+         'fm_context_iterations': 116.0},
+        {'fold': 3, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 182, 'use_context': False,
+         'fm_context_iterations': 109.0},
+        {'fold': 4, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 11, 'use_context': False,
+         'fm_context_iterations': 121.0},
+        {'fold': 5, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 142, 'use_context': False,
+         'fm_context_iterations': 112.0},
+        {'fold': 6, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 48, 'use_context': False,
+         'fm_context_iterations': 122.0},
+        {'fold': 7, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 111, 'use_context': False,
+         'fm_context_iterations': 112.0},
+        {'fold': 8, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 41, 'use_context': False,
+         'fm_context_iterations': 221.0},
+        {'fold': 9, 'fm_use_1way_interactions': True, 'use_bias': True,
+         'fm_context_num_factors': 136, 'use_context': False,
+         'fm_context_iterations': 102.0}
+    ]
+
+    no_context_results = []
+    context_results = []
+    my_context_top_n_runner = ContextTopNRunner()
+    for parameters in nocontext_parameters:
+        no_context_results.append(
+            my_context_top_n_runner.run_single_fold(parameters))
+    for parameters in context_parameters:
+        context_results.append(
+            my_context_top_n_runner.run_single_fold(parameters))
+    print('No context mean recall: %f' % numpy.mean(no_context_results))
+    print('Context mean recall: %f' % numpy.mean(context_results))
+
+start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
 # my_context_top_n_runner.run()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+run_test_folds_original()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
