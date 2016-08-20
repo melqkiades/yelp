@@ -953,10 +953,10 @@ def run_test_folds():
     print('No context mean recall: %f' % numpy.mean(no_context_results))
     print('Context mean recall: %f' % numpy.mean(context_results))
 
-start = time.time()
+# start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
 # my_context_top_n_runner.run()
-run_test_folds_original()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# run_test_folds_original()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
