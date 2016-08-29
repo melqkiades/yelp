@@ -54,3 +54,4 @@ nested_cross_validation_cycle: 0
 # nested_test means that the train+validate sets are use to train data and test
 # set to test
 cross_validation_strategy: nested_validate
+topic_model_type: lda

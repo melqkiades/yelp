@@ -22,6 +22,7 @@ from evaluation.top_n_evaluator import TopNEvaluator
 from topicmodeling.context import topic_model_analyzer
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.lda_based_context import LdaBasedContext
+from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from tripadvisor.fourcity import extractor
 from utils.constants import Constants
 
@@ -218,7 +219,7 @@ class ContextTopNRunner(object):
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.original_records =\
-            ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+            ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
         # ETLUtils.drop_fields(['tagged_words'], self.original_records)
         print('num_records: %d' % len(self.original_records))
 
@@ -302,11 +303,22 @@ class ContextTopNRunner(object):
         else:
             print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-            lda_based_context = LdaBasedContext(self.train_records)
-            lda_based_context.generate_review_corpus()
-            lda_based_context.build_topic_model()
-            lda_based_context.update_reviews_with_topics()
-            lda_based_context.get_context_rich_topics()
+            if Constants.TOPIC_MODEL_TYPE == 'lda':
+                lda_based_context = LdaBasedContext(self.train_records)
+                lda_based_context.generate_review_corpus()
+                lda_based_context.build_topic_model()
+                lda_based_context.update_reviews_with_topics()
+                lda_based_context.get_context_rich_topics()
+            elif Constants.TOPIC_MODEL_TYPE == 'nmf':
+                lda_based_context = NmfContextExtractor(self.train_records)
+                lda_based_context.num_topics = Constants.LDA_NUM_TOPICS
+                lda_based_context.generate_review_bows()
+                lda_based_context.build_document_term_matrix()
+                lda_based_context.build_stable_topic_model()
+                lda_based_context.update_reviews_with_topics()
+                lda_based_context.get_context_rich_topics()
+            else:
+                raise ValueError('Unrecognized topic model type')
 
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -808,36 +820,26 @@ def run_test_folds_original():
     ]
 
     nocontext_parameters = [
-        {'fold': 0, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 37, 'use_context': False,
-         'fm_context_iterations': 123.0},
-        {'fold': 1, 'fm_use_1way_interactions': False, 'use_bias': True,
-         'fm_context_num_factors': 58, 'use_context': False,
-         'fm_context_iterations': 185.0},
-        {'fold': 2, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 95, 'use_context': False,
-         'fm_context_iterations': 116.0},
-        {'fold': 3, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 182, 'use_context': False,
-         'fm_context_iterations': 109.0},
-        {'fold': 4, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 11, 'use_context': False,
-         'fm_context_iterations': 121.0},
-        {'fold': 5, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 142, 'use_context': False,
-         'fm_context_iterations': 112.0},
-        {'fold': 6, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 48, 'use_context': False,
-         'fm_context_iterations': 122.0},
-        {'fold': 7, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 111, 'use_context': False,
-         'fm_context_iterations': 112.0},
-        {'fold': 8, 'fm_use_1way_interactions': False, 'use_bias': True,
-         'fm_context_num_factors': 41, 'use_context': False,
-         'fm_context_iterations': 221.0},
-        {'fold': 9, 'fm_use_1way_interactions': False, 'use_bias': False,
-         'fm_context_num_factors': 136, 'use_context': False,
-         'fm_context_iterations': 102.0}
+        {'fold': 0, 'fm_context_num_factors': 91, 'use_context': False,
+         'fm_context_iterations': 110},
+        {'fold': 1, 'fm_context_num_factors': 77, 'use_context': False,
+         'fm_context_iterations': 103},
+        {'fold': 2, 'fm_context_num_factors': 138, 'use_context': False,
+         'fm_context_iterations': 100},
+        {'fold': 3, 'fm_context_num_factors': 87, 'use_context': False,
+         'fm_context_iterations': 106},
+        {'fold': 4, 'fm_context_num_factors': 60, 'use_context': False,
+         'fm_context_iterations': 100},
+        {'fold': 5, 'fm_context_num_factors': 53, 'use_context': False,
+         'fm_context_iterations': 107},
+        {'fold': 6, 'fm_context_num_factors': 0, 'use_context': False,
+         'fm_context_iterations': 104},
+        {'fold': 7, 'fm_context_num_factors': 66, 'use_context': False,
+         'fm_context_iterations': 101},
+        {'fold': 8, 'fm_context_num_factors': 66, 'use_context': False,
+         'fm_context_iterations': 101},
+        {'fold': 9, 'fm_context_num_factors': 44, 'use_context': False,
+         'fm_context_iterations': 127}
     ]
 
     no_context_results = []
@@ -856,89 +858,69 @@ def run_test_folds_original():
 def run_test_folds():
 
     context_parameters = [
-        {'fold': 0, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.32274492997627074, 'lda_num_topics': 538,
-         'use_context': True, 'lda_model_passes': 1, 'use_bias': True,
-         'fm_context_num_factors': 52, 'lda_model_iterations': 61,
-         'fm_context_iterations': 211.0},
-        {'fold': 1, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.25641679450188937, 'lda_num_topics': 188,
-         'use_context': True, 'lda_model_passes': 17, 'use_bias': True,
-         'fm_context_num_factors': 33, 'lda_model_iterations': 227,
-         'fm_context_iterations': 217.0},
-        {'fold': 2, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.38882003389550224, 'lda_num_topics': 209,
-         'use_context': True, 'lda_model_passes': 53, 'use_bias': True,
-         'fm_context_num_factors': 121, 'lda_model_iterations': 370,
-         'fm_context_iterations': 112.0},
-        {'fold': 3, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.04854762952801284, 'lda_num_topics': 144,
-         'use_context': True, 'lda_model_passes': 6, 'use_bias': True,
-         'fm_context_num_factors': 44, 'lda_model_iterations': 250,
-         'fm_context_iterations': 278.0},
-        {'fold': 4, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.213170321510319, 'lda_num_topics': 886,
-         'use_context': True, 'lda_model_passes': 64, 'use_bias': True,
-         'fm_context_num_factors': 125, 'lda_model_iterations': 351,
-         'fm_context_iterations': 421.0},
-        {'fold': 5, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.40806071257617305, 'lda_num_topics': 743,
-         'use_context': True, 'lda_model_passes': 63, 'use_bias': True,
-         'fm_context_num_factors': 106, 'lda_model_iterations': 264,
-         'fm_context_iterations': 111.0},
-        {'fold': 6, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.3594891423456263, 'lda_num_topics': 682,
-         'use_context': True, 'lda_model_passes': 83, 'use_bias': True,
-         'fm_context_num_factors': 38, 'lda_model_iterations': 62,
-         'fm_context_iterations': 115.0},
-        {'fold': 7, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.3697255891944044, 'lda_num_topics': 311,
-         'use_context': True, 'lda_model_passes': 6, 'use_bias': True,
-         'fm_context_num_factors': 148, 'lda_model_iterations': 227,
-         'fm_context_iterations': 110.0},
-        {'fold': 8, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.39348352792449093, 'lda_num_topics': 191,
-         'use_context': True, 'lda_model_passes': 61, 'use_bias': True,
-         'fm_context_num_factors': 105, 'lda_model_iterations': 60,
-         'fm_context_iterations': 109.0},
-        {'fold': 9, 'fm_use_1way_interactions': True,
-         'lda_epsilon': 0.44475053702442174, 'lda_num_topics': 330,
-         'use_context': True, 'lda_model_passes': 84, 'use_bias': True,
-         'fm_context_num_factors': 70, 'lda_model_iterations': 150,
-         'fm_context_iterations': 355.0}
+        {'fold': 0, 'lda_epsilon': 0.07880440620294243, 'lda_num_topics': 34,
+         'use_context': True, 'lda_model_passes': 52,
+         'fm_context_num_factors': 128, 'lda_model_iterations': 128,
+         'fm_context_iterations': 101},
+        {'fold': 1, 'lda_epsilon': 0.17195395908803693, 'lda_num_topics': 303,
+         'use_context': True, 'lda_model_passes': 93,
+         'fm_context_num_factors': 195, 'lda_model_iterations': 234,
+         'fm_context_iterations': 101},
+        {'fold': 2, 'lda_epsilon': 0.28737312234836504, 'lda_num_topics': 331,
+         'use_context': True, 'lda_model_passes': 3,
+         'fm_context_num_factors': 193, 'lda_model_iterations': 134,
+         'fm_context_iterations': 109},
+        {'fold': 3, 'lda_epsilon': 0.42428360798122067, 'lda_num_topics': 700,
+         'use_context': True, 'lda_model_passes': 98,
+         'fm_context_num_factors': 183, 'lda_model_iterations': 469,
+         'fm_context_iterations': 117},
+        {'fold': 4, 'lda_epsilon': 0.31942754612995505, 'lda_num_topics': 422,
+         'use_context': True, 'lda_model_passes': 27,
+         'fm_context_num_factors': 116, 'lda_model_iterations': 456,
+         'fm_context_iterations': 101},
+        {'fold': 5, 'lda_epsilon': 0.29413633240807885, 'lda_num_topics': 741,
+         'use_context': True, 'lda_model_passes': 69,
+         'fm_context_num_factors': 143, 'lda_model_iterations': 443,
+         'fm_context_iterations': 100},
+        {'fold': 6, 'lda_epsilon': 0.29557472675205987, 'lda_num_topics': 266,
+         'use_context': True, 'lda_model_passes': 49,
+         'fm_context_num_factors': 182, 'lda_model_iterations': 448,
+         'fm_context_iterations': 111},
+        {'fold': 7, 'lda_epsilon': 0.31994749965370956, 'lda_num_topics': 303,
+         'use_context': True, 'lda_model_passes': 99,
+         'fm_context_num_factors': 188, 'lda_model_iterations': 217,
+         'fm_context_iterations': 108},
+        {'fold': 8, 'lda_epsilon': 0.2960375671760339, 'lda_num_topics': 965,
+         'use_context': True, 'lda_model_passes': 82,
+         'fm_context_num_factors': 127, 'lda_model_iterations': 132,
+         'fm_context_iterations': 121},
+        {'fold': 9, 'lda_epsilon': 0.1561718750639763, 'lda_num_topics': 623,
+         'use_context': True, 'lda_model_passes': 82,
+         'fm_context_num_factors': 118, 'lda_model_iterations': 237,
+         'fm_context_iterations': 107}
     ]
 
     nocontext_parameters = [
-        {'fold': 0, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 37, 'use_context': False,
-         'fm_context_iterations': 123.0},
-        {'fold': 1, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 58, 'use_context': False,
-         'fm_context_iterations': 185.0},
-        {'fold': 2, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 95, 'use_context': False,
-         'fm_context_iterations': 116.0},
-        {'fold': 3, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 182, 'use_context': False,
-         'fm_context_iterations': 109.0},
-        {'fold': 4, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 11, 'use_context': False,
-         'fm_context_iterations': 121.0},
-        {'fold': 5, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 142, 'use_context': False,
-         'fm_context_iterations': 112.0},
-        {'fold': 6, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 48, 'use_context': False,
-         'fm_context_iterations': 122.0},
-        {'fold': 7, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 111, 'use_context': False,
-         'fm_context_iterations': 112.0},
-        {'fold': 8, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 41, 'use_context': False,
-         'fm_context_iterations': 221.0},
-        {'fold': 9, 'fm_use_1way_interactions': True, 'use_bias': True,
-         'fm_context_num_factors': 136, 'use_context': False,
-         'fm_context_iterations': 102.0}
+        {'fold': 0, 'fm_context_num_factors': 91, 'use_context': False,
+         'fm_context_iterations': 110},
+        {'fold': 1, 'fm_context_num_factors': 77, 'use_context': False,
+         'fm_context_iterations': 103},
+        {'fold': 2, 'fm_context_num_factors': 138, 'use_context': False,
+         'fm_context_iterations': 100},
+        {'fold': 3, 'fm_context_num_factors': 87, 'use_context': False,
+         'fm_context_iterations': 106},
+        {'fold': 4, 'fm_context_num_factors': 60, 'use_context': False,
+         'fm_context_iterations': 100},
+        {'fold': 5, 'fm_context_num_factors': 53, 'use_context': False,
+         'fm_context_iterations': 107},
+        {'fold': 6, 'fm_context_num_factors': 0, 'use_context': False,
+         'fm_context_iterations': 104},
+        {'fold': 7, 'fm_context_num_factors': 66, 'use_context': False,
+         'fm_context_iterations': 101},
+        {'fold': 8, 'fm_context_num_factors': 83, 'use_context': False,
+         'fm_context_iterations': 110},
+        {'fold': 9, 'fm_context_num_factors': 44, 'use_context': False,
+         'fm_context_iterations': 127}
     ]
 
     no_context_results = []

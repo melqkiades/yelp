@@ -8,6 +8,7 @@
   cat myfile | perl -MList::Util=shuffle -e 'print shuffle(<STDIN>);'
 - To run python and keep the constantly updated in a file use:
   stdbuf -oL nohup python context_recommender_tests.py > results4.log &
+  PYTHONPATH='/home/fpena/yelp/source/python' stdbuf -oL nohup python /home/fpena/yelp/source/python/evaluation/context_top_n_runner.py > /home/fpena/logs/results4.log &
 - Command to run the iPython notebook:
   ipython notebook --pylab inline
 - To expand the memory a process can use the shmmax command

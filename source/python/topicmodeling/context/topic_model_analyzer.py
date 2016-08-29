@@ -9,6 +9,8 @@ from pandas import DataFrame
 
 from etl import ETLUtils
 from topicmodeling.context import topic_model_creator
+from topicmodeling.context.lda_based_context import LdaBasedContext
+from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from utils.constants import Constants
 
 
@@ -121,21 +123,19 @@ num_words = 10
 print(csv_file_name)
 
 
-def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
+def export_topics():
 
     topic_model_creator.plant_seeds()
 
-    new_properties = Constants.get_properties_copy()
-    if epsilon is not None:
-        new_properties['lda_epsilon'] = epsilon
-    if alpha is not None:
-        new_properties['lda_alpha'] = alpha
-
-    Constants.update_properties(new_properties)
+    start_time = time.time()
 
     # lda_based_context = load_topic_model(cycle_index, fold_index)
-    lda_based_context = topic_model_creator.create_single_topic_model(
-        cycle_index, fold_index, False)
+    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+    lda_based_context = LdaBasedContext(records)
+    lda_based_context.generate_review_corpus()
+    lda_based_context.build_topic_model()
+    lda_based_context.update_reviews_with_topics()
+    lda_based_context.get_context_rich_topics()
 
     file_name = Constants.DATASET_FOLDER + 'all_reviews_topic_model_' + \
         Constants.ITEM_TYPE + '_' + \
@@ -186,13 +186,91 @@ def export_topics(cycle_index, fold_index, epsilon=None, alpha=None):
         results.append(result)
     topic_model_score = analyze_topics(results, lda_based_context)
 
-    # generate_excel_file(results)
+    end_time = time.time()
+    cycle_time = end_time - start_time
+    topic_model_score['cycle_time'] = cycle_time
+
+    print("Cycle time = %f seconds" % cycle_time)
+
+    generate_excel_file(results)
     # ETLUtils.save_csv_file(file_name, results, headers)
 
-    write_results_to_csv(csv_file_name, topic_model_score)
-    write_results_to_json(json_file_name, topic_model_score)
-
     return topic_model_score
+
+
+def export_nmf_topics():
+
+    topic_model_creator.plant_seeds()
+
+    start_time = time.time()
+
+    results = []
+
+    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+
+    print('num_reviews', len(records))
+    # lda_context_utils.discover_topics(my_reviews, 150)
+    context_extractor = NmfContextExtractor(records)
+    context_extractor.num_topics = Constants.LDA_NUM_TOPICS
+    context_extractor.generate_review_bows()
+    context_extractor.build_document_term_matrix()
+    context_extractor.build_stable_topic_model()
+    context_extractor.update_reviews_with_topics()
+    context_extractor.get_context_rich_topics()
+    topic_model_strings = context_extractor.print_topic_model()
+    topic_ratio_map = context_extractor.topic_ratio_map
+
+    for topic in range(Constants.LDA_NUM_TOPICS):
+        result = {}
+        result['topic_id'] = topic
+        result.update(split_topic(topic_model_strings[topic]))
+        result['ratio'] = topic_ratio_map[topic]
+        result['weighted_frequency'] = \
+            context_extractor.topic_weighted_frequency_map[topic]
+        results.append(result)
+
+    data_frame = DataFrame.from_dict(results)
+
+    scores = {}
+    scores['num_topics'] = Constants.LDA_NUM_TOPICS
+    topic_model_score = data_frame['score'].mean()
+    scores['topic_model_score'] = topic_model_score
+    high_ratio_mean_score = data_frame[(data_frame.ratio > 1.0)]['score'].mean()
+    low_ratio_mean_score = data_frame[(data_frame.ratio < 1.0)]['score'].mean()
+    scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
+    scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
+    scores['lda_model_passes'] = Constants.LDA_MODEL_PASSES
+    scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
+    scores['document_level'] = Constants.DOCUMENT_LEVEL
+    scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
+
+    separation_score = \
+        (high_ratio_mean_score / low_ratio_mean_score) \
+        if low_ratio_mean_score != 0 \
+        else 'N/A'
+    scores['separation_score'] = separation_score
+    scores['combined_score'] = \
+        (topic_model_score * separation_score) \
+        if topic_model_score != 'N/A' and separation_score != 'N/A' \
+        else 'N/A'
+
+    print('topic model score: %f' % scores['topic_model_score'])
+    print('separation score:', scores['separation_score'])
+    print('combined score:', scores['combined_score'])
+
+    print('num topics: %d' % Constants.LDA_NUM_TOPICS)
+    print('topic model score: %f' % topic_model_score)
+
+    end_time = time.time()
+    cycle_time = end_time - start_time
+    scores['cycle_time'] = cycle_time
+
+    print("Cycle time = %f seconds" % cycle_time)
+
+    generate_excel_file(results)
+    # ETLUtils.save_csv_file(file_name, results, headers)
+
+    return scores
 
 
 def split_topic(topic_string):
@@ -248,16 +326,17 @@ def analyze_topics(topic_data, lda_based_context):
         (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
     # scores['all_ratio_count'] =
     #     data_frame[data_frame.score > 0.1]['topic_id'].count()
-    num_context_topics = len(lda_based_context.context_rich_topics)
-    scores['num_context_topics'] = num_context_topics
+    # num_context_topics = len(lda_based_context.context_rich_topics)
+    # scores['num_context_topics'] = num_context_topics
     scores['document_level'] = Constants.DOCUMENT_LEVEL
     scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
-    scores['alpha'] = Constants.LDA_ALPHA
-    scores['epsilon'] = Constants.LDA_EPSILON
-    scores['lda_review_type'] = Constants.LDA_REVIEW_TYPE
+    # scores['alpha'] = Constants.LDA_ALPHA
+    # scores['epsilon'] = Constants.LDA_EPSILON
+    # scores['lda_review_type'] = Constants.LDA_REVIEW_TYPE
     scores['lda_model_passes'] = Constants.LDA_MODEL_PASSES
     scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
     scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
+    scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
 
     separation_score =\
         (high_ratio_mean_score / low_ratio_mean_score)\
@@ -290,7 +369,14 @@ def generate_excel_file(records):
         for values in grouped_restaurant_context_words.values():
             my_context_words.extend(values)
 
-    workbook = xlsxwriter.Workbook('/Users/fpena/tmp/conditional_format-5.xlsx')
+    file_name = Constants.DATASET_FOLDER + 'topic_model_' +\
+        Constants.TOPIC_MODEL_TYPE + '_' +\
+        Constants.ITEM_TYPE + '_' + \
+        str(Constants.LDA_NUM_TOPICS) + 't_' +\
+        str(Constants.LDA_MODEL_PASSES) + 'p_' + \
+        str(Constants.LDA_MODEL_ITERATIONS) + 'i_' + \
+        '.xlsx'
+    workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
 
     yellow_format = workbook.add_format()
@@ -365,7 +451,9 @@ def main():
     alpha_list = [0.0]
     # num_topics_list =\
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
-    num_topics_list = [300]
+    # num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
+    num_topics_list = [150, 300]
+    # num_topics_list = [300]
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
     # topic_weighting_methods = ['binary', 'probability']
@@ -373,19 +461,24 @@ def main():
     # review_type_list = ['specific', 'generic', 'all_reviews']
     review_type_list = ['specific']
     # lda_passes_list = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    lda_passes_list = [1]
+    lda_passes_list = [1, 10, 100]
+    # lda_passes_list = [1]
     # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
-    lda_iterations_list = [50]
+    lda_iterations_list = [100, 200, 500]
+    # lda_iterations_list = [50]
+    # topic_model_type_list = ['lda']
+    topic_model_type_list = ['nmf', 'lda']
     num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
         len(document_level_list) * len(topic_weighting_methods) *\
         len(review_type_list) * len(lda_passes_list) *\
-        len(lda_iterations_list)
+        len(lda_iterations_list) * len(topic_model_type_list)
     cycle_index = 1
     for epsilon, alpha, num_topics, document_level, topic_weighting_method,\
-        review_type, lda_passes, lda_iterations in itertools.product(
+        review_type, lda_passes, lda_iterations,\
+        topic_model_type in itertools.product(
             epsilon_list, alpha_list, num_topics_list, document_level_list,
             topic_weighting_methods, review_type_list, lda_passes_list,
-            lda_iterations_list):
+            lda_iterations_list, topic_model_type_list):
         print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
         new_dict = {
             'lda_num_topics': num_topics,
@@ -395,10 +488,21 @@ def main():
             'lda_epsilon': epsilon,
             'lda_review_type': review_type,
             'lda_model_passes': lda_passes,
-            'lda_model_iterations': lda_iterations
+            'lda_model_iterations': lda_iterations,
+            'topic_model_type': topic_model_type
         }
+
+        print(new_dict)
+
         Constants.update_properties(new_dict)
-        export_topics(0, 0)
+        if Constants.TOPIC_MODEL_TYPE == 'lda':
+            topic_model_score = export_topics()
+        elif Constants.TOPIC_MODEL_TYPE == 'nmf':
+            topic_model_score = export_nmf_topics()
+
+        write_results_to_csv(csv_file_name, topic_model_score)
+        write_results_to_json(json_file_name, topic_model_score)
+
         cycle_index += 1
 
 
@@ -424,10 +528,10 @@ def write_results_to_json(file_name, results):
             json.dump(results, f)
             f.write('\n')
 
-
 # start = time.time()
 # main()
-# export_topics(0, 0)
+# export_topics()
+# export_nmf_topics()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
