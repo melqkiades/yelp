@@ -122,9 +122,9 @@ class Constants(object):
         '_' + str(DOCUMENT_LEVEL) + '.pkl'
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     CSV_RESULTS_FILE = DATASET_FOLDER + \
-        ITEM_TYPE + '_results-1iter.csv'
+        ITEM_TYPE + '_results.csv'
     JSON_RESULTS_FILE = DATASET_FOLDER + \
-        ITEM_TYPE + '_results-1iter.json'
+        ITEM_TYPE + '_results.json'
     GIT_REVISION_HASH = strip(subprocess.check_output(
         ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
     _properties['git_revision_hash'] = GIT_REVISION_HASH

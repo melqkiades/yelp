@@ -403,8 +403,8 @@ def generate_excel_file(records):
     data = [[record[column] for column in headers] for record in records]
     headers = [{'header': header} for header in headers]
     num_topics = Constants.LDA_NUM_TOPICS
-    print(data)
-    print(headers)
+    # print(data)
+    # print(headers)
 
     # worksheet7.add_table('B2:N52', {'data': data, 'columns': headers})
 
@@ -451,8 +451,8 @@ def main():
     alpha_list = [0.0]
     # num_topics_list =\
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
-    # num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
-    num_topics_list = [150, 300]
+    num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
+    # num_topics_list = [150, 300]
     # num_topics_list = [300]
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
@@ -464,7 +464,7 @@ def main():
     lda_passes_list = [1, 10, 100]
     # lda_passes_list = [1]
     # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
-    lda_iterations_list = [100, 200, 500]
+    lda_iterations_list = [50, 100, 200, 500]
     # lda_iterations_list = [50]
     # topic_model_type_list = ['lda']
     topic_model_type_list = ['nmf', 'lda']
@@ -492,7 +492,7 @@ def main():
             'topic_model_type': topic_model_type
         }
 
-        print(new_dict)
+        # print(new_dict)
 
         Constants.update_properties(new_dict)
         if Constants.TOPIC_MODEL_TYPE == 'lda':
