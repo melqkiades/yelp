@@ -36,7 +36,7 @@ def run_recommender(args):
     print('args', args)
 
     # Cast integer values
-    args['fm_iterations'] = int(args['fm_iterations'])
+    # args['fm_iterations'] = int(args['fm_iterations'])
     args['fm_num_factors'] = int(args['fm_num_factors'])
     if args['use_context']:
         args['lda_model_iterations'] = int(args['lda_model_iterations'])
@@ -78,13 +78,13 @@ def tune_parameters():
         'topn_num_items': Constants.TOPN_NUM_ITEMS,
         'nested_cross_validation_cycle': Constants.NESTED_CROSS_VALIDATION_CYCLE,
         # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
-        'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
+        # 'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
         'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 200, 1),
         # 'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
         # 'fm_use_bias': hp.choice('use_bias', [True, False]),
         # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
         # 'lda_beta': hp.uniform('lda_beta', 0, 2),
-        'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
+        # 'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
         'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
         'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
         'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
