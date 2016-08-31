@@ -47,6 +47,8 @@ def build_headers(context_rich_topics):
 
 
 def create_user_item_map(records):
+    print('creating user-item map: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
     user_ids = extractor.get_groupby_list(records, Constants.USER_ID_FIELD)
     user_item_map = {}
     user_count = 0
@@ -120,12 +122,12 @@ def filter_reviews(records, reviews, review_type):
 def write_results_to_csv(results):
     if not os.path.exists(Constants.CSV_RESULTS_FILE):
         with open(Constants.CSV_RESULTS_FILE, 'w') as f:
-            w = csv.DictWriter(f, results.keys())
+            w = csv.DictWriter(f, sorted(results.keys()))
             w.writeheader()
             w.writerow(results)
     else:
         with open(Constants.CSV_RESULTS_FILE, 'a') as f:
-            w = csv.DictWriter(f, results.keys())
+            w = csv.DictWriter(f, sorted(results.keys()))
             w.writerow(results)
 
 
@@ -219,7 +221,7 @@ class ContextTopNRunner(object):
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.original_records =\
-            ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+            ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
         # ETLUtils.drop_fields(['tagged_words'], self.original_records)
         print('num_records: %d' % len(self.original_records))
 
@@ -571,7 +573,7 @@ class ContextTopNRunner(object):
             self.top_n_evaluator.generic_recall
 
     def evaluate_rmse(self):
-        print('evaluate_topn: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        print('evaluate_rmse: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         true_values = [
             record[Constants.RATING_FIELD] for record in self.records_to_predict
@@ -935,10 +937,10 @@ def run_test_folds():
     print('No context mean recall: %f' % numpy.mean(no_context_results))
     print('Context mean recall: %f' % numpy.mean(context_results))
 
-# start = time.time()
-# my_context_top_n_runner = ContextTopNRunner()
-# my_context_top_n_runner.run()
+start = time.time()
+my_context_top_n_runner = ContextTopNRunner()
+my_context_top_n_runner.run()
 # run_test_folds_original()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)

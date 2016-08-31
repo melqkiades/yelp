@@ -252,7 +252,7 @@ class YelpReviewsPreprocessor:
             Constants.TEXT_FIELD,
             Constants.POS_TAGS_FIELD,
             Constants.VOTES_FIELD,
-            Constants.BOW_FIELD
+            # Constants.BOW_FIELD
         ]
 
         ETLUtils.drop_fields(unnecessary_fields, self.records)

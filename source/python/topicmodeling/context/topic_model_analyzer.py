@@ -130,7 +130,7 @@ def export_topics():
     start_time = time.time()
 
     # lda_based_context = load_topic_model(cycle_index, fold_index)
-    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
     lda_based_context = LdaBasedContext(records)
     lda_based_context.generate_review_corpus()
     lda_based_context.build_topic_model()
@@ -206,7 +206,7 @@ def export_nmf_topics():
 
     results = []
 
-    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
     print('num_reviews', len(records))
     # lda_context_utils.discover_topics(my_reviews, 150)
@@ -241,7 +241,9 @@ def export_nmf_topics():
     scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
     scores['lda_model_passes'] = Constants.LDA_MODEL_PASSES
     scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
+    scores['item_type'] = Constants.ITEM_TYPE
     scores['document_level'] = Constants.DOCUMENT_LEVEL
+    scores['bow_type'] = Constants.BOW_TYPE
     scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
 
     separation_score = \
@@ -328,7 +330,9 @@ def analyze_topics(topic_data, lda_based_context):
     #     data_frame[data_frame.score > 0.1]['topic_id'].count()
     # num_context_topics = len(lda_based_context.context_rich_topics)
     # scores['num_context_topics'] = num_context_topics
+    scores['item_type'] = Constants.ITEM_TYPE
     scores['document_level'] = Constants.DOCUMENT_LEVEL
+    scores['bow_type'] = Constants.BOW_TYPE
     scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
     # scores['alpha'] = Constants.LDA_ALPHA
     # scores['epsilon'] = Constants.LDA_EPSILON
@@ -374,7 +378,7 @@ def generate_excel_file(records):
         Constants.ITEM_TYPE + '_' + \
         str(Constants.LDA_NUM_TOPICS) + 't_' +\
         str(Constants.LDA_MODEL_PASSES) + 'p_' + \
-        str(Constants.LDA_MODEL_ITERATIONS) + 'i_' + \
+        str(Constants.LDA_MODEL_ITERATIONS) + 'i' + \
         '.xlsx'
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
@@ -453,7 +457,7 @@ def main():
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
     num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
     # num_topics_list = [150, 300]
-    # num_topics_list = [300]
+    # num_topics_list = [30]
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
     # topic_weighting_methods = ['binary', 'probability']
@@ -466,8 +470,8 @@ def main():
     # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
     lda_iterations_list = [50, 100, 200, 500]
     # lda_iterations_list = [50]
-    # topic_model_type_list = ['lda']
     topic_model_type_list = ['nmf', 'lda']
+    # topic_model_type_list = ['nmf']
     num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
         len(document_level_list) * len(topic_weighting_methods) *\
         len(review_type_list) * len(lda_passes_list) *\
@@ -492,7 +496,7 @@ def main():
             'topic_model_type': topic_model_type
         }
 
-        # print(new_dict)
+        print(new_dict)
 
         Constants.update_properties(new_dict)
         if Constants.TOPIC_MODEL_TYPE == 'lda':
@@ -509,12 +513,12 @@ def main():
 def write_results_to_csv(file_name, results):
     if not os.path.exists(file_name):
         with open(file_name, 'w') as f:
-            w = csv.DictWriter(f, results.keys())
+            w = csv.DictWriter(f, sorted(results.keys()))
             w.writeheader()
             w.writerow(results)
     else:
         with open(file_name, 'a') as f:
-            w = csv.DictWriter(f, results.keys())
+            w = csv.DictWriter(f, sorted(results.keys()))
             w.writerow(results)
 
 

@@ -371,7 +371,7 @@ class NmfContextExtractor:
 
 def main():
 
-    records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
     print('num_reviews', len(records))
     # lda_context_utils.discover_topics(my_reviews, 150)

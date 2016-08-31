@@ -404,12 +404,12 @@ class WordContextTopNRunner(object):
 
         if not os.path.exists(Constants.CSV_RESULTS_FILE):
             with open(Constants.CSV_RESULTS_FILE, 'wb') as f:
-                w = csv.DictWriter(f, results.keys())
+                w = csv.DictWriter(f, sorted(results.keys()))
                 w.writeheader()
                 w.writerow(results)
         else:
             with open(Constants.CSV_RESULTS_FILE, 'a') as f:
-                w = csv.DictWriter(f, results.keys())
+                w = csv.DictWriter(f, sorted(results.keys()))
                 w.writerow(results)
 
 
