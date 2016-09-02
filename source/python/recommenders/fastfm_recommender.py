@@ -368,8 +368,8 @@ def find_lda_context(train_records, test_records):
     topic_model = ldamodel.LdaModel(
         corpus, id2word=dictionary,
         num_topics=num_topics,
-        passes=Constants.LDA_MODEL_PASSES,
-        iterations=Constants.LDA_MODEL_ITERATIONS)
+        passes=Constants.TOPIC_MODEL_PASSES,
+        iterations=Constants.TOPIC_MODEL_ITERATIONS)
 
     print(corpus)
     for i in range(num_topics):

@@ -34,17 +34,17 @@ def build_topic_model_from_corpus(corpus, dictionary):
         print('%s: lda multicore' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         topic_model = LdaMulticore(
             corpus, id2word=dictionary,
-            num_topics=Constants.LDA_NUM_TOPICS,
-            passes=Constants.LDA_MODEL_PASSES,
-            iterations=Constants.LDA_MODEL_ITERATIONS,
+            num_topics=Constants.TOPIC_MODEL_NUM_TOPICS,
+            passes=Constants.TOPIC_MODEL_PASSES,
+            iterations=Constants.TOPIC_MODEL_ITERATIONS,
             workers=Constants.NUM_CORES - 1)
     else:
         print('%s: lda monocore' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         topic_model = ldamodel.LdaModel(
             corpus, id2word=dictionary,
-            num_topics=Constants.LDA_NUM_TOPICS,
-            passes=Constants.LDA_MODEL_PASSES,
-            iterations=Constants.LDA_MODEL_ITERATIONS)
+            num_topics=Constants.TOPIC_MODEL_NUM_TOPICS,
+            passes=Constants.TOPIC_MODEL_PASSES,
+            iterations=Constants.TOPIC_MODEL_ITERATIONS)
 
     return topic_model
 

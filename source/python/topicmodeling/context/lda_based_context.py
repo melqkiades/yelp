@@ -20,7 +20,7 @@ class LdaBasedContext:
         self.all_senses = None
         self.sense_groups = None
         self.review_topics_list = None
-        self.num_topics = Constants.LDA_NUM_TOPICS
+        self.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
         self.context_rich_topics = None
@@ -85,10 +85,10 @@ class LdaBasedContext:
     def update_reviews_with_topics(self):
         lda_context_utils.update_reviews_with_topics(
             self.topic_model, self.specific_corpus, self.specific_reviews,
-            Constants.LDA_EPSILON)
+            Constants.CONTEXT_EXTRACTOR_EPSILON)
         lda_context_utils.update_reviews_with_topics(
             self.topic_model, self.generic_corpus, self.generic_reviews,
-            Constants.LDA_EPSILON)
+            Constants.CONTEXT_EXTRACTOR_EPSILON)
 
         print('%s: updated reviews with topics' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -140,7 +140,7 @@ class LdaBasedContext:
                 lda_context_utils.calculate_topic_weighted_frequency(
                     topic, self.generic_reviews)
 
-            if weighted_frq < Constants.LDA_ALPHA:
+            if weighted_frq < Constants.CONTEXT_EXTRACTOR_ALPHA:
                 non_contextual_topics.add(topic)
                 # print('non-contextual_topic: %d' % topic)
                 lower_than_alpha_count += 1.0
@@ -156,7 +156,8 @@ class LdaBasedContext:
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
 
-            if self.lda_beta_comparison_operator(ratio, Constants.LDA_BETA):
+            if self.lda_beta_comparison_operator(
+                    ratio, Constants.CONTEXT_EXTRACTOR_BETA):
                 non_contextual_topics.add(topic)
                 lower_than_beta_count += 1.0
                 # print('non-contextual_topic: %d' % topic)
@@ -202,7 +203,8 @@ class LdaBasedContext:
             # numpy.random.seed(0)
             topic_distribution = lda_context_utils.get_topic_distribution(
                 record, self.topic_model, self.dictionary,
-                Constants.LDA_EPSILON, text_sampling_proportion, self.max_words
+                Constants.CONTEXT_EXTRACTOR_EPSILON, text_sampling_proportion,
+                self.max_words
             )
             record[Constants.TOPICS_FIELD] = topic_distribution
 

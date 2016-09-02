@@ -60,12 +60,12 @@ class Constants(object):
     RANDOM_SEED = _properties['random_seed']
     NUMPY_RANDOM_SEED = _properties['numpy_random_seed']
     NUM_CYCLES = _properties['num_cycles']
-    LDA_ALPHA = _properties['lda_alpha']
-    LDA_BETA = _properties['lda_beta']
-    LDA_EPSILON = _properties['lda_epsilon']
-    LDA_NUM_TOPICS = _properties['lda_num_topics']
-    LDA_MODEL_PASSES = _properties['lda_model_passes']
-    LDA_MODEL_ITERATIONS = _properties['lda_model_iterations']
+    CONTEXT_EXTRACTOR_ALPHA = _properties['context_extractor_alpha']
+    CONTEXT_EXTRACTOR_BETA = _properties['context_extractor_beta']
+    CONTEXT_EXTRACTOR_EPSILON = _properties['context_extractor_epsilon']
+    TOPIC_MODEL_NUM_TOPICS = _properties['topic_model_num_topics']
+    TOPIC_MODEL_PASSES = _properties['topic_model_passes']
+    TOPIC_MODEL_ITERATIONS = _properties['topic_model_iterations']
     LDA_MULTICORE = _properties['lda_multicore']
     LIBFM_SEED = _properties['libfm_seed']
     FM_NUM_FACTORS = _properties['fm_num_factors']
@@ -152,12 +152,17 @@ class Constants(object):
         Constants.RANDOM_SEED = Constants._properties['random_seed']
         Constants.NUMPY_RANDOM_SEED = Constants._properties['numpy_random_seed']
         Constants.NUM_CYCLES = Constants._properties['num_cycles']
-        Constants.LDA_ALPHA = Constants._properties['lda_alpha']
-        Constants.LDA_BETA = Constants._properties['lda_beta']
-        Constants.LDA_EPSILON = Constants._properties['lda_epsilon']
-        Constants.LDA_NUM_TOPICS = Constants._properties['lda_num_topics']
-        Constants.LDA_MODEL_PASSES = Constants._properties['lda_model_passes']
-        Constants.LDA_MODEL_ITERATIONS =\
+        Constants.CONTEXT_EXTRACTOR_ALPHA = \
+            Constants._properties['context_extractor_alpha']
+        Constants.CONTEXT_EXTRACTOR_BETA = \
+            Constants._properties['context_extractor_beta']
+        Constants.CONTEXT_EXTRACTOR_EPSILON = \
+            Constants._properties['context_extractor_epsilon']
+        Constants.TOPIC_MODEL_NUM_TOPICS = \
+            Constants._properties['topic_model_num_topics']
+        Constants.TOPIC_MODEL_PASSES = \
+            Constants._properties['topic_model_passes']
+        Constants.TOPIC_MODEL_ITERATIONS =\
             Constants._properties['lda_model_iterations']
         Constants.LDA_MULTICORE = Constants._properties['lda_multicore']
         Constants.LIBFM_SEED = Constants._properties['libfm_seed']

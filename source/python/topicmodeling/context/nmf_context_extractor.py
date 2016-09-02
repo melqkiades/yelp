@@ -20,7 +20,7 @@ class NmfContextExtractor:
         self.records = records
         self.specific_reviews = None
         self.generic_reviews = None
-        self.num_topics = Constants.LDA_NUM_TOPICS
+        self.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
         self.tfidf_vectorizer = None
@@ -105,7 +105,7 @@ class NmfContextExtractor:
 
         self.topic_model = decomposition.NMF(
             init="nndsvd", n_components=self.num_topics,
-            max_iter=Constants.LDA_MODEL_ITERATIONS)
+            max_iter=Constants.TOPIC_MODEL_ITERATIONS)
         self.document_topic_matrix =\
             self.topic_model.fit_transform(self.document_term_matrix)
         self.topic_term_matrix = self.topic_model.components_
@@ -119,7 +119,7 @@ class NmfContextExtractor:
 
         topic_model = decomposition.NMF(
             init="nndsvd", n_components=self.num_topics,
-            max_iter=Constants.LDA_MODEL_ITERATIONS)
+            max_iter=Constants.TOPIC_MODEL_ITERATIONS)
         topic_model.fit_transform(self.document_term_matrix)
         topic_term_matrix = topic_model.components_
 
@@ -128,7 +128,7 @@ class NmfContextExtractor:
     def build_stable_topic_model(self):
 
         matrices = []
-        for i in range(Constants.LDA_MODEL_PASSES):
+        for i in range(Constants.TOPIC_MODEL_PASSES):
             topic_term_matrix = self.build_single_topic_model().transpose()
             matrices.append(topic_term_matrix)
 
@@ -140,7 +140,7 @@ class NmfContextExtractor:
 
         self.topic_model = decomposition.NMF(
             init="nndsvd", n_components=self.num_topics,
-            max_iter=Constants.LDA_MODEL_ITERATIONS
+            max_iter=Constants.TOPIC_MODEL_ITERATIONS
         )
 
         self.document_topic_matrix = self.topic_model.fit_transform(M)
@@ -228,7 +228,7 @@ class NmfContextExtractor:
                 self.calculate_topic_weighted_frequency(
                     topic, self.generic_reviews)
 
-            if weighted_frq < Constants.LDA_ALPHA:
+            if weighted_frq < Constants.CONTEXT_EXTRACTOR_ALPHA:
                 non_contextual_topics.add(topic)
                 # print('non-contextual_topic: %d' % topic)
                 lower_than_alpha_count += 1.0
@@ -244,7 +244,8 @@ class NmfContextExtractor:
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
             #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
 
-            if self.lda_beta_comparison_operator(ratio, Constants.LDA_BETA):
+            if self.lda_beta_comparison_operator(
+                    ratio, Constants.CONTEXT_EXTRACTOR_BETA):
                 non_contextual_topics.add(topic)
                 lower_than_beta_count += 1.0
                 # print('non-contextual_topic: %d' % topic)

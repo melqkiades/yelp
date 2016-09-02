@@ -139,10 +139,10 @@ def export_topics():
 
     file_name = Constants.DATASET_FOLDER + 'all_reviews_topic_model_' + \
         Constants.ITEM_TYPE + '_' + \
-        str(Constants.LDA_NUM_TOPICS) + '_' + \
-        str(Constants.LDA_MODEL_PASSES) + '_' + \
-        str(Constants.LDA_MODEL_ITERATIONS) + '_' + \
-        str(Constants.LDA_EPSILON) + \
+        str(Constants.TOPIC_MODEL_NUM_TOPICS) + '_' + \
+                str(Constants.TOPIC_MODEL_PASSES) + '_' + \
+                str(Constants.TOPIC_MODEL_ITERATIONS) + '_' + \
+                str(Constants.CONTEXT_EXTRACTOR_EPSILON) + \
         '-nouns-complete.csv'
     print(file_name)
 
@@ -211,7 +211,7 @@ def export_nmf_topics():
     print('num_reviews', len(records))
     # lda_context_utils.discover_topics(my_reviews, 150)
     context_extractor = NmfContextExtractor(records)
-    context_extractor.num_topics = Constants.LDA_NUM_TOPICS
+    context_extractor.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
     context_extractor.generate_review_bows()
     context_extractor.build_document_term_matrix()
     context_extractor.build_stable_topic_model()
@@ -220,7 +220,7 @@ def export_nmf_topics():
     topic_model_strings = context_extractor.print_topic_model()
     topic_ratio_map = context_extractor.topic_ratio_map
 
-    for topic in range(Constants.LDA_NUM_TOPICS):
+    for topic in range(Constants.TOPIC_MODEL_NUM_TOPICS):
         result = {}
         result['topic_id'] = topic
         result.update(split_topic(topic_model_strings[topic]))
@@ -232,15 +232,15 @@ def export_nmf_topics():
     data_frame = DataFrame.from_dict(results)
 
     scores = {}
-    scores['num_topics'] = Constants.LDA_NUM_TOPICS
+    scores['num_topics'] = Constants.TOPIC_MODEL_NUM_TOPICS
     topic_model_score = data_frame['score'].mean()
     scores['topic_model_score'] = topic_model_score
     high_ratio_mean_score = data_frame[(data_frame.ratio > 1.0)]['score'].mean()
     low_ratio_mean_score = data_frame[(data_frame.ratio < 1.0)]['score'].mean()
     scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
     scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
-    scores['lda_model_passes'] = Constants.LDA_MODEL_PASSES
-    scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
+    scores['lda_model_passes'] = Constants.TOPIC_MODEL_PASSES
+    scores['lda_model_iterations'] = Constants.TOPIC_MODEL_ITERATIONS
     scores['item_type'] = Constants.ITEM_TYPE
     scores['document_level'] = Constants.DOCUMENT_LEVEL
     scores['bow_type'] = Constants.BOW_TYPE
@@ -260,7 +260,7 @@ def export_nmf_topics():
     print('separation score:', scores['separation_score'])
     print('combined score:', scores['combined_score'])
 
-    print('num topics: %d' % Constants.LDA_NUM_TOPICS)
+    print('num topics: %d' % Constants.TOPIC_MODEL_NUM_TOPICS)
     print('topic model score: %f' % topic_model_score)
 
     end_time = time.time()
@@ -315,17 +315,17 @@ def analyze_topics(topic_data, lda_based_context):
     data_frame = DataFrame.from_dict(topic_data)
 
     scores = {}
-    num_topics = Constants.LDA_NUM_TOPICS
+    num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
     scores['num_topics'] = num_topics
     topic_model_score = data_frame[
-        data_frame.weighted_frequency > Constants.LDA_ALPHA]['score'].mean()
+        data_frame.weighted_frequency > Constants.CONTEXT_EXTRACTOR_ALPHA]['score'].mean()
     scores['topic_model_score'] = topic_model_score
     high_ratio_mean_score = data_frame[
         (data_frame.ratio > 1.0) &
-        (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
+        (data_frame.weighted_frequency > Constants.CONTEXT_EXTRACTOR_ALPHA)]['score'].mean()
     low_ratio_mean_score = data_frame[
         (data_frame.ratio < 1.0) &
-        (data_frame.weighted_frequency > Constants.LDA_ALPHA)]['score'].mean()
+        (data_frame.weighted_frequency > Constants.CONTEXT_EXTRACTOR_ALPHA)]['score'].mean()
     # scores['all_ratio_count'] =
     #     data_frame[data_frame.score > 0.1]['topic_id'].count()
     # num_context_topics = len(lda_based_context.context_rich_topics)
@@ -337,8 +337,8 @@ def analyze_topics(topic_data, lda_based_context):
     # scores['alpha'] = Constants.LDA_ALPHA
     # scores['epsilon'] = Constants.LDA_EPSILON
     # scores['lda_review_type'] = Constants.LDA_REVIEW_TYPE
-    scores['lda_model_passes'] = Constants.LDA_MODEL_PASSES
-    scores['lda_model_iterations'] = Constants.LDA_MODEL_ITERATIONS
+    scores['lda_model_passes'] = Constants.TOPIC_MODEL_PASSES
+    scores['lda_model_iterations'] = Constants.TOPIC_MODEL_ITERATIONS
     scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
     scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
 
@@ -376,9 +376,9 @@ def generate_excel_file(records):
     file_name = Constants.DATASET_FOLDER + 'topic_model_' +\
         Constants.TOPIC_MODEL_TYPE + '_' +\
         Constants.ITEM_TYPE + '_' + \
-        str(Constants.LDA_NUM_TOPICS) + 't_' +\
-        str(Constants.LDA_MODEL_PASSES) + 'p_' + \
-        str(Constants.LDA_MODEL_ITERATIONS) + 'i' + \
+        str(Constants.TOPIC_MODEL_NUM_TOPICS) + 't_' + \
+                str(Constants.TOPIC_MODEL_PASSES) + 'p_' + \
+                str(Constants.TOPIC_MODEL_ITERATIONS) + 'i' + \
         '.xlsx'
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
@@ -406,7 +406,7 @@ def generate_excel_file(records):
 
     data = [[record[column] for column in headers] for record in records]
     headers = [{'header': header} for header in headers]
-    num_topics = Constants.LDA_NUM_TOPICS
+    num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
     # print(data)
     # print(headers)
 
