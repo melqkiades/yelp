@@ -11,6 +11,7 @@ from os.path import expanduser
 
 from etl import ETLUtils
 from topicmodeling.context.lda_based_context import LdaBasedContext
+from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from utils import constants
 from utils.constants import Constants
 
@@ -18,7 +19,7 @@ from utils.constants import Constants
 def get_topic_model_file_path(cycle_index, fold_index):
 
     topic_model_file = Constants.ITEM_TYPE + '_' +\
-        'topic_model_cycle:' +\
+        Constants.TOPIC_MODEL_TYPE + '_topic_model_cycle:' +\
         str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
         '_fold:' + str(fold_index+1) + '|' +\
         str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
@@ -44,7 +45,7 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
         print('topic model already exists')
         return
 
-    topic_model = train_context_topics_model(records)
+    topic_model = train_context_extractor(records)
 
     with open(topic_model_file_path, 'wb') as write_file:
         pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
@@ -62,17 +63,27 @@ def plant_seeds():
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 
-def train_context_topics_model(records):
+def train_context_extractor(records):
     print('%s: train context topics model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    lda_based_context = LdaBasedContext(records)
-    lda_based_context.generate_review_corpus()
-    lda_based_context.build_topic_model()
-    lda_based_context.update_reviews_with_topics()
-    lda_based_context.get_context_rich_topics()
+    if Constants.TOPIC_MODEL_TYPE == 'lda':
+        context_extractor = LdaBasedContext(records)
+        context_extractor.generate_review_corpus()
+        context_extractor.build_topic_model()
+        context_extractor.update_reviews_with_topics()
+        context_extractor.get_context_rich_topics()
+    elif Constants.TOPIC_MODEL_TYPE == 'nmf':
+        context_extractor = NmfContextExtractor(records)
+        context_extractor.generate_review_bows()
+        context_extractor.build_document_term_matrix()
+        context_extractor.build_stable_topic_model()
+        context_extractor.update_reviews_with_topics()
+        context_extractor.get_context_rich_topics()
+    else:
+        raise ValueError('Unrecognized topic model type')
 
-    print('%s: Trained LDA Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    print('%s: Trained Topic Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    return lda_based_context
+    return context_extractor
 
 
 def load_topic_model(cycle_index, fold_index):
@@ -141,7 +152,7 @@ def create_topic_models():
 
         parallel_context_top_n(args)
 
-        # lda_based_context = train_context_topics_model(train_records)
+        # lda_based_context = train_context_extractor(train_records)
         # create_topic_model(i+1, j+1)
 
 
