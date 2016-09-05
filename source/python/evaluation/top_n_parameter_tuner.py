@@ -87,7 +87,9 @@ def tune_parameters():
         # 'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
         'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
         'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
-        'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
+        # 'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
+        'lda_num_topics': hp.choice('lda_num_topics', [10, 20, 30, 50, 75, 100, 150, 300]),
+        'topic_model_type': hp.choice('topic_model_type', ['lda', 'mnf']),
         # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
         # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
         'use_context': Constants.USE_CONTEXT
