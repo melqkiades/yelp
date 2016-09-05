@@ -617,7 +617,7 @@ class ContextTopNRunner(object):
 
     def perform_cross_validation(self, records):
 
-        print(Constants._properties)
+        Constants.print_properties()
 
         # self.plant_seeds()
 
@@ -704,7 +704,7 @@ class ContextTopNRunner(object):
 
         Constants.update_properties(parameters)
 
-        print(Constants._properties)
+        Constants.print_properties()
 
         self.plant_seeds()
         self.load()
@@ -812,26 +812,26 @@ def run_test_folds():
     ]
 
     nocontext_parameters = [
-        {'fold': 0, 'fm_context_num_factors': 91, 'use_context': False,
-         'fm_context_iterations': 110},
-        {'fold': 1, 'fm_context_num_factors': 77, 'use_context': False,
-         'fm_context_iterations': 103},
-        {'fold': 2, 'fm_context_num_factors': 138, 'use_context': False,
-         'fm_context_iterations': 100},
-        {'fold': 3, 'fm_context_num_factors': 87, 'use_context': False,
-         'fm_context_iterations': 106},
-        {'fold': 4, 'fm_context_num_factors': 60, 'use_context': False,
-         'fm_context_iterations': 100},
-        {'fold': 5, 'fm_context_num_factors': 53, 'use_context': False,
-         'fm_context_iterations': 107},
-        {'fold': 6, 'fm_context_num_factors': 0, 'use_context': False,
-         'fm_context_iterations': 104},
-        {'fold': 7, 'fm_context_num_factors': 66, 'use_context': False,
-         'fm_context_iterations': 101},
-        {'fold': 8, 'fm_context_num_factors': 83, 'use_context': False,
-         'fm_context_iterations': 110},
-        {'fold': 9, 'fm_context_num_factors': 44, 'use_context': False,
-         'fm_context_iterations': 127}
+        {'fold': 0, 'fm_context_num_factors': 0.0, 'use_context': False,
+         'fm_context_iterations': 101.0},
+        {'fold': 1, 'fm_context_num_factors': 197.0, 'use_context': False,
+         'fm_context_iterations': 109.0},
+        {'fold': 2, 'fm_context_num_factors': 62.0, 'use_context': False,
+         'fm_context_iterations': 102.0},
+        {'fold': 3, 'fm_context_num_factors': 119.0, 'use_context': False,
+         'fm_context_iterations': 103.0},
+        {'fold': 4, 'fm_context_num_factors': 35.0, 'use_context': False,
+         'fm_context_iterations': 102.0},
+        {'fold': 5, 'fm_context_num_factors': 157.0, 'use_context': False,
+         'fm_context_iterations': 115.0},
+        {'fold': 6, 'fm_context_num_factors': 197.0, 'use_context': False,
+         'fm_context_iterations': 102.0},
+        {'fold': 7, 'fm_context_num_factors': 49.0, 'use_context': False,
+         'fm_context_iterations': 102.0},
+        {'fold': 8, 'fm_context_num_factors': 136.0, 'use_context': False,
+         'fm_context_iterations': 120.0},
+        {'fold': 9, 'fm_context_num_factors': 105.0, 'use_context': False,
+         'fm_context_iterations': 116.0}
     ]
 
     no_context_results = []

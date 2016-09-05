@@ -96,7 +96,7 @@ def load_topic_model(cycle_index, fold_index):
 
 def create_single_topic_model(cycle_index, fold_index, check_exists=True):
 
-    print(Constants._properties)
+    Constants.print_properties()
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
@@ -130,7 +130,7 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
 
 def create_topic_models():
 
-    print(Constants._properties)
+    Constants.print_properties()
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     records = ETLUtils.load_json_file(Constants.RECORDS_FILE)

@@ -328,7 +328,7 @@ class WordContextTopNRunner(object):
 
     def perform_cross_validation(self):
 
-        print(Constants._properties)
+        Constants.print_properties()
 
         self.plant_seeds()
 

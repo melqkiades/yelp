@@ -286,7 +286,7 @@ class YelpReviewsPreprocessor:
         #     print(self.records[i])
 
     def full_cycle(self):
-        print(Constants._properties)
+        Constants.print_properties()
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.plant_seeds()
         self.load_records()

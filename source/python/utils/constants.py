@@ -251,3 +251,7 @@ class Constants(object):
             Constants.ITEM_TYPE + '_' + 'user_item_map.pkl'
         Constants.TOPIC_MODEL_FILE = Constants.CACHE_FOLDER + 'topic_model_' +\
             Constants.ITEM_TYPE + '.pkl'
+
+    @staticmethod
+    def print_properties():
+        print(Constants._properties)
