@@ -7,7 +7,7 @@ topn_num_items: 270
 random_seed: 0
 numpy_random_seed: 0
 num_cycles: 1
-context_extractor_model_alpha: 0.0
+context_extractor__alpha: 0.0
 context_extractor_beta: 1.0
 context_extractor_epsilon: 0.05
 topic_model_num_topics: 150
