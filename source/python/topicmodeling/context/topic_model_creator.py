@@ -18,10 +18,11 @@ from utils.constants import Constants
 
 def get_topic_model_file_path(cycle_index, fold_index):
 
-    topic_model_file = Constants.ITEM_TYPE + '_' +\
-        Constants.TOPIC_MODEL_TYPE + '_topic_model_cycle:' +\
-        str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) +\
-        '_fold:' + str(fold_index+1) + '|' +\
+    topic_model_file = Constants.ITEM_TYPE + '_topic_model_' +\
+        Constants.TOPIC_MODEL_TYPE + '_' +\
+        Constants.CROSS_VALIDATION_STRATEGY + \
+        '_cycle:' + str(cycle_index+1) + '|' +\
+        str(Constants.NUM_CYCLES) + '_fold:' + str(fold_index+1) + '|' +\
         str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
         '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) +\
         '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) +\
@@ -99,6 +100,18 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+
+    if Constants.CROSS_VALIDATION_STRATEGY == 'nested_test':
+        pass
+    elif Constants.CROSS_VALIDATION_STRATEGY == 'nested_validate':
+        num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+        cycle = Constants.NESTED_CROSS_VALIDATION_CYCLE
+        split = 1 - (1 / float(num_folds))
+        cv_start = float(cycle) / num_folds
+        print('cv_start', cv_start)
+        records, _ = ETLUtils.split_train_test(records, split, cv_start)
+    else:
+        raise ValueError('Unknown cross-validation strategy')
 
     plant_seeds()
     num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
