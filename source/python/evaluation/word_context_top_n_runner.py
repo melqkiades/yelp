@@ -395,7 +395,7 @@ class WordContextTopNRunner(object):
         print('average cycle time: %f' % average_cycle_time)
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        results = copy.deepcopy(Constants._properties)
+        results = Constants.get_properties_copy()
         results['recall'] = average_recall
         results['specific_recall'] = average_specific_recall
         results['generic_recall'] = average_generic_recall

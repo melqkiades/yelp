@@ -17,21 +17,25 @@ def run_recommender(args):
     print('args', args)
 
     parameters = {
-        'business_type': args['business_type'],
+        Constants.BUSINESS_TYPE_FIELD: args[Constants.BUSINESS_TYPE_FIELD],
         # 'lda_alpha': args['lda_alpha'],
         # 'lda_beta': args['lda_beta'],
-        'lda_epsilon': args['lda_epsilon'],
-        'lda_model_iterations': int(args['lda_model_iterations']),
-        'lda_model_passes': int(args['lda_model_passes']),
-        'lda_num_topics': int(args['lda_num_topics']),
+        Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD:
+            args[Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD],
+        Constants.TOPIC_MODEL_ITERATIONS_FIELD:
+            int(args[Constants.TOPIC_MODEL_ITERATIONS_FIELD]),
+        Constants.TOPIC_MODEL_PASSES_FIELD:
+            int(args[Constants.TOPIC_MODEL_PASSES_FIELD]),
+        Constants.TOPIC_MODEL_NUM_TOPICS_FIELD:
+            int(args[Constants.TOPIC_MODEL_NUM_TOPICS_FIELD]),
         # 'topic_weighting_method': args['topic_weighting_method'],
-        'use_context': args['use_context']
+        Constants.USE_CONTEXT_FIELD: args[Constants.USE_CONTEXT_FIELD]
     }
 
     Constants.update_properties(parameters)
     # Finish updating parameters
 
-    results = topic_model_analyzer.export_topics(0, 0)
+    results = topic_model_analyzer.export_topics()
     results['loss'] = -results['combined_score']
     results['status'] = 'ok'
 
@@ -54,17 +58,23 @@ def tune_parameters():
     print('Connected to %s' % mongo_url)
 
     space =\
-        hp.choice('use_context', [
+        hp.choice(Constants.USE_CONTEXT_FIELD, [
             {
-                'business_type': Constants.ITEM_TYPE,
+                Constants.BUSINESS_TYPE_FIELD: Constants.ITEM_TYPE,
                 # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
                 # 'lda_beta': hp.uniform('lda_beta', 0, 2),
-                'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
-                'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
-                'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
-                'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
-                # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
-                'use_context': True
+                Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: hp.uniform(
+                    Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD, 0, 0.5),
+                Constants.TOPIC_MODEL_ITERATIONS_FIELD: hp.quniform(
+                    Constants.TOPIC_MODEL_ITERATIONS_FIELD, 50, 500, 1),
+                Constants.TOPIC_MODEL_PASSES_FIELD: hp.quniform(
+                    Constants.TOPIC_MODEL_PASSES_FIELD, 1, 100, 1),
+                Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: hp.quniform(
+                    Constants.TOPIC_MODEL_NUM_TOPICS_FIELD, 1, 1000, 1),
+                # 'topic_weighting_method': hp.choice(
+                #     'topic_weighting_method',
+                #     ['probability', 'binary', 'all_topics']),
+                Constants.USE_CONTEXT_FIELD: True
             },
         ])
 

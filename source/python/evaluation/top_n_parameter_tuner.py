@@ -37,11 +37,15 @@ def run_recommender(args):
 
     # Cast integer values
     # args['fm_iterations'] = int(args['fm_iterations'])
-    args['fm_num_factors'] = int(args['fm_num_factors'])
-    if args['use_context']:
-        args['lda_model_iterations'] = int(args['lda_model_iterations'])
-        args['lda_model_passes'] = int(args['lda_model_passes'])
-        args['lda_num_topics'] = int(args['lda_num_topics'])
+    args[Constants.FM_NUM_FACTORS_FIELD] = \
+        int(args[Constants.FM_NUM_FACTORS_FIELD])
+    if args[Constants.USE_CONTEXT_FIELD]:
+        args[Constants.TOPIC_MODEL_ITERATIONS_FIELD] = \
+            int(args[Constants.TOPIC_MODEL_ITERATIONS_FIELD])
+        args[Constants.TOPIC_MODEL_PASSES_FIELD] = \
+            int(args[Constants.TOPIC_MODEL_PASSES_FIELD])
+        args[Constants.TOPIC_MODEL_NUM_TOPICS_FIELD] = \
+            int(args[Constants.TOPIC_MODEL_NUM_TOPICS_FIELD])
 
     Constants.update_properties(args)
 
@@ -74,38 +78,51 @@ def tune_parameters():
 
     params = Constants.get_properties_copy()
     params.update({
-        'business_type': Constants.ITEM_TYPE,
-        'topn_num_items': Constants.TOPN_NUM_ITEMS,
-        'nested_cross_validation_cycle': Constants.NESTED_CROSS_VALIDATION_CYCLE,
+        Constants.BUSINESS_TYPE_FIELD: Constants.ITEM_TYPE,
+        Constants.TOPN_NUM_ITEMS_FIELD: Constants.TOPN_NUM_ITEMS,
+        Constants.NESTED_CROSS_VALIDATION_CYCLE_FIELD:
+            Constants.NESTED_CROSS_VALIDATION_CYCLE,
         # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
         # 'fm_iterations': hp.quniform('fm_context_iterations', 100, 500, 1),
-        'fm_num_factors': hp.quniform('fm_context_num_factors', 0, 200, 1),
+        Constants.FM_NUM_FACTORS_FIELD: hp.quniform(
+            Constants.FM_NUM_FACTORS_FIELD, 0, 200, 1),
         # 'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
         # 'fm_use_bias': hp.choice('use_bias', [True, False]),
         # 'lda_alpha': hp.uniform('lda_alpha', 0, 1),
         # 'lda_beta': hp.uniform('lda_beta', 0, 2),
-        # 'lda_epsilon': hp.uniform('lda_epsilon', 0, 0.5),
-        'lda_model_iterations': hp.quniform('lda_model_iterations', 50, 500, 1),
-        'lda_model_passes': hp.quniform('lda_model_passes', 1, 100, 1),
-        # 'lda_num_topics': hp.quniform('lda_num_topics', 1, 1000, 1),
-        'lda_num_topics': hp.choice('lda_num_topics', [10, 20, 30, 50, 75, 100, 150, 300]),
-        'topic_model_type': hp.choice('topic_model_type', ['lda', 'mnf']),
-        # 'topic_weighting_method': hp.choice('topic_weighting_method', ['probability', 'binary', 'all_topics']),
-        # 'use_no_context_topics_sum': hp.choice('use_no_context_topics_sum', [True, False]),
-        'use_context': Constants.USE_CONTEXT
+        # Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: hp.uniform(
+        #     Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD, 0, 0.5),
+        Constants.TOPIC_MODEL_ITERATIONS_FIELD: hp.quniform(
+            Constants.TOPIC_MODEL_ITERATIONS_FIELD, 50, 500, 1),
+        Constants.TOPIC_MODEL_PASSES_FIELD: hp.quniform(
+            Constants.TOPIC_MODEL_PASSES_FIELD, 1, 100, 1),
+        # Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: hp.quniform(
+        #     Constants.TOPIC_MODEL_NUM_TOPICS_FIELD, 1, 1000, 1),
+        Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: hp.choice(
+            Constants.TOPIC_MODEL_NUM_TOPICS_FIELD,
+            [10, 20, 30, 50, 75, 100, 150, 300]),
+        Constants.TOPIC_MODEL_TYPE_FIELD: hp.choice(
+            Constants.TOPIC_MODEL_TYPE_FIELD, ['lda', 'mnf']),
+        # 'topic_weighting_method': hp.choice(
+        #     'topic_weighting_method',
+        #     ['probability', 'binary', 'all_topics']),
+        # 'use_no_context_topics_sum': hp.choice(
+        #     'use_no_context_topics_sum', [True, False]),
+        Constants.USE_CONTEXT_FIELD: Constants.USE_CONTEXT
     })
+    params = Constants.get_properties_copy()
 
     space =\
-        hp.choice('use_context', [
+        hp.choice(Constants.USE_CONTEXT_FIELD, [
             params,
         ])
 
     if not Constants.USE_CONTEXT:
         unwanted_args = [
-            'lda_epsilon',
-            'lda_model_iterations',
-            'lda_model_passes',
-            'lda_num_topics'
+            Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD,
+            Constants.TOPIC_MODEL_ITERATIONS_FIELD,
+            Constants.TOPIC_MODEL_PASSES_FIELD,
+            Constants.TOPIC_MODEL_NUM_TOPICS_FIELD
         ]
 
         for element in space.pos_args[1].named_args[:]:

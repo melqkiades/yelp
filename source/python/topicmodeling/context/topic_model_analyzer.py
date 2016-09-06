@@ -140,9 +140,9 @@ def export_topics():
     file_name = Constants.DATASET_FOLDER + 'all_reviews_topic_model_' + \
         Constants.ITEM_TYPE + '_' + \
         str(Constants.TOPIC_MODEL_NUM_TOPICS) + '_' + \
-                str(Constants.TOPIC_MODEL_PASSES) + '_' + \
-                str(Constants.TOPIC_MODEL_ITERATIONS) + '_' + \
-                str(Constants.CONTEXT_EXTRACTOR_EPSILON) + \
+        str(Constants.TOPIC_MODEL_PASSES) + '_' + \
+        str(Constants.TOPIC_MODEL_ITERATIONS) + '_' + \
+        str(Constants.CONTEXT_EXTRACTOR_EPSILON) + \
         '-nouns-complete.csv'
     print(file_name)
 
@@ -238,13 +238,15 @@ def export_nmf_topics():
     high_ratio_mean_score = data_frame[(data_frame.ratio > 1.0)]['score'].mean()
     low_ratio_mean_score = data_frame[(data_frame.ratio < 1.0)]['score'].mean()
     scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
-    scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
-    scores['lda_model_passes'] = Constants.TOPIC_MODEL_PASSES
-    scores['lda_model_iterations'] = Constants.TOPIC_MODEL_ITERATIONS
-    scores['item_type'] = Constants.ITEM_TYPE
-    scores['document_level'] = Constants.DOCUMENT_LEVEL
-    scores['bow_type'] = Constants.BOW_TYPE
-    scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
+    scores[Constants.TOPIC_MODEL_TYPE_FIELD] = Constants.TOPIC_MODEL_TYPE
+    scores[Constants.TOPIC_MODEL_PASSES_FIELD] = Constants.TOPIC_MODEL_PASSES
+    scores[Constants.TOPIC_MODEL_ITERATIONS_FIELD] = \
+        Constants.TOPIC_MODEL_ITERATIONS
+    scores[Constants.BUSINESS_TYPE_FIELD] = Constants.ITEM_TYPE
+    scores[Constants.DOCUMENT_LEVEL_FIELD] = Constants.DOCUMENT_LEVEL
+    scores[Constants.BOW_TYPE_FIELD] = Constants.BOW_TYPE
+    scores[Constants.TOPIC_WEIGHTING_METHOD_FIELD] = \
+        Constants.TOPIC_WEIGHTING_METHOD
 
     separation_score = \
         (high_ratio_mean_score / low_ratio_mean_score) \
@@ -318,29 +320,34 @@ def analyze_topics(topic_data, lda_based_context):
     num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
     scores['num_topics'] = num_topics
     topic_model_score = data_frame[
-        data_frame.weighted_frequency > Constants.CONTEXT_EXTRACTOR_ALPHA]['score'].mean()
+        data_frame.weighted_frequency >
+        Constants.CONTEXT_EXTRACTOR_ALPHA]['score'].mean()
     scores['topic_model_score'] = topic_model_score
     high_ratio_mean_score = data_frame[
         (data_frame.ratio > 1.0) &
-        (data_frame.weighted_frequency > Constants.CONTEXT_EXTRACTOR_ALPHA)]['score'].mean()
+        (data_frame.weighted_frequency >
+         Constants.CONTEXT_EXTRACTOR_ALPHA)]['score'].mean()
     low_ratio_mean_score = data_frame[
         (data_frame.ratio < 1.0) &
-        (data_frame.weighted_frequency > Constants.CONTEXT_EXTRACTOR_ALPHA)]['score'].mean()
+        (data_frame.weighted_frequency >
+         Constants.CONTEXT_EXTRACTOR_ALPHA)]['score'].mean()
     # scores['all_ratio_count'] =
     #     data_frame[data_frame.score > 0.1]['topic_id'].count()
     # num_context_topics = len(lda_based_context.context_rich_topics)
     # scores['num_context_topics'] = num_context_topics
-    scores['item_type'] = Constants.ITEM_TYPE
-    scores['document_level'] = Constants.DOCUMENT_LEVEL
-    scores['bow_type'] = Constants.BOW_TYPE
-    scores['topic_weighting_method'] = Constants.TOPIC_WEIGHTING_METHOD
+    scores[Constants.BUSINESS_TYPE_FIELD] = Constants.ITEM_TYPE
+    scores[Constants.DOCUMENT_LEVEL_FIELD] = Constants.DOCUMENT_LEVEL
+    scores[Constants.BOW_TYPE_FIELD] = Constants.BOW_TYPE
+    scores[Constants.TOPIC_WEIGHTING_METHOD_FIELD] = \
+        Constants.TOPIC_WEIGHTING_METHOD
     # scores['alpha'] = Constants.LDA_ALPHA
     # scores['epsilon'] = Constants.LDA_EPSILON
-    # scores['lda_review_type'] = Constants.LDA_REVIEW_TYPE
-    scores['lda_model_passes'] = Constants.TOPIC_MODEL_PASSES
-    scores['lda_model_iterations'] = Constants.TOPIC_MODEL_ITERATIONS
+    # scores[Constants.LDA_REVIEW_TYPE_FIELD] = Constants.LDA_REVIEW_TYPE
+    scores[Constants.TOPIC_MODEL_PASSES_FIELD] = Constants.TOPIC_MODEL_PASSES
+    scores[Constants.TOPIC_MODEL_ITERATIONS_FIELD] = \
+        Constants.TOPIC_MODEL_ITERATIONS
     scores['git_revision_hash'] = Constants.GIT_REVISION_HASH
-    scores['topic_model_type'] = Constants.TOPIC_MODEL_TYPE
+    scores[Constants.TOPIC_MODEL_TYPE_FIELD] = Constants.TOPIC_MODEL_TYPE
 
     separation_score =\
         (high_ratio_mean_score / low_ratio_mean_score)\
@@ -377,8 +384,8 @@ def generate_excel_file(records):
         Constants.TOPIC_MODEL_TYPE + '_' +\
         Constants.ITEM_TYPE + '_' + \
         str(Constants.TOPIC_MODEL_NUM_TOPICS) + 't_' + \
-                str(Constants.TOPIC_MODEL_PASSES) + 'p_' + \
-                str(Constants.TOPIC_MODEL_ITERATIONS) + 'i' + \
+        str(Constants.TOPIC_MODEL_PASSES) + 'p_' + \
+        str(Constants.TOPIC_MODEL_ITERATIONS) + 'i' + \
         '.xlsx'
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
@@ -485,15 +492,15 @@ def main():
             lda_iterations_list, topic_model_type_list):
         print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
         new_dict = {
-            'lda_num_topics': num_topics,
-            'document_level': document_level,
-            'topic_weighting_method': topic_weighting_method,
-            'lda_alpha': alpha,
-            'lda_epsilon': epsilon,
-            'lda_review_type': review_type,
-            'lda_model_passes': lda_passes,
-            'lda_model_iterations': lda_iterations,
-            'topic_model_type': topic_model_type
+            Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics,
+            Constants.DOCUMENT_LEVEL_FIELD: document_level,
+            Constants.TOPIC_WEIGHTING_METHOD_FIELD: topic_weighting_method,
+            Constants.CONTEXT_EXTRACTOR_ALPHA_FIELD: alpha,
+            Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: epsilon,
+            Constants.LDA_REVIEW_TYPE_FIELD: review_type,
+            Constants.TOPIC_MODEL_PASSES_FIELD: lda_passes,
+            Constants.TOPIC_MODEL_ITERATIONS_FIELD: lda_iterations,
+            Constants.TOPIC_MODEL_TYPE_FIELD: topic_model_type
         }
 
         print(new_dict)
