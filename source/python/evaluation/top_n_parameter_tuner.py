@@ -110,7 +110,6 @@ def tune_parameters():
         #     'use_no_context_topics_sum', [True, False]),
         Constants.USE_CONTEXT_FIELD: Constants.USE_CONTEXT
     })
-    params = Constants.get_properties_copy()
 
     space =\
         hp.choice(Constants.USE_CONTEXT_FIELD, [

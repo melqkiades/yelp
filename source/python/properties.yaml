@@ -11,8 +11,8 @@ context_extractor_alpha: 0.0
 context_extractor_beta: 1.0
 context_extractor_epsilon: 0.05
 topic_model_num_topics: 150
-topic_model_passes: 1
-topic_model_iterations: 400
+topic_model_passes: 100
+topic_model_iterations: 200
 lda_multicore: False
 libfm_seed: 0
 cross_validation_num_folds: 10
