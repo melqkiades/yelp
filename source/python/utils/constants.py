@@ -209,7 +209,7 @@ class Constants(object):
         Constants.TOPIC_MODEL_PASSES = \
             Constants._properties['topic_model_passes']
         Constants.TOPIC_MODEL_ITERATIONS =\
-            Constants._properties['lda_model_iterations']
+            Constants._properties['topic_model_iterations']
         Constants.LDA_MULTICORE = Constants._properties['lda_multicore']
         Constants.LIBFM_SEED = Constants._properties['libfm_seed']
         Constants.FM_NUM_FACTORS = Constants._properties['fm_num_factors']
