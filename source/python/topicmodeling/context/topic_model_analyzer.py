@@ -462,34 +462,36 @@ def main():
     alpha_list = [0.0]
     # num_topics_list =\
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
-    num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
+    # num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
     # num_topics_list = [150, 300]
-    # num_topics_list = [30]
-    # document_level_list = ['review', 'sentence', 1]
-    document_level_list = [1]
+    num_topics_list = [50]
+    bow_type_list = [None, 'NN']
+    document_level_list = ['review', 'sentence', 1]
+    # document_level_list = [1]
     # topic_weighting_methods = ['binary', 'probability']
     topic_weighting_methods = ['probability']
     # review_type_list = ['specific', 'generic', 'all_reviews']
     review_type_list = ['specific']
     # lda_passes_list = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    lda_passes_list = [1, 10, 100]
-    # lda_passes_list = [1]
+    # lda_passes_list = [1, 10, 100]
+    lda_passes_list = [100]
     # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
-    lda_iterations_list = [50, 100, 200, 500]
-    # lda_iterations_list = [50]
+    # lda_iterations_list = [50, 100, 200, 500]
+    lda_iterations_list = [200]
     topic_model_type_list = ['nmf', 'lda']
     # topic_model_type_list = ['nmf']
     num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
         len(document_level_list) * len(topic_weighting_methods) *\
         len(review_type_list) * len(lda_passes_list) *\
-        len(lda_iterations_list) * len(topic_model_type_list)
+        len(lda_iterations_list) * len(topic_model_type_list) *\
+        len(bow_type_list)
     cycle_index = 1
     for epsilon, alpha, num_topics, document_level, topic_weighting_method,\
-        review_type, lda_passes, lda_iterations,\
-        topic_model_type in itertools.product(
+        review_type, lda_passes, lda_iterations, topic_model_type,\
+        bow_type in itertools.product(
             epsilon_list, alpha_list, num_topics_list, document_level_list,
             topic_weighting_methods, review_type_list, lda_passes_list,
-            lda_iterations_list, topic_model_type_list):
+            lda_iterations_list, topic_model_type_list, bow_type_list):
         print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
         new_dict = {
             Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics,
@@ -500,7 +502,8 @@ def main():
             Constants.LDA_REVIEW_TYPE_FIELD: review_type,
             Constants.TOPIC_MODEL_PASSES_FIELD: lda_passes,
             Constants.TOPIC_MODEL_ITERATIONS_FIELD: lda_iterations,
-            Constants.TOPIC_MODEL_TYPE_FIELD: topic_model_type
+            Constants.TOPIC_MODEL_TYPE_FIELD: topic_model_type,
+            Constants.BOW_TYPE_FIELD: bow_type
         }
 
         print(new_dict)
