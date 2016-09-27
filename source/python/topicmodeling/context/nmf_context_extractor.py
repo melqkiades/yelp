@@ -338,9 +338,9 @@ class NmfContextExtractor:
 
         return records
 
-    def print_topic(self, topic_index):
-        top_indices =\
-            numpy.argsort(self.topic_term_matrix[topic_index, :])[::-1][0:10]
+    def print_topic(self, topic_index, num_terms=10):
+        top_indices = numpy.argsort(
+            self.topic_term_matrix[topic_index, :])[::-1][0:num_terms]
         term_ranking = [
             '%.3f*%s' % (self.topic_term_matrix[topic_index][i], self.terms[i])
             for i in top_indices
@@ -356,10 +356,12 @@ class NmfContextExtractor:
         # print("Topic %d: %s" % (topic_index, topic_string))
         return topic_string
 
-    def print_topic_model(self):
+    def print_topic_model(self, num_terms=10):
 
-        return\
-            [self.print_topic(topic_id) for topic_id in range(self.num_topics)]
+        return [
+            self.print_topic(topic_id, num_terms)
+            for topic_id in range(self.num_topics)
+        ]
 
     def get_topic_distribution(self, record):
         corpus = " ".join(record[Constants.BOW_FIELD])
