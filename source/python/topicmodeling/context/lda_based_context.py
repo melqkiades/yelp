@@ -232,6 +232,13 @@ class LdaBasedContext:
 
         return records
 
+    def print_topic_model(self, num_terms=10):
+
+        return [
+            self.topic_model.print_topic(topic_id, num_terms)
+            for topic_id in range(self.num_topics)
+            ]
+
 
 def main():
     pass
