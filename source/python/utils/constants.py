@@ -145,6 +145,10 @@ class Constants(object):
     NESTED_CROSS_VALIDATION_CYCLE = _properties['nested_cross_validation_cycle']
     CROSS_VALIDATION_STRATEGY = _properties['cross_validation_strategy']
     TOPIC_MODEL_TYPE = _properties['topic_model_type']
+    TOPIC_MODEL_STABILITY_ITERATIONS = \
+        _properties['topic_model_stability_iterations']
+    TOPIC_MODEL_STABILITY_NUM_TERMS = \
+        _properties['topic_model_stability_num_terms']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -257,6 +261,10 @@ class Constants(object):
         Constants.CROSS_VALIDATION_STRATEGY = \
             Constants._properties['cross_validation_strategy']
         Constants.TOPIC_MODEL_TYPE = Constants._properties['topic_model_type']
+        Constants.TOPIC_MODEL_STABILITY_ITERATIONS = \
+            Constants._properties['topic_model_stability_iterations']
+        Constants.TOPIC_MODEL_STABILITY_NUM_TERMS = \
+            Constants._properties['topic_model_stability_num_terms']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'

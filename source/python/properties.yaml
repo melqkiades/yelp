@@ -55,3 +55,5 @@ nested_cross_validation_cycle: 0
 # set to test
 cross_validation_strategy: nested_validate
 topic_model_type: lda
+topic_model_stability_iterations: 5
+topic_model_stability_num_terms: 5
