@@ -93,4 +93,8 @@
   do
   conda remove pymongo
   conda install pymongo=2.8
+- To execute several commands in parallel
+   parallel -j 10 -a topicmodel-restaurant.sh &
+- To run a hyperopt instance use
+  hyperopt-mongo-worker --mongo=node44:1234/restaurant_context_db_nested_0 > /dev/null &
 
