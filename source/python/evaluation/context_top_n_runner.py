@@ -291,7 +291,7 @@ class ContextTopNRunner(object):
 
         if Constants.EVALUATION_METRIC == 'topn_recall':
             self.get_records_to_predict_topn()
-        elif Constants.EVALUATION_METRIC == 'rmse':
+        elif Constants.EVALUATION_METRIC in ['rmse', 'mae']:
             self.get_records_to_predict_rmse()
         else:
             raise ValueError('Unrecognized evaluation metric')
@@ -594,23 +594,38 @@ class ContextTopNRunner(object):
                 generic_predictions.append(prediction)
             index += 1
 
-        rmse = rmse_calculator.calculate_rmse(true_values, self.predictions)
-        specific_rmse = rmse_calculator.calculate_rmse(
-            specific_true_values, specific_predictions)
-        generic_rmse = rmse_calculator.calculate_rmse(
-            generic_true_values, generic_predictions)
+        metric = Constants.EVALUATION_METRIC
 
-        print('RMSE: %f' % rmse)
-        print('Specific RMSE: %f' % specific_rmse)
-        print('Generic RMSE: %f' % generic_rmse)
+        overall_result = None
+        specific_result = None
+        generic_result = None
 
-        return rmse, specific_rmse, generic_rmse
+        if metric == 'rmse':
+            overall_result = \
+                rmse_calculator.calculate_rmse(true_values, self.predictions)
+            specific_result = rmse_calculator.calculate_rmse(
+                specific_true_values, specific_predictions)
+            generic_result = rmse_calculator.calculate_rmse(
+                generic_true_values, generic_predictions)
+        elif metric == 'mae':
+            overall_result = \
+                rmse_calculator.calculate_mae(true_values, self.predictions)
+            specific_result = rmse_calculator.calculate_mae(
+                specific_true_values, specific_predictions)
+            generic_result = rmse_calculator.calculate_mae(
+                generic_true_values, generic_predictions)
+
+        print(metric + ': %f' % overall_result)
+        print('Specific ' + metric + ': %f' % specific_result)
+        print('Generic ' + metric + ': %f' % generic_result)
+
+        return overall_result, specific_result, generic_result
 
     def evaluate(self):
 
         if Constants.EVALUATION_METRIC == 'topn_recall':
             return self.evaluate_topn()
-        elif Constants.EVALUATION_METRIC == 'rmse':
+        elif Constants.EVALUATION_METRIC in ['rmse', 'mae']:
             return self.evaluate_rmse()
         else:
             raise ValueError('Unrecognized evaluation metric')
