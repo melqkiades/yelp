@@ -56,7 +56,7 @@ def get_review_metrics(record):
         # time_words_ratio = log_time_words / log_words
         personal_pronouns_ratio = log_personal_pronouns / log_words
 
-    result = [log_words, log_past_verbs, log_verbs, past_verbs_ratio, verbs_ratio, log_personal_pronouns, personal_pronouns_ratio, past_verbs_ratio2]#, log_time_words, time_words_ratio]
+    result = [log_words, log_past_verbs, log_verbs, personal_pronouns_ratio]#, log_time_words, time_words_ratio]
     # print(result)
     # result = [log_sentences]
     # result = [log_personal_pronouns, log_past_verbs, log_words]

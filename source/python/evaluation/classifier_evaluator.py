@@ -1,32 +1,29 @@
-
+import itertools
 import time
 
-from sklearn.dummy import DummyClassifier
+import matplotlib as mpl
+import numpy
 import sklearn.metrics as skmetrics
+from sklearn.cross_validation import StratifiedKFold
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import auc
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import tree
 from sklearn.svm import NuSVC
-from topicmodeling.context import topic_model_creator
-
 from sklearn.svm import SVC
-
+from sklearn.tree import tree
+from unbalanced_dataset.combine import SMOTEENN
+from unbalanced_dataset.combine import SMOTETomek
 from unbalanced_dataset.over_sampling import RandomOverSampler
 from unbalanced_dataset.over_sampling import SMOTE
-from unbalanced_dataset.combine import SMOTETomek
-from unbalanced_dataset.combine import SMOTEENN
 
 from etl import ETLUtils
 from etl.yelp_reviews_preprocessor import YelpReviewsPreprocessor
-from utils.constants import Constants
-from sklearn.cross_validation import StratifiedKFold
-from nlp import nlp_utils
 from topicmodeling.context import review_metrics_extractor
-from sklearn.linear_model import LogisticRegression
-import itertools
-import numpy
-import matplotlib as mpl
+from utils import utilities
+from utils.constants import Constants
 mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 
@@ -301,11 +298,13 @@ def print_confusion_matrix(y_true, y_predictions):
         'min_tp_tn': min_tp_tn
     }
 
+    print('Accuracy: %f' % accuracy)
+
     return metrics
 
 
 def test_classifier(x_matrix, y_vector, sampler_type, my_classifier):
-    topic_model_creator.plant_seeds()
+    utilities.plant_seeds()
 
     results = {
         'resampler': sampler_type,
@@ -326,11 +325,37 @@ def test_classifier(x_matrix, y_vector, sampler_type, my_classifier):
 
     results.update(plot_roc_curve(y_true_values, y_probabilities))
 
+    importances = my_classifier.feature_importances_
+    indices = numpy.argsort(importances)[::-1]
+
+    # Print the feature ranking
+    print("Feature ranking:")
+
+    for f in range(x_matrix.shape[1]):
+        print(
+            "%d. feature %d (%f)" %
+            (f + 1, indices[f], importances[indices[f]]))
+
+    # std = numpy.std([
+    #         tree.feature_importances_ for tree in my_classifier.estimators_],
+    #     axis=0
+    # )
+    #
+    # # Plot the feature importances of the forest
+    # plt.figure()
+    # plt.title("Feature importances")
+    # plt.bar(range(x_matrix.shape[1]), importances[indices],
+    #         color="r", yerr=std[indices], align="center")
+    # plt.xticks(range(x_matrix.shape[1]), indices)
+    # plt.xlim([-1, x_matrix.shape[1]])
+    # plt.show()
+
     return results
 
 
 def cross_validation_predict(
-        classifier, x_matrix, y_vector, num_folds, sampler_type, method='predict'):
+        classifier, x_matrix, y_vector, num_folds, sampler_type,
+        method='predict'):
     cv = StratifiedKFold(y_vector, num_folds)
 
     all_predictions = []
@@ -358,7 +383,7 @@ def cross_validation_predict(
 
 
 def main():
-    topic_model_creator.plant_seeds()
+    utilities.plant_seeds()
 
     my_resamplers = [
         None,
@@ -400,7 +425,8 @@ def main():
 
         count_specific_generic(my_records)
 
-        for resampler, classifier in itertools.product(my_resamplers, my_classifiers):
+        for resampler, classifier in itertools.product(
+                my_resamplers, my_classifiers):
 
             print('Cycle %d/%d' % (index, num_cyles))
 
@@ -413,7 +439,7 @@ def main():
         print(results)
 
     csv_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE +\
-               '_sentence_classifier_results.csv'
+        '_sentence_classifier_results.csv'
     ETLUtils.save_csv_file(csv_file, results_list, results_list[0].keys())
 
 # start = time.time()
@@ -421,5 +447,3 @@ def main():
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
-
-
