@@ -16,6 +16,7 @@ from topicmodeling.context import topic_model_creator
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from topicmodeling.context.word_based_context import WordBasedContext
 from tripadvisor.fourcity import extractor
+from utils import utilities
 from utils.constants import Constants
 
 __author__ = 'fpena'
@@ -169,16 +170,6 @@ class WordContextTopNRunner(object):
         self.context_test_file = self.csv_test_file + '.libfm'
         self.context_log_file = prefix + '.log'
 
-    @staticmethod
-    def plant_seeds():
-
-        if Constants.RANDOM_SEED is not None:
-            print('random seed: %d' % Constants.RANDOM_SEED)
-            random.seed(Constants.RANDOM_SEED)
-        if Constants.NUMPY_RANDOM_SEED is not None:
-            print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
-            numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
-
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.original_records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
@@ -330,7 +321,7 @@ class WordContextTopNRunner(object):
 
         Constants.print_properties()
 
-        self.plant_seeds()
+        utilities.plant_seeds()
 
         total_recall = 0.0
         total_specific_recall = 0.0

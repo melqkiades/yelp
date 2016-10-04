@@ -24,6 +24,7 @@ from topicmodeling.context import topic_model_creator
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from tripadvisor.fourcity import extractor
+from utils import utilities
 from utils.constants import Constants
 
 __author__ = 'fpena'
@@ -207,16 +208,6 @@ class ContextTopNRunner(object):
         self.context_train_file = self.csv_train_file + '.libfm'
         self.context_test_file = self.csv_test_file + '.libfm'
         self.context_log_file = prefix + '.log'
-
-    @staticmethod
-    def plant_seeds():
-
-        if Constants.RANDOM_SEED is not None:
-            print('random seed: %d' % Constants.RANDOM_SEED)
-            random.seed(Constants.RANDOM_SEED)
-        if Constants.NUMPY_RANDOM_SEED is not None:
-            print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
-            numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -721,7 +712,7 @@ class ContextTopNRunner(object):
 
         Constants.print_properties()
 
-        self.plant_seeds()
+        utilities.plant_seeds()
         self.load()
 
         records = self.original_records
@@ -761,7 +752,7 @@ class ContextTopNRunner(object):
 
     def run(self):
 
-        self.plant_seeds()
+        utilities.plant_seeds()
         self.load()
 
         records = self.original_records

@@ -13,6 +13,7 @@ from etl import ETLUtils
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from utils import constants
+from utils import utilities
 from utils.constants import Constants
 
 
@@ -52,16 +53,6 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
         pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
 
     return topic_model
-
-
-def plant_seeds():
-
-    if Constants.RANDOM_SEED is not None:
-        print('random seed: %d' % Constants.RANDOM_SEED)
-        random.seed(Constants.RANDOM_SEED)
-    if Constants.NUMPY_RANDOM_SEED is not None:
-        print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
-        numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 
 def train_context_extractor(records):
@@ -113,7 +104,7 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
     else:
         raise ValueError('Unknown cross-validation strategy')
 
-    plant_seeds()
+    utilities.plant_seeds()
     num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
     split = 1 - (1/float(num_folds))
 
@@ -135,7 +126,7 @@ def create_topic_models():
 
     records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
 
-    plant_seeds()
+    utilities.plant_seeds()
     num_cycles = Constants.NUM_CYCLES
     num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
     split = 1 - (1/float(num_folds))

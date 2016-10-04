@@ -16,6 +16,7 @@ from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from topicmodeling.hungarian import HungarianError
 from topicmodeling.jaccard_similarity import AverageJaccard
 from topicmodeling.jaccard_similarity import RankingSetAgreement
+from utils import utilities
 from utils.constants import Constants
 
 
@@ -135,7 +136,7 @@ def get_topic_model_terms(context_extractor, num_terms):
 
 def export_topics():
 
-    topic_model_creator.plant_seeds()
+    utilities.plant_seeds()
 
     records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
     print('num_reviews', len(records))
@@ -232,7 +233,7 @@ def analyze_topics(context_extractor):
 
 def calculate_topic_stability():
 
-    topic_model_creator.plant_seeds()
+    utilities.plant_seeds()
     Constants.print_properties()
 
     records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
