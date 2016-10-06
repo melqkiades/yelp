@@ -32,7 +32,7 @@ max_dictionary_word_count: 0.2
 # sentences to use (1 is 1st sentence, 2 is 1st and 2nd, etc.)
 document_level: 1
 solver: libfm
-fastfm_method: mcmc
+fm_method: mcmc
 evaluation_metric: topn_recall
 resampler: smote-enn
 document_classifier: random_forest
