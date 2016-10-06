@@ -38,7 +38,7 @@ grouped_hotel_context_words = {
                  'boyfriend', 'bf', 'gf', 'hubby', 'husband', 'wife',
                  'fiance', 'fiancee', 'weekend', 'getaway', 'romance'},
     'anniversary': {'husband', 'wife', 'weekend', 'anniversary', 'hubby', '@'},
-    'gambling': {'gamble', 'casino', 'slot', 'roulette', '@', '@@'},
+    'gambling': {'gamble', 'casino', 'slot', 'poker' 'roulette', '@'},
     'party': {'party', 'friend', 'music', 'group', 'nightlife', 'dj'},
     'business': {'business', 'work', 'job', 'colleague', 'coworker', '@'},
     'parking': {'car', 'parking', 'valet', 'driver', '@', '@@'},
