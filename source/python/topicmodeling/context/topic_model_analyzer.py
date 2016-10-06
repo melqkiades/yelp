@@ -300,6 +300,8 @@ def generate_excel_file(records):
     file_name = Constants.DATASET_FOLDER + 'topic_model_' +\
         Constants.TOPIC_MODEL_TYPE + '_' +\
         Constants.ITEM_TYPE + '_' + \
+        Constants.LDA_REVIEW_TYPE + '_' + \
+        str(Constants.DOCUMENT_LEVEL) + '_' + \
         str(Constants.TOPIC_MODEL_NUM_TOPICS) + 't_' + \
         str(Constants.TOPIC_MODEL_PASSES) + 'p_' + \
         str(Constants.TOPIC_MODEL_ITERATIONS) + 'i' + \
