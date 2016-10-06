@@ -45,6 +45,10 @@ fm_use_bias: True
 fm_use_1way_interactions: True
 fm_iterations: 100
 fm_init_stdev: 0.1
+fm_sdg_learn_rate: 0.1
+fm_regularization0: 1
+fm_regularization1: 1
+fm_regularization2: 1
 max_sample_test_set: 200
 nested_cross_validation_cycle: 0
 # Possible values: nested_validate, nested_test, simple
@@ -54,6 +58,6 @@ nested_cross_validation_cycle: 0
 # nested_test means that the train+validate sets are use to train data and test
 # set to test
 cross_validation_strategy: nested_validate
-topic_model_type: lda
+topic_model_type: nmf
 topic_model_stability_iterations: 5
 topic_model_stability_num_terms: 5

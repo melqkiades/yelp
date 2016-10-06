@@ -70,7 +70,7 @@ def create_user_item_map(records):
     return user_item_map
 
 
-def run_libfm(train_file, test_file, predictions_file, log_file):
+def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
 
     libfm_command = Constants.LIBFM_FOLDER + 'libFM'
 
@@ -78,6 +78,14 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         libfm_command,
         '-task',
         'r',
+        '-method',
+        Constants.FM_METHOD,
+        '-regular',
+        str(Constants.FM_REGULARIZATION0) + ',' +
+        str(Constants.FM_REGULARIZATION1) + ',' +
+        str(Constants.FM_REGULARIZATION2),
+        '-learn_rate',
+        str(Constants.FM_SDG_LEARN_RATE),
         '-train',
         train_file,
         '-test',
@@ -91,7 +99,9 @@ def run_libfm(train_file, test_file, predictions_file, log_file):
         '-iter',
         str(Constants.FM_ITERATIONS),
         '-out',
-        predictions_file
+        predictions_file,
+        '-save_model',
+        save_file
     ]
 
     print(command)
@@ -163,6 +173,8 @@ class ContextTopNRunner(object):
         self.context_train_file = None
         self.context_test_file = None
         self.context_log_file = None
+        self.libfm_model_file = None
+        self.num_variables_in_model = None
 
     def clear(self):
         print('clear: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -208,6 +220,7 @@ class ContextTopNRunner(object):
         self.context_train_file = self.csv_train_file + '.libfm'
         self.context_test_file = self.csv_test_file + '.libfm'
         self.context_log_file = prefix + '.log'
+        self.libfm_model_file = prefix + '_trained_model.libfm'
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -215,6 +228,12 @@ class ContextTopNRunner(object):
             ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
         # ETLUtils.drop_fields(['tagged_words'], self.original_records)
         print('num_records: %d' % len(self.original_records))
+        user_ids = \
+            extractor.get_groupby_list(self.original_records, Constants.USER_ID_FIELD)
+        item_ids = \
+            extractor.get_groupby_list(self.original_records, Constants.ITEM_ID_FIELD)
+        print('total users', len(user_ids))
+        print('total items', len(item_ids))
 
         if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
             records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
@@ -495,7 +514,7 @@ class ContextTopNRunner(object):
 
         print('num_cols', len(self.headers))
 
-        libfm_converter.csv_to_libfm(
+        self.num_variables_in_model = libfm_converter.csv_to_libfm(
             csv_files, 0, [1, 2], [], ',', has_header=True,
             suffix='.libfm')
 
@@ -538,7 +557,9 @@ class ContextTopNRunner(object):
 
         run_libfm(
             self.context_train_file, self.context_test_file,
-            self.context_predictions_file, self.context_log_file)
+            self.context_predictions_file, self.context_log_file,
+            self.libfm_model_file
+        )
         self.predictions = rmse_calculator.read_targets_from_txt(
             self.context_predictions_file)
 

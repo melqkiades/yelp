@@ -38,9 +38,9 @@ class Constants(object):
     DOCUMENT_CLASSIFIER_SEED_FIELD = 'document_classifier_seed'
     DOCUMENT_LEVEL_FIELD = 'document_level'
     EVALUATION_METRIC_FIELD = 'evaluation_metric'
-    FASTFM_METHOD_FIELD = 'fastfm_method'
     FM_INIT_STDEV_FIELD = 'fm_init_stdev'
     FM_ITERATIONS_FIELD = 'fm_iterations'
+    FM_METHOD_FIELD = 'fm_method'
     FM_NUM_FACTORS_FIELD = 'fm_num_factors'
     FM_REVIEW_TYPE_FIELD = 'fm_review_type'
     FM_USE_BIAS_FIELD = 'fm_use_bias'
@@ -130,7 +130,7 @@ class Constants(object):
     MAX_DICTIONARY_WORD_COUNT = _properties['max_dictionary_word_count']
     DOCUMENT_LEVEL = _properties['document_level']
     SOLVER = _properties['solver']
-    FASTFM_METHOD = _properties['fastfm_method']
+    FM_METHOD = _properties['fm_method']
     EVALUATION_METRIC = _properties['evaluation_metric']
     RESAMPLER = _properties['resampler']
     DOCUMENT_CLASSIFIER = _properties['document_classifier']
@@ -141,6 +141,10 @@ class Constants(object):
     FM_USE_1WAY_INTERACTIONS = int(_properties['fm_use_1way_interactions'])
     FM_ITERATIONS = _properties['fm_iterations']
     FM_INIT_STDEV = _properties['fm_init_stdev']
+    FM_SDG_LEARN_RATE = _properties['fm_sdg_learn_rate']
+    FM_REGULARIZATION0 = _properties['fm_regularization0']
+    FM_REGULARIZATION1 = _properties['fm_regularization1']
+    FM_REGULARIZATION2 = _properties['fm_regularization2']
     MAX_SAMPLE_TEST_SET = _properties['max_sample_test_set']
     NESTED_CROSS_VALIDATION_CYCLE = _properties['nested_cross_validation_cycle']
     CROSS_VALIDATION_STRATEGY = _properties['cross_validation_strategy']
@@ -237,7 +241,7 @@ class Constants(object):
             Constants._properties['max_dictionary_word_count']
         Constants.DOCUMENT_LEVEL = Constants._properties['document_level']
         Constants.SOLVER = Constants._properties['solver']
-        Constants.FASTFM_METHOD = Constants._properties['fastfm_method']
+        Constants.FM_METHOD = Constants._properties['fm_method']
         Constants.EVALUATION_METRIC = Constants._properties['evaluation_metric']
         Constants.RESAMPLER = Constants._properties['resampler']
         Constants.DOCUMENT_CLASSIFIER =\
@@ -254,6 +258,13 @@ class Constants(object):
             int(Constants._properties['fm_use_1way_interactions'])
         Constants.FM_ITERATIONS = Constants._properties['fm_iterations']
         Constants.FM_INIT_STDEV = Constants._properties['fm_init_stdev']
+        Constants.FM_SDG_LEARN_RATE = Constants._properties['fm_sdg_learn_rate']
+        Constants.FM_REGULARIZATION0 = \
+            Constants._properties['fm_regularization0']
+        Constants.FM_REGULARIZATION1 = \
+            Constants._properties['fm_regularization1']
+        Constants.FM_REGULARIZATION2 = \
+            Constants._properties['fm_regularization2']
         Constants.MAX_SAMPLE_TEST_SET =\
             Constants._properties['max_sample_test_set']
         Constants.NESTED_CROSS_VALIDATION_CYCLE = \
