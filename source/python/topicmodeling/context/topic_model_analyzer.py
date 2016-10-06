@@ -300,8 +300,8 @@ def generate_excel_file(records):
     file_name = Constants.DATASET_FOLDER + 'topic_model_' +\
         Constants.TOPIC_MODEL_TYPE + '_' +\
         Constants.ITEM_TYPE + '_' + \
-        Constants.LDA_REVIEW_TYPE + '_' + \
-        str(Constants.DOCUMENT_LEVEL) + '_' + \
+        Constants.TOPIC_MODEL_REVIEW_TYPE + '_' + \
+                str(Constants.DOCUMENT_LEVEL) + '_' + \
         str(Constants.TOPIC_MODEL_NUM_TOPICS) + 't_' + \
         str(Constants.TOPIC_MODEL_PASSES) + 'p_' + \
         str(Constants.TOPIC_MODEL_ITERATIONS) + 'i' + \
@@ -420,7 +420,7 @@ def main():
             Constants.TOPIC_WEIGHTING_METHOD_FIELD: topic_weighting_method,
             Constants.CONTEXT_EXTRACTOR_ALPHA_FIELD: alpha,
             Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: epsilon,
-            Constants.LDA_REVIEW_TYPE_FIELD: review_type,
+            Constants.TOPIC_MODEL_REVIEW_TYPE_FIELD: review_type,
             Constants.TOPIC_MODEL_PASSES_FIELD: lda_passes,
             Constants.TOPIC_MODEL_ITERATIONS_FIELD: lda_iterations,
             Constants.TOPIC_MODEL_TYPE_FIELD: topic_model_type,

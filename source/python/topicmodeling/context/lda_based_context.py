@@ -69,14 +69,16 @@ class LdaBasedContext:
     def build_topic_model(self):
         print('%s: building topic model' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
-        if Constants.LDA_REVIEW_TYPE == Constants.SPECIFIC:
+        if Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.SPECIFIC:
             corpus = self.specific_corpus
-        elif Constants.LDA_REVIEW_TYPE == Constants.GENERIC:
+        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.GENERIC:
             corpus = self.generic_corpus
-        elif Constants.LDA_REVIEW_TYPE == Constants.ALL_REVIEWS:
+        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.ALL_REVIEWS:
             corpus = self.specific_corpus + self.generic_corpus
         else:
-            raise ValueError('Unrecognized lda_review_type value')
+            msg = 'Unrecognized ' + Constants.TOPIC_MODEL_REVIEW_TYPE_FIELD + \
+                  ' value'
+            raise ValueError(msg)
         self.topic_model = lda_context_utils.build_topic_model_from_corpus(
             corpus, self.dictionary)
         print('%s: topic model built' %

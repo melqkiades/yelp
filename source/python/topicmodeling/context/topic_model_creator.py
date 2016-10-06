@@ -29,7 +29,7 @@ def get_topic_model_file_path(cycle_index, fold_index):
         '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) +\
         '_passes:' + str(Constants.TOPIC_MODEL_PASSES) +\
         '_bow:' + str(Constants.BOW_TYPE) +\
-        '_reviewtype:' + str(Constants.LDA_REVIEW_TYPE) +\
+        '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) +\
         '_document_level:' + str(Constants.DOCUMENT_LEVEL) +\
         '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file

@@ -74,14 +74,16 @@ class NmfContextExtractor:
 
     def build_document_term_matrix(self):
 
-        if Constants.LDA_REVIEW_TYPE == Constants.SPECIFIC:
+        if Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.SPECIFIC:
             corpus = self.specific_bows
-        elif Constants.LDA_REVIEW_TYPE == Constants.GENERIC:
+        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.GENERIC:
             corpus = self.generic_bows
-        elif Constants.LDA_REVIEW_TYPE == Constants.ALL_REVIEWS:
+        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.ALL_REVIEWS:
             corpus = self.specific_bows + self.generic_bows
         else:
-            raise ValueError('Unrecognized lda_review_type value')
+            msg = 'Unrecognized ' + Constants.TOPIC_MODEL_REVIEW_TYPE_FIELD + \
+                  ' value'
+            raise ValueError(msg)
 
         self.tfidf_vectorizer = TfidfVectorizer(
             stop_words=ENGLISH_STOP_WORDS, lowercase=True,

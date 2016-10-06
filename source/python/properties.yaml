@@ -1,7 +1,7 @@
 # Properties for the recommender system
 business_type: hotel
 fm_review_type:
-lda_review_type: specific
+topic_model_review_type: specific
 topn_n: 10
 topn_num_items: 270
 random_seed: 0
