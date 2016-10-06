@@ -1,11 +1,14 @@
 
 # from fastFM.mcmc import FMRegression
-from fastFM import mcmc, als
+import itertools
+from fastFM import mcmc, als, sgd
 import numpy
 from gensim import corpora
 from gensim.models import ldamodel
 from sklearn.preprocessing import OneHotEncoder
 
+from etl.libfm_converter import load_libfm_model
+from etl.libfm_converter import load_test_file
 from utils.constants import Constants
 
 reviews_matrix = [
@@ -125,65 +128,66 @@ train_set = [
     {'user_id': 'U02', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family winter'},
     {'user_id': 'U03', 'business_id': 'SummerHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
     {'user_id': 'U04', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
-    {'user_id': 'U05', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
-    {'user_id': 'U06', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
-    {'user_id': 'U07', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'family winter'},
-    {'user_id': 'U08', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U09', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U10', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
-    {'user_id': 'U11', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
-    {'user_id': 'U12', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U13', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U14', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
-    {'user_id': 'U15', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'family summer'},
-    {'user_id': 'U16', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
-    {'user_id': 'U17', 'business_id': 'SuperbHotel1', 'stars': 5.0,'context_text': 'family winter'},
-    {'user_id': 'U18', 'business_id': 'SummerHotel1', 'stars': 5.0, 'context_text': 'family summer'},
-    {'user_id': 'U19', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U20', 'business_id': 'SummerHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
-    {'user_id': 'U21', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
-    {'user_id': 'U22', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
-    {'user_id': 'U23', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
-    {'user_id': 'U24', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'family winter'},
-    {'user_id': 'U25', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U26', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U27', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
-    {'user_id': 'U28', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
-    {'user_id': 'U29', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U30', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U31', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
-    {'user_id': 'U32', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'family summer'},
-    {'user_id': 'U33', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
-    {'user_id': 'U34', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'family winter'}
+    {'user_id': 'U01', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
+    {'user_id': 'U02', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
+    {'user_id': 'U03', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'family winter'},
+    {'user_id': 'U04', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    {'user_id': 'U05', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    {'user_id': 'U01', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
+    {'user_id': 'U02', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
+    {'user_id': 'U03', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    {'user_id': 'U04', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    {'user_id': 'U01', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
+    {'user_id': 'U02', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'family summer'},
+    {'user_id': 'U03', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
+    {'user_id': 'U04', 'business_id': 'SuperbHotel1', 'stars': 5.0,'context_text': 'family winter'},
+    # {'user_id': 'U05', 'business_id': 'SummerHotel1', 'stars': 5.0, 'context_text': 'family summer'},
+    # {'user_id': 'U19', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    # {'user_id': 'U20', 'business_id': 'SummerHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U21', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U22', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U23', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U24', 'business_id': 'WinterHotel1', 'stars': 5.0, 'context_text': 'family winter'},
+    # {'user_id': 'U25', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U26', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U27', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U28', 'business_id': 'BusinessHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U29', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    # {'user_id': 'U30', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U31', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U32', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'family summer'},
+    # {'user_id': 'U33', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U34', 'business_id': 'SuperbHotel1', 'stars': 5.0, 'context_text': 'family winter'}
 ]
 
 test_set = [
-    {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
-    {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'winter'},
-    {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
-    {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'summer'},
-    {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
-    {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'winter'},
-    {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
-    {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'summer'},
-    {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
-    {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
-    {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'solo'},
-    {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'solo'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'family winter'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'family summer'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'family'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'summer'},
-    {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'winter'}
+    {'user_id': 'U01', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
+    {'user_id': 'U03', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    # {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'winter'},
+    # {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U83', 'business_id': 'WinterHotel1', 'stars': 1.0, 'context_text': 'summer'},
+    # {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    # {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'winter'},
+    # {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U83', 'business_id': 'SummerHotel1', 'stars': 1.0, 'context_text': 'summer'},
+    # {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'solo'},
+    # {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    # {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U83', 'business_id': 'BusinessHotel1', 'stars': 1.0, 'context_text': 'family'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'solo winter'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'solo summer'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'solo'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'family winter'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'family summer'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'family'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'summer'},
+    # {'user_id': 'U83', 'business_id': 'SuperbHotel1', 'stars': 1.0, 'context_text': 'winter'}
 ]
 
 my_reviews = [
@@ -303,6 +307,7 @@ def predict(train_records, test_records):
     """
 
     records = train_records + test_records
+    num_factors = 2
 
     context_rich_topics = [(i, 1) for i in range(num_topics)]
     new_matrix, new_y = records_to_matrix(records, context_rich_topics)
@@ -316,19 +321,74 @@ def predict(train_records, test_records):
     x_train = new_x
     y_train = new_y[:len(train_records)]
     x_test = encoder.transform(new_matrix[len(train_records):])
-    mc_regressor = mcmc.FMRegression()
-    y_pred = mc_regressor.fit_predict(x_train, y_train, x_test)
+    # mc_regressor = mcmc.FMRegression(rank=0)
+    mc_regressor = sgd.FMRegression(rank=num_factors)
+    mc_regressor.fit(x_train, y_train)
+    y_pred = mc_regressor.predict(x_test)
+
+    w0 = mc_regressor.w0_
+    w = mc_regressor.w_
+    V = mc_regressor.V_
+    V = V.transpose()
+    print('w0', w0)
+    print('w', w.shape)
+    print('w', w)
+    print('V', V.shape)
+    print('V', V)
     print('********')
     print(x_test.todense())
     print(y_pred)
 
+    manual_predict(x_test, w0, w, V, num_factors)
+
+    # for i, j in itertools.combinations(range(9), 2):
+    #     own_prediction = w0 + w[i] + w[j]
+    #     print('My own prediction: %f' % own_prediction)
+
     als_fm = als.FMRegression(
-        n_iter=1000, init_stdev=0.1, rank=2, l2_reg_w=0.1, l2_reg_V=0.5)
+        n_iter=1000, init_stdev=0.1, rank=num_factors, l2_reg_w=0.1, l2_reg_V=0.5)
     als_fm.fit(x_train, y_train)
     y_pred = als_fm.predict(x_test)
+
+    w0 = als_fm.w0_
+    w = als_fm.w_
+    V = als_fm.V_
+    V = V.transpose()
     print(y_pred)
+    manual_predict(x_test, w0, w, V, num_factors)
 
     return y_pred
+
+
+def manual_predict(x, w0, w, V, num_factors):
+
+    predictions = []
+
+    for pred_index in range(x.shape[0]):
+        sum_ = numpy.zeros(num_factors)
+        sum_sqr_ = numpy.zeros(num_factors)
+
+        result = 0.0
+
+        result += w0
+        for i in range(len(w)):
+
+            result += w[i] * x[pred_index, i]
+
+        for f in range(num_factors):
+            sum_[f] = 0.0
+            sum_sqr_[f] = 0.0
+            for i in range(len(w)):
+                d = V[i, f] * x[pred_index, i]
+                sum_[f] += d
+                sum_sqr_[f] += d * d
+            result += 0.5 * (sum_[f] * sum_[f] - sum_sqr_[f])
+        # print('My own prediction: %f' % own_prediction)
+        print('My own prediction: %f' % result)
+
+        predictions.append(result)
+
+    return predictions
 
 
 def preprocess_records(train_records, test_records):
@@ -403,8 +463,29 @@ def predict_with_lda(train_records, test_records):
     predict(train_records, test_records)
 
 
+def manual_predict_sample():
+    num_users = 4148
+    num_items = 284
+    num_context_topics = 39
+    num_variables = num_users + num_items + num_context_topics
+
+    # unique_id = '3721d1bb5e8644e18e2ecd2e2a30585a'
+    # unique_id = 'a872576a0c374e12a42205c79122c905'
+    unique_id = '8a998bcf78b04d09900700a51fdc68ed'
+    prefix = Constants.GENERATED_FOLDER + unique_id + '_' + Constants.ITEM_TYPE
+
+    saved_model_file = prefix + '_trained_model.libfm'
+    test_file = prefix + '_test.csv.libfm'
+
+    w0, w, V = load_libfm_model(saved_model_file, num_variables)
+    x_test = load_test_file(test_file, num_variables)
+    manual_predict(x_test, w0, w, V, Constants.FM_NUM_FACTORS)
+
+
 # predict(reviews_matrix2[:-1], reviews_matrix2[-1:])
 # predict(reviews_matrix3[:-1], reviews_matrix3[-1:])
 # test_reviews_lda(my_reviews)
 # find_lda_context(reviews_matrix3[:-1], reviews_matrix3[-1:])
 # predict_with_lda(train_set, test_set)
+# predict(train_set, test_set)
+# manual_predict_sample()

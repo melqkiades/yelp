@@ -1,6 +1,11 @@
 
 import csv
 
+import numpy
+from scipy import sparse
+
+from utils.constants import Constants
+
 __author__ = 'fpena'
 
 
@@ -98,3 +103,66 @@ def csv_to_libfm(
 
 def get_column(matrix, i):
     return [row[i] for row in matrix]
+
+
+def load_libfm_model(libfm_model_file, num_variables_in_model):
+
+    w = numpy.zeros(num_variables_in_model)
+    V = numpy.zeros((num_variables_in_model, Constants.FM_NUM_FACTORS))
+
+    with open(libfm_model_file, 'r') as model_file:
+
+        index = 0
+        lines = model_file.readlines()
+
+        # print(lines[index])
+        # if line == '#global bias W0':
+        # print('w000000')
+        index += 1
+        w0 = float(lines[index])
+        print(w0)
+        index += 1
+        index += 1
+        # if line == '#unary interactions Wj':
+        # model_file.readline()
+        for j in range(num_variables_in_model):
+            w[j] = lines[index]
+            index += 1
+        # if line == 'pairwise interactions Vj,f':
+        # model_file.readline()
+        index += 1
+        for j in range(num_variables_in_model):
+            factors = lines[index].split()
+            index += 1
+            for f in range(len(factors)):
+                V[j, f] = factors[f]
+
+    print('w0', w0)
+    print('w', w)
+    print('V', V)
+
+    return w0, w, V
+
+
+def load_test_file(file_name, num_variables_in_model):
+
+    with open(file_name, 'r') as model_file:
+        row_index = 0
+        lines = model_file.readlines()
+        # x_list = numpy.zeros((len(lines), num_variables_in_model))
+        x_list = sparse.lil_matrix((len(lines), num_variables_in_model))
+
+        for line in lines:
+            entries = line.split(' ')[1:]
+
+            for entry in entries:
+                print('entry: %s' % entry)
+                column_index = entry.split(':')[0]
+                cell_value = entry.split(':')[1]
+                x_list[row_index, column_index] = cell_value
+
+            row_index += 1
+
+    print(x_list)
+
+    return x_list
