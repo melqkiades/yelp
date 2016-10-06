@@ -22,6 +22,9 @@ def csv_to_libfm(
     :param delimiter: the separator used in the CSV file
     :type has_header: bool
     :param has_header: a boolean indicating if the CSV file has a header or not
+
+    :rtype int
+    :return the number of variables in the model
     """
 
     if delete_columns is None:
@@ -87,6 +90,10 @@ def csv_to_libfm(
         with open(input_file + suffix, 'w') as write_file:
             for row in output_rows:
                 write_file.write("%s\n" % row)
+
+    print('Number of variables in the model: %d' % id_counter)
+
+    return id_counter
 
 
 def get_column(matrix, i):
