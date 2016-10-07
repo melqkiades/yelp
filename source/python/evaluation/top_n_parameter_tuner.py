@@ -36,7 +36,8 @@ def run_recommender(args):
     print('args', args)
 
     # Cast integer values
-    args[Constants.FM_ITERATIONS] = int(args[Constants.FM_ITERATIONS])
+    args[Constants.FM_ITERATIONS_FIELD] = \
+        int(args[Constants.FM_ITERATIONS_FIELD])
     args[Constants.FM_NUM_FACTORS_FIELD] = \
         int(args[Constants.FM_NUM_FACTORS_FIELD])
     if args[Constants.USE_CONTEXT_FIELD]:
@@ -83,8 +84,8 @@ def tune_parameters():
         Constants.NESTED_CROSS_VALIDATION_CYCLE_FIELD:
             Constants.NESTED_CROSS_VALIDATION_CYCLE,
         # 'fm_init_stdev': hp.uniform('fm_init_stdev', 0, 2),
-        Constants.FM_ITERATIONS: hp.quniform(
-            Constants.FM_ITERATIONS, 1, 500, 1),
+        Constants.FM_ITERATIONS_FIELD: hp.quniform(
+            Constants.FM_ITERATIONS_FIELD, 1, 500, 1),
         Constants.FM_NUM_FACTORS_FIELD: hp.quniform(
             Constants.FM_NUM_FACTORS_FIELD, 0, 200, 1),
         # 'fm_use_1way_interactions': hp.choice('fm_use_1way_interactions', [True, False]),
