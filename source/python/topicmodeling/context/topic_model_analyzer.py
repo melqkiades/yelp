@@ -288,6 +288,46 @@ def calculate_topic_stability():
     return all_scores
 
 
+def calculate_topic_stability_cross_validation():
+    all_term_rankings = []
+
+    for i in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
+        context_extractor = topic_model_creator.load_topic_model(0, i)
+        terms_matrix = get_topic_model_terms(
+            context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
+        all_term_rankings.append(terms_matrix)
+
+    # First argument was the reference term ranking
+    reference_term_ranking = all_term_rankings[0]
+    all_term_rankings = all_term_rankings[1:]
+    r = len(all_term_rankings)
+    print("Loaded %d non-reference term rankings" % r)
+
+    # Perform the evaluation
+    metric = AverageJaccard()
+    matcher = RankingSetAgreement(metric)
+    print("Performing reference comparisons with %s ..." % str(metric))
+    all_scores = []
+    for i in range(r):
+        try:
+            score = \
+                matcher.similarity(reference_term_ranking,
+                                   all_term_rankings[i])
+            all_scores.append(score)
+        except HungarianError:
+            msg = \
+                "HungarianError: Unable to find results. Algorithm has failed."
+            print(msg)
+            all_scores.append(float('nan'))
+
+    # Get overall score across all candidates
+    all_scores = numpy.array(all_scores)
+
+    print("Stability=%.4f [%.4f,%.4f]" % (
+        numpy.nanmean(all_scores), numpy.nanmin(all_scores),
+        numpy.nanmax(all_scores)))
+
+
 def generate_excel_file(records):
     my_context_words = []
     if Constants.ITEM_TYPE == 'hotel':
