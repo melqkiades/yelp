@@ -62,8 +62,8 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
     print(topic_model_file_path)
 
     if check_exists and os.path.exists(topic_model_file_path):
-        print('topic model already exists')
-        return
+        print('WARNING: Topic model already exists')
+        return load_topic_model(cycle_index, fold_index)
 
     topic_model = train_context_extractor(records)
 

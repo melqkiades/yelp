@@ -12,8 +12,6 @@ from pandas import DataFrame
 
 from etl import ETLUtils
 from topicmodeling.context import topic_model_creator
-from topicmodeling.context.lda_based_context import LdaBasedContext
-from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from topicmodeling.hungarian import HungarianError
 from topicmodeling.jaccard_similarity import AverageJaccard
 from topicmodeling.jaccard_similarity import RankingSetAgreement
@@ -135,23 +133,6 @@ def get_topic_model_terms(context_extractor, num_terms):
     return topic_term_matrix
 
 
-def export_topics():
-
-    utilities.plant_seeds()
-
-    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-        records = ETLUtils.load_json_file(
-            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
-    else:
-        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
-    print('num_reviews', len(records))
-
-    context_extractor = topic_model_creator.train_context_extractor(records)
-    topic_model_score = analyze_topics(context_extractor)
-
-    return topic_model_score
-
-
 def split_topic(topic_string):
     """
     Splits a topic into dictionary containing each word
@@ -185,9 +166,14 @@ def split_topic(topic_string):
     return words_dict
 
 
-def analyze_topics(context_extractor):
+def analyze_topics(include_stability=True):
 
     start_time = time.time()
+
+    utilities.plant_seeds()
+
+    context_extractor =\
+        topic_model_creator.create_single_topic_model(None, None)
 
     topic_data = []
 
@@ -211,7 +197,11 @@ def analyze_topics(context_extractor):
         (data_frame.ratio > Constants.CONTEXT_EXTRACTOR_BETA)]['score'].mean()
     low_ratio_mean_score = data_frame[
         (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['score'].mean()
-    scores['stability'] = calculate_topic_stability().mean()
+
+    stability = None
+    if include_stability:
+        stability = calculate_topic_stability().mean()
+    scores['stability'] = stability
 
     separation_score =\
         (high_ratio_mean_score / low_ratio_mean_score)\
@@ -238,6 +228,10 @@ def analyze_topics(context_extractor):
 
 def calculate_topic_stability():
 
+    Constants.update_properties({
+        Constants.NUMPY_RANDOM_SEED_FIELD: Constants.NUMPY_RANDOM_SEED + 10,
+        Constants.RANDOM_SEED_FIELD: Constants.RANDOM_SEED + 10
+    })
     utilities.plant_seeds()
     Constants.print_properties()
 
@@ -249,18 +243,15 @@ def calculate_topic_stability():
     print('num_reviews', len(records))
 
     all_term_rankings = []
-    for _ in range(Constants.TOPIC_MODEL_STABILITY_ITERATIONS):
-        if Constants.TOPIC_MODEL_TYPE == 'lda':
-            context_extractor = LdaBasedContext(records)
-            context_extractor.generate_review_corpus()
-            context_extractor.build_topic_model()
-        elif Constants.TOPIC_MODEL_TYPE == 'nmf':
-            context_extractor = NmfContextExtractor(records)
-            context_extractor.generate_review_bows()
-            context_extractor.build_document_term_matrix()
-            context_extractor.build_stable_topic_model()
-        context_extractor.update_reviews_with_topics()
-        context_extractor.get_context_rich_topics()
+
+    context_extractor =\
+        topic_model_creator.create_topic_model(records, None, None)
+    terms_matrix = get_topic_model_terms(
+        context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
+    all_term_rankings.append(terms_matrix)
+
+    for _ in range(Constants.TOPIC_MODEL_STABILITY_ITERATIONS - 1):
+        context_extractor = topic_model_creator.train_context_extractor(records)
         terms_matrix = get_topic_model_terms(
             context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
         all_term_rankings.append(terms_matrix)
@@ -412,7 +403,7 @@ def main():
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
     # num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
     # num_topics_list = [150, 300]
-    num_topics_list = [10, 50, 150]
+    num_topics_list = [10, 20, 30]
     bow_type_list = ['NN']
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
@@ -421,13 +412,13 @@ def main():
     # review_type_list = ['specific', 'generic', 'all_reviews']
     review_type_list = ['specific']
     # lda_passes_list = [1, 10, 20, 50, 75, 100, 200, 500]
-    lda_passes_list = [1, 10]
-    # lda_passes_list = [100]
+    # lda_passes_list = [1, 10]
+    lda_passes_list = [100]
     # lda_iterations_list = [50, 100, 200, 400, 800, 2000]
-    lda_iterations_list = [50, 100, 200, 500]
-    # lda_iterations_list = [200]
-    topic_model_type_list = ['lda', 'nmf']
-    # topic_model_type_list = ['nmf']
+    # lda_iterations_list = [50, 100, 200, 500]
+    lda_iterations_list = [200]
+    # topic_model_type_list = ['lda', 'nmf']
+    topic_model_type_list = ['nmf']
     num_cycles = len(epsilon_list) * len(alpha_list) * len(num_topics_list) *\
         len(document_level_list) * len(topic_weighting_methods) *\
         len(review_type_list) * len(lda_passes_list) *\
@@ -458,7 +449,7 @@ def main():
 
         Constants.update_properties(new_dict)
         results = Constants.get_properties_copy()
-        results.update(export_topics())
+        results.update(analyze_topics(include_stability=True))
 
         write_results_to_csv(csv_file_name, results)
         write_results_to_json(json_file_name, results)
