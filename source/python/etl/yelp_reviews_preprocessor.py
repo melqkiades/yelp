@@ -244,6 +244,23 @@ class YelpReviewsPreprocessor:
         self.drop_unnecessary_fields()
         ETLUtils.save_json_file(Constants.PROCESSED_RECORDS_FILE, self.records)
 
+    def separate_recsys_topic_model_records(self):
+
+        num_records = len(self.records)
+        topic_model_records = self.records[:num_records/2]
+        recsys_records = self.records[num_records/2:]
+
+        ETLUtils.save_json_file(
+            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE, topic_model_records)
+        ETLUtils.save_json_file(
+            Constants.RECSYS_PROCESSED_RECORDS_FILE, recsys_records)
+
+        if False:
+            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE = \
+                Constants.PROCESSED_RECORDS_FILE
+            Constants.RECSYS_PROCESSED_RECORDS_FILE =\
+                Constants.PROCESSED_RECORDS_FILE
+
     def drop_unnecessary_fields(self):
         print(
             '%s: drop unnecessary fields' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -302,6 +319,9 @@ class YelpReviewsPreprocessor:
         self.build_corpus()
         self.export_records()
         self.count_specific_generic_ratio()
+
+        if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+            self.separate_recsys_topic_model_records()
 
 
 def main():

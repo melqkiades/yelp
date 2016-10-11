@@ -224,9 +224,14 @@ class ContextTopNRunner(object):
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        self.original_records =\
-            ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
-        # ETLUtils.drop_fields(['tagged_words'], self.original_records)
+
+        if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+            self.original_records =\
+                ETLUtils.load_json_file(Constants.RECSYS_PROCESSED_RECORDS_FILE)
+        else:
+            self.original_records =\
+                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+
         print('num_records: %d' % len(self.original_records))
         user_ids = \
             extractor.get_groupby_list(self.original_records, Constants.USER_ID_FIELD)
@@ -312,7 +317,7 @@ class ContextTopNRunner(object):
             print('loading topic model')
             lda_based_context = topic_model_creator.load_topic_model(
                 cycle_index, fold_index)
-        else:
+        elif not Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
             print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
             if Constants.TOPIC_MODEL_TYPE == 'lda':
@@ -330,6 +335,10 @@ class ContextTopNRunner(object):
                 lda_based_context.get_context_rich_topics()
             else:
                 raise ValueError('Unrecognized topic model type')
+        else:
+            msg = 'If the separate_topic_model_recsys_reviews property is ' \
+                  'True then the cache_topic_model must also be True'
+            raise ValueError(msg)
 
         self.context_rich_topics = lda_based_context.context_rich_topics
         print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -795,119 +804,49 @@ class ContextTopNRunner(object):
 
 def run_test_folds():
     context_parameters = [
-        {'fold': 0,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.07880440620294243,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 34,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 52,
-         Constants.FM_NUM_FACTORS_FIELD: 128,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 128,
-         Constants.FM_ITERATIONS_FIELD: 101},
-        {'fold': 1,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.17195395908803693,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 303,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 93,
-         Constants.FM_NUM_FACTORS_FIELD: 195,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 234,
-         Constants.FM_ITERATIONS_FIELD: 101},
-        {'fold': 2,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.28737312234836504,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 331,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 3,
-         Constants.FM_NUM_FACTORS_FIELD: 193,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 134,
-         Constants.FM_ITERATIONS_FIELD: 109},
-        {'fold': 3,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.42428360798122067,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 700,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 98,
-         Constants.FM_NUM_FACTORS_FIELD: 183,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 469,
-         Constants.FM_ITERATIONS_FIELD: 117},
-        {'fold': 4,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.31942754612995505,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 422,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 27,
-         Constants.FM_NUM_FACTORS_FIELD: 116,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 456,
-         Constants.FM_ITERATIONS_FIELD: 101},
-        {'fold': 5,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.29413633240807885,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 741,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 69,
-         Constants.FM_NUM_FACTORS_FIELD: 143,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 443,
-         Constants.FM_ITERATIONS_FIELD: 100},
-        {'fold': 6,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.29557472675205987,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 266,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 49,
-         Constants.FM_NUM_FACTORS_FIELD: 182,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 448,
-         Constants.FM_ITERATIONS_FIELD: 111},
-        {'fold': 7,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.31994749965370956,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 303,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 99,
-         Constants.FM_NUM_FACTORS_FIELD: 188,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 217,
-         Constants.FM_ITERATIONS_FIELD: 108},
-        {'fold': 8,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.2960375671760339,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 965,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 82,
-         Constants.FM_NUM_FACTORS_FIELD: 127,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 132,
-         Constants.FM_ITERATIONS_FIELD: 121},
-        {'fold': 9,
-         Constants.CONTEXT_EXTRACTOR_EPSILON_FIELD: 0.1561718750639763,
-         Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: 623,
-         Constants.USE_CONTEXT_FIELD: True,
-         Constants.TOPIC_MODEL_PASSES_FIELD: 82,
-         Constants.FM_NUM_FACTORS_FIELD: 118,
-         Constants.TOPIC_MODEL_ITERATIONS_FIELD: 237,
-         Constants.FM_ITERATIONS_FIELD: 107}
+        {'fold': 0, Constants.FM_NUM_FACTORS_FIELD: 16,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 1, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 2, Constants.FM_NUM_FACTORS_FIELD: 1,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 3, Constants.FM_NUM_FACTORS_FIELD: 2,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 4, Constants.FM_NUM_FACTORS_FIELD: 16,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 5, Constants.FM_NUM_FACTORS_FIELD: 16,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 6, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 7, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 8, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: True},
+        {'fold': 9, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: True}
     ]
 
     nocontext_parameters = [
-        {'fold': 0, Constants.FM_NUM_FACTORS_FIELD: 0.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 101.0},
-        {'fold': 1, Constants.FM_NUM_FACTORS_FIELD: 197.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 109.0},
-        {'fold': 2, Constants.FM_NUM_FACTORS_FIELD: 62.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 102.0},
-        {'fold': 3, Constants.FM_NUM_FACTORS_FIELD: 119.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 103.0},
-        {'fold': 4, Constants.FM_NUM_FACTORS_FIELD: 35.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 102.0},
-        {'fold': 5, Constants.FM_NUM_FACTORS_FIELD: 157.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 115.0},
-        {'fold': 6, Constants.FM_NUM_FACTORS_FIELD: 197.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 102.0},
-        {'fold': 7, Constants.FM_NUM_FACTORS_FIELD: 49.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 102.0},
-        {'fold': 8, Constants.FM_NUM_FACTORS_FIELD: 136.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 120.0},
-        {'fold': 9, Constants.FM_NUM_FACTORS_FIELD: 105.0,
-         Constants.USE_CONTEXT_FIELD: False,
-         Constants.FM_ITERATIONS_FIELD: 116.0}
+        {'fold': 0, Constants.FM_NUM_FACTORS_FIELD: 128,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 1, Constants.FM_NUM_FACTORS_FIELD: 2,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 2, Constants.FM_NUM_FACTORS_FIELD: 128,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 3, Constants.FM_NUM_FACTORS_FIELD: 8,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 4, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 5, Constants.FM_NUM_FACTORS_FIELD: 32,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 6, Constants.FM_NUM_FACTORS_FIELD: 2,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 7, Constants.FM_NUM_FACTORS_FIELD: 4,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 8, Constants.FM_NUM_FACTORS_FIELD: 4,
+         Constants.USE_CONTEXT_FIELD: False},
+        {'fold': 9, Constants.FM_NUM_FACTORS_FIELD: 128,
+         Constants.USE_CONTEXT_FIELD: False}
     ]
 
     no_context_results = []
@@ -925,7 +864,7 @@ def run_test_folds():
 # start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
 # my_context_top_n_runner.run()
-# run_test_folds_original()
+# run_test_folds()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)

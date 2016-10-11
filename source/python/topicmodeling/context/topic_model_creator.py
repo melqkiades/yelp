@@ -19,19 +19,37 @@ from utils.constants import Constants
 
 def get_topic_model_file_path(cycle_index, fold_index):
 
-    topic_model_file = Constants.ITEM_TYPE + '_topic_model_' +\
-        Constants.TOPIC_MODEL_TYPE + '_' +\
-        Constants.CROSS_VALIDATION_STRATEGY + \
-        '_cycle:' + str(cycle_index+1) + '|' +\
-        str(Constants.NUM_CYCLES) + '_fold:' + str(fold_index+1) + '|' +\
-        str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
-        '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) +\
-        '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) +\
-        '_passes:' + str(Constants.TOPIC_MODEL_PASSES) +\
-        '_bow:' + str(Constants.BOW_TYPE) +\
-        '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) +\
-        '_document_level:' + str(Constants.DOCUMENT_LEVEL) +\
-        '.pkl'
+    if cycle_index is None and fold_index is None:
+
+        data_split = '_separated'\
+            if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS else '_full'
+
+        topic_model_file = Constants.ITEM_TYPE + '_topic_model_' + \
+            Constants.TOPIC_MODEL_TYPE + data_split + \
+            '_numtopics:' + str(
+            Constants.TOPIC_MODEL_NUM_TOPICS) + \
+            '_iterations:' + str(
+            Constants.TOPIC_MODEL_ITERATIONS) + \
+            '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
+            '_bow:' + str(Constants.BOW_TYPE) + \
+            '_reviewtype:' + str(
+            Constants.TOPIC_MODEL_REVIEW_TYPE) + \
+            '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+            '.pkl'
+    else:
+        topic_model_file = Constants.ITEM_TYPE + '_topic_model_' +\
+            Constants.TOPIC_MODEL_TYPE + '_' +\
+            Constants.CROSS_VALIDATION_STRATEGY + \
+            '_cycle:' + str(cycle_index+1) + '|' +\
+            str(Constants.NUM_CYCLES) + '_fold:' + str(fold_index+1) + '|' +\
+            str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
+            '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) +\
+            '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) +\
+            '_passes:' + str(Constants.TOPIC_MODEL_PASSES) +\
+            '_bow:' + str(Constants.BOW_TYPE) +\
+            '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) +\
+            '_document_level:' + str(Constants.DOCUMENT_LEVEL) +\
+            '.pkl'
     return Constants.CACHE_FOLDER + topic_model_file
 
 
@@ -80,6 +98,7 @@ def train_context_extractor(records):
 
 def load_topic_model(cycle_index, fold_index):
     file_path = get_topic_model_file_path(cycle_index, fold_index)
+    print(file_path)
     with open(file_path, 'rb') as read_file:
         topic_model = pickle.load(read_file)
     return topic_model
@@ -89,6 +108,15 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
 
     Constants.print_properties()
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    if cycle_index is None and fold_index is None:
+        if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+            train_records = ETLUtils.load_json_file(
+                Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
+        else:
+            train_records = ETLUtils.load_json_file(
+                Constants.PROCESSED_RECORDS_FILE)
+        return create_topic_model(train_records, None, None, check_exists)
 
     records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
@@ -241,7 +269,7 @@ def main():
     create_single_topic_model(cycle, fold)
 
 # start = time.time()
-# create_single_topic_model(0, 0)
+# create_single_topic_model(None, None)
 # num_cycles = Constants.NUM_CYCLES
 # num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
 # for cycle, fold in itertools.product(range(num_cycles), range(num_folds)):

@@ -10,7 +10,7 @@ num_cycles: 1
 context_extractor_alpha: 0.0
 context_extractor_beta: 1.0
 context_extractor_epsilon: 0.05
-topic_model_num_topics: 150
+topic_model_num_topics: 30
 topic_model_passes: 100
 topic_model_iterations: 200
 lda_multicore: False
@@ -19,7 +19,7 @@ cross_validation_num_folds: 10
 use_context: True
 shuffle_data: True
 num_cores:
-cache_topic_model: False
+cache_topic_model: True
 text_sampling_proportion:
 # Possible values: Probability, binary, all_topics
 topic_weighting_method: probability
@@ -61,3 +61,4 @@ cross_validation_strategy: nested_validate
 topic_model_type: nmf
 topic_model_stability_iterations: 5
 topic_model_stability_num_terms: 5
+separate_topic_model_recsys_reviews: False

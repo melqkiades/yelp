@@ -3,6 +3,7 @@ import json
 import os
 import time
 
+import cPickle as pickle
 import itertools
 
 import numpy
@@ -138,7 +139,11 @@ def export_topics():
 
     utilities.plant_seeds()
 
-    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+        records = ETLUtils.load_json_file(
+            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
+    else:
+        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
     print('num_reviews', len(records))
 
     context_extractor = topic_model_creator.train_context_extractor(records)
@@ -236,7 +241,11 @@ def calculate_topic_stability():
     utilities.plant_seeds()
     Constants.print_properties()
 
-    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+        records = ETLUtils.load_json_file(
+            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
+    else:
+        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
     print('num_reviews', len(records))
 
     all_term_rankings = []
@@ -256,36 +265,7 @@ def calculate_topic_stability():
             context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
         all_term_rankings.append(terms_matrix)
 
-    # First argument was the reference term ranking
-    reference_term_ranking = all_term_rankings[0]
-    all_term_rankings = all_term_rankings[1:]
-    r = len(all_term_rankings)
-    print("Loaded %d non-reference term rankings" % r)
-
-    # Perform the evaluation
-    metric = AverageJaccard()
-    matcher = RankingSetAgreement(metric)
-    print("Performing reference comparisons with %s ..." % str(metric))
-    all_scores = []
-    for i in range(r):
-        try:
-            score = \
-                matcher.similarity(reference_term_ranking, all_term_rankings[i])
-            all_scores.append(score)
-        except HungarianError:
-            msg =\
-                "HungarianError: Unable to find results. Algorithm has failed."
-            print(msg)
-            all_scores.append(float('nan'))
-
-    # Get overall score across all candidates
-    all_scores = numpy.array(all_scores)
-
-    print("Stability=%.4f [%.4f,%.4f]" % (
-        numpy.nanmean(all_scores), numpy.nanmin(all_scores),
-        numpy.nanmax(all_scores)))
-
-    return all_scores
+    return calculate_stability(all_term_rankings)
 
 
 def calculate_topic_stability_cross_validation():
@@ -296,6 +276,11 @@ def calculate_topic_stability_cross_validation():
         terms_matrix = get_topic_model_terms(
             context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
         all_term_rankings.append(terms_matrix)
+
+    return calculate_stability(all_term_rankings)
+
+
+def calculate_stability(all_term_rankings):
 
     # First argument was the reference term ranking
     reference_term_ranking = all_term_rankings[0]
@@ -327,6 +312,8 @@ def calculate_topic_stability_cross_validation():
         numpy.nanmean(all_scores), numpy.nanmin(all_scores),
         numpy.nanmax(all_scores)))
 
+    return all_scores
+
 
 def generate_excel_file(records):
     my_context_words = []
@@ -341,7 +328,7 @@ def generate_excel_file(records):
         Constants.TOPIC_MODEL_TYPE + '_' +\
         Constants.ITEM_TYPE + '_' + \
         Constants.TOPIC_MODEL_REVIEW_TYPE + '_' + \
-                str(Constants.DOCUMENT_LEVEL) + '_' + \
+        str(Constants.DOCUMENT_LEVEL) + '_' + \
         str(Constants.TOPIC_MODEL_NUM_TOPICS) + 't_' + \
         str(Constants.TOPIC_MODEL_PASSES) + 'p_' + \
         str(Constants.TOPIC_MODEL_ITERATIONS) + 'i' + \
@@ -500,6 +487,36 @@ def write_results_to_json(file_name, results):
         with open(file_name, 'a') as f:
             json.dump(results, f)
             f.write('\n')
+
+
+def calculate_topic_stability_files(file_list):
+    all_term_rankings = []
+
+    Constants.update_properties(
+        {'separate_topic_model_recsys_reviews': False})
+    topic_model = topic_model_creator.load_topic_model(None, None)
+    terms_matrix = get_topic_model_terms(
+        topic_model, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
+    all_term_rankings.append(terms_matrix)
+
+    Constants.update_properties({'separate_topic_model_recsys_reviews': True})
+    topic_model = topic_model_creator.load_topic_model(None, None)
+    terms_matrix = get_topic_model_terms(
+        topic_model, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
+    all_term_rankings.append(terms_matrix)
+
+    file_path = Constants.CACHE_FOLDER + \
+        'restaurant_topic_model_nmf_separated2_numtopics:30_' \
+        'iterations:200_passes:100_bow:NN_reviewtype:specific_' \
+        'document_level:1.pkl'
+    with open(file_path, 'rb') as read_file:
+        topic_model = pickle.load(read_file)
+    terms_matrix = get_topic_model_terms(
+        topic_model, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
+    all_term_rankings.append(terms_matrix)
+
+    return calculate_stability(all_term_rankings)
+
 
 # start = time.time()
 # main()

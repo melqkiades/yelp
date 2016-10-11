@@ -153,6 +153,8 @@ class Constants(object):
         _properties['topic_model_stability_iterations']
     TOPIC_MODEL_STABILITY_NUM_TERMS = \
         _properties['topic_model_stability_num_terms']
+    SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
+        _properties['separate_topic_model_recsys_reviews']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -169,6 +171,14 @@ class Constants(object):
         '_' + str(DOCUMENT_LEVEL) + '.json'
     FULL_PROCESSED_RECORDS_FILE =\
         CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews' + \
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
+        '_' + str(DOCUMENT_LEVEL) + '.json'
+    TOPIC_MODEL_PROCESSED_RECORDS_FILE =\
+        CACHE_FOLDER + ITEM_TYPE + '_topic_model_processed_reviews' +\
+        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
+        '_' + str(DOCUMENT_LEVEL) + '.json'
+    RECSYS_PROCESSED_RECORDS_FILE =\
+        CACHE_FOLDER + ITEM_TYPE + '_recsys_processed_reviews' +\
         ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
         '_' + str(DOCUMENT_LEVEL) + '.json'
     DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary' + \
@@ -277,6 +287,8 @@ class Constants(object):
             Constants._properties['topic_model_stability_iterations']
         Constants.TOPIC_MODEL_STABILITY_NUM_TERMS = \
             Constants._properties['topic_model_stability_num_terms']
+        Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
+            Constants._properties['separate_topic_model_recsys_reviews']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
