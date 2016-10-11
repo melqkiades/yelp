@@ -18,6 +18,7 @@ from etl import ETLUtils
 from etl import libfm_converter
 from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
+from evaluation import parameter_combinator
 # from recommenders import fastfm_recommender
 from topicmodeling.context import topic_model_analyzer
 from topicmodeling.context import topic_model_creator
@@ -196,6 +197,7 @@ class ContextTopNRunner(object):
             os.remove(self.context_train_file)
             os.remove(self.context_test_file)
             os.remove(self.context_log_file)
+            os.remove(self.libfm_model_file)
 
         self.csv_train_file = None
         self.csv_test_file = None
@@ -203,6 +205,7 @@ class ContextTopNRunner(object):
         self.context_train_file = None
         self.context_test_file = None
         self.context_log_file = None
+        self.libfm_model_file = None
         gc.collect()
 
     def create_tmp_file_names(self):
@@ -802,6 +805,23 @@ class ContextTopNRunner(object):
             raise ValueError('Unknown cross-validation strategy')
 
 
+def run_tests():
+
+    combined_parameters = parameter_combinator.get_combined_parameters()
+
+    test_cycle = 1
+    num_tests = len(combined_parameters)
+    for properties in combined_parameters:
+        Constants.update_properties(properties)
+        context_top_n_runner = ContextTopNRunner()
+
+        print('\n\n******************\nTest %d/%d\n******************\n' %
+              (test_cycle, num_tests))
+
+        context_top_n_runner.run()
+        test_cycle += 1
+
+
 def run_test_folds():
     context_parameters = [
         {'fold': 0, Constants.FM_NUM_FACTORS_FIELD: 16,
@@ -864,6 +884,7 @@ def run_test_folds():
 # start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
 # my_context_top_n_runner.run()
+# run_tests()
 # run_test_folds()
 # end = time.time()
 # total_time = end - start

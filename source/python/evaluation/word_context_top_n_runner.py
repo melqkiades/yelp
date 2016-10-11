@@ -406,7 +406,7 @@ class WordContextTopNRunner(object):
 
 def run_tests():
 
-    combined_parameters = parameter_combinator.hotel_context_parameters()
+    combined_parameters = parameter_combinator.get_combined_parameters()
 
     test_cycle = 1
     num_tests = len(combined_parameters)
