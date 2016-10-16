@@ -39,21 +39,6 @@ basic_headers = [
 ]
 
 
-records_file_path = Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-    '_context_%s_records_' + Constants.TOPIC_MODEL_TYPE + '_' + \
-    Constants.EVALUATION_METRIC + '_' + \
-    Constants.CROSS_VALIDATION_STRATEGY + \
-    '_cycle:%d|' + str(Constants.NUM_CYCLES) + \
-    '_fold:%d|' + \
-    '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
-    '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
-    '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
-    '_bow:' + str(Constants.BOW_TYPE) + \
-    '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
-    '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
-    '.pkl'
-
-
 def build_headers(context_rich_topics):
     headers = basic_headers[:]
     for topic in context_rich_topics:
@@ -361,8 +346,8 @@ class ContextTopNRunner(object):
 
         self.context_rich_topics = context_extractor.context_rich_topics
 
-        topics_file_path = records_file_path % (
-            'topics', cycle_index + 1, fold_index + 1)
+        topics_file_path = utilities.generate_file_name(
+            'context_topics', cycle_index + 1, fold_index + 1)
         ETLUtils.save_json_file(
             topics_file_path, [dict(self.context_rich_topics)])
         print('Trained Context Extractor: %s' %
@@ -372,12 +357,12 @@ class ContextTopNRunner(object):
 
     def load_context_reviews(self, cycle_index, fold_index):
 
-        train_records_file_path = records_file_path % (
-            'train', cycle_index + 1, fold_index + 1)
-        important_records_file_path = records_file_path % (
-            'important', cycle_index + 1, fold_index + 1)
-        topics_file_path = records_file_path % (
-            'topics', cycle_index + 1, fold_index + 1)
+        train_records_file_path = utilities.generate_file_name(
+            'context_train_records', cycle_index + 1, fold_index + 1)
+        important_records_file_path = utilities.generate_file_name(
+            'context_important_records', cycle_index + 1, fold_index + 1)
+        topics_file_path = utilities.generate_file_name(
+            'context_topics', cycle_index + 1, fold_index + 1)
 
         self.train_records = ETLUtils.load_json_file(train_records_file_path)
         self.important_records = \
@@ -401,10 +386,10 @@ class ContextTopNRunner(object):
     def find_reviews_topics(self, context_extractor, cycle_index, fold_index):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        train_records_file_path = records_file_path % (
-            'train', cycle_index + 1, fold_index + 1)
-        important_records_file_path = records_file_path % (
-            'important', cycle_index + 1, fold_index + 1)
+        train_records_file_path = utilities.generate_file_name(
+            'context_train_records', cycle_index + 1, fold_index + 1)
+        important_records_file_path = utilities.generate_file_name(
+            'context_important_records', cycle_index + 1, fold_index + 1)
 
         context_extractor.find_contextual_topics(self.train_records)
         ETLUtils.save_json_file(train_records_file_path, self.train_records)

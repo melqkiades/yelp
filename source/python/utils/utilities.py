@@ -13,3 +13,37 @@ def plant_seeds():
     if Constants.NUMPY_RANDOM_SEED is not None:
         print('numpy random seed: %d' % Constants.NUMPY_RANDOM_SEED)
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
+
+
+def generate_file_name(data_type, cycle_index, fold_index):
+
+    prefix = Constants.ITEM_TYPE + '_' + data_type + '_' + \
+        Constants.TOPIC_MODEL_TYPE
+    suffix = '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
+        '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
+        '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
+        '_bow:' + str(Constants.BOW_TYPE) + \
+        '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
+        '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+        '.pkl'
+
+    if cycle_index is None and fold_index is None:
+
+        data_split = '_separated' \
+            if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS else '_full'
+
+        topic_model_file = prefix + data_split + \
+            suffix
+    else:
+        strategy = Constants.CROSS_VALIDATION_STRATEGY
+        cross_validation_info = '_' + strategy
+        if strategy == 'nested_validate':
+            cross_validation_info +=\
+                ':' + str(Constants.NESTED_CROSS_VALIDATION_CYCLE)
+        topic_model_file = prefix + \
+            cross_validation_info + \
+            '_cycle:' + str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) + \
+            '_fold:' + str(fold_index+1) + '|' + \
+            str(Constants.CROSS_VALIDATION_NUM_FOLDS) + \
+            suffix
+    return Constants.CACHE_FOLDER + topic_model_file

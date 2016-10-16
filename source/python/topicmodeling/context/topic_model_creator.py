@@ -6,7 +6,6 @@ import traceback
 from multiprocessing import Pool
 import cPickle as pickle
 
-import numpy
 from os.path import expanduser
 
 from etl import ETLUtils
@@ -17,40 +16,12 @@ from utils import utilities
 from utils.constants import Constants
 
 
-def get_topic_model_file_path(cycle_index, fold_index):
-
-    prefix = Constants.ITEM_TYPE + '_topic_model_' + \
-        Constants.TOPIC_MODEL_TYPE + '_'
-    suffix = '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
-        '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
-        '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
-        '_bow:' + str(Constants.BOW_TYPE) + \
-        '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
-        '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
-        '.pkl'
-
-    if cycle_index is None and fold_index is None:
-
-        data_split = '_separated'\
-            if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS else '_full'
-
-        topic_model_file = prefix + data_split + \
-            suffix
-    else:
-        topic_model_file = prefix + \
-            Constants.CROSS_VALIDATION_STRATEGY + \
-            '_cycle:' + str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) + \
-            '_fold:' + str(fold_index+1) + '|' +\
-            str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
-            suffix
-    return Constants.CACHE_FOLDER + topic_model_file
-
-
 def create_topic_model(records, cycle_index, fold_index, check_exists=True):
 
     print('%s: Create topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    topic_model_file_path = get_topic_model_file_path(cycle_index, fold_index)
+    topic_model_file_path = \
+        utilities.generate_file_name('topic_model', cycle_index, fold_index)
 
     print(topic_model_file_path)
 
@@ -90,7 +61,8 @@ def train_context_extractor(records):
 
 
 def load_topic_model(cycle_index, fold_index):
-    file_path = get_topic_model_file_path(cycle_index, fold_index)
+    file_path = \
+        utilities.generate_file_name('topic_model', cycle_index, fold_index)
     print(file_path)
     with open(file_path, 'rb') as read_file:
         topic_model = pickle.load(read_file)
