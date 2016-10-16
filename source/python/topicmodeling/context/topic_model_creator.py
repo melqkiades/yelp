@@ -19,37 +19,30 @@ from utils.constants import Constants
 
 def get_topic_model_file_path(cycle_index, fold_index):
 
+    prefix = Constants.ITEM_TYPE + '_topic_model_' + \
+        Constants.TOPIC_MODEL_TYPE + '_'
+    suffix = '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
+        '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
+        '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
+        '_bow:' + str(Constants.BOW_TYPE) + \
+        '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
+        '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+        '.pkl'
+
     if cycle_index is None and fold_index is None:
 
         data_split = '_separated'\
             if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS else '_full'
 
-        topic_model_file = Constants.ITEM_TYPE + '_topic_model_' + \
-            Constants.TOPIC_MODEL_TYPE + data_split + \
-            '_numtopics:' + str(
-            Constants.TOPIC_MODEL_NUM_TOPICS) + \
-            '_iterations:' + str(
-            Constants.TOPIC_MODEL_ITERATIONS) + \
-            '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
-            '_bow:' + str(Constants.BOW_TYPE) + \
-            '_reviewtype:' + str(
-            Constants.TOPIC_MODEL_REVIEW_TYPE) + \
-            '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
-            '.pkl'
+        topic_model_file = prefix + data_split + \
+            suffix
     else:
-        topic_model_file = Constants.ITEM_TYPE + '_topic_model_' +\
-            Constants.TOPIC_MODEL_TYPE + '_' +\
+        topic_model_file = prefix + \
             Constants.CROSS_VALIDATION_STRATEGY + \
-            '_cycle:' + str(cycle_index+1) + '|' +\
-            str(Constants.NUM_CYCLES) + '_fold:' + str(fold_index+1) + '|' +\
+            '_cycle:' + str(cycle_index+1) + '|' + str(Constants.NUM_CYCLES) + \
+            '_fold:' + str(fold_index+1) + '|' +\
             str(Constants.CROSS_VALIDATION_NUM_FOLDS) +\
-            '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) +\
-            '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) +\
-            '_passes:' + str(Constants.TOPIC_MODEL_PASSES) +\
-            '_bow:' + str(Constants.BOW_TYPE) +\
-            '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) +\
-            '_document_level:' + str(Constants.DOCUMENT_LEVEL) +\
-            '.pkl'
+            suffix
     return Constants.CACHE_FOLDER + topic_model_file
 
 
