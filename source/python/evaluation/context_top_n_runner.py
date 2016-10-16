@@ -306,7 +306,10 @@ class ContextTopNRunner(object):
         self.test_records = None
         gc.collect()
 
-    def get_records_to_predict(self):
+    def get_records_to_predict(self, use_random_seeds):
+
+        if use_random_seeds:
+            utilities.plant_seeds()
 
         if Constants.EVALUATION_METRIC == 'topn_recall':
             self.get_records_to_predict_topn()
@@ -370,7 +373,6 @@ class ContextTopNRunner(object):
         self.context_rich_topics = sorted(
             ETLUtils.load_json_file(topics_file_path)[0].items(),
             key=operator.itemgetter(1), reverse=True)
-        print('topics after', self.context_rich_topics)
 
         self.context_topics_map = {}
         for record in self.important_records:
@@ -734,7 +736,7 @@ class ContextTopNRunner(object):
                         self.records, split=split, start=cv_start)
                 # subsample_size = int(len(self.train_records)*0.5)
                 # self.train_records = self.train_records[:subsample_size]
-                self.get_records_to_predict()
+                self.get_records_to_predict(True)
                 if Constants.USE_CONTEXT:
                     if Constants.CACHE_CONTEXT_REVIEWS:
                         self.load_context_reviews(i, j)
@@ -816,7 +818,7 @@ class ContextTopNRunner(object):
                 self.records, split=split, start=cv_start)
         # subsample_size = int(len(self.train_records)*0.5)
         # self.train_records = self.train_records[:subsample_size]
-        self.get_records_to_predict()
+        self.get_records_to_predict(True)
         if Constants.USE_CONTEXT:
             context_extractor = self.train_topic_model(0, fold)
             self.find_reviews_topics(context_extractor, 0, fold)
