@@ -9,6 +9,7 @@ import cPickle as pickle
 import uuid
 import gc
 import numpy
+import operator
 # from fastFM import als
 # from fastFM import mcmc
 # from fastFM import sgd
@@ -36,6 +37,21 @@ basic_headers = [
     Constants.USER_ID_FIELD,
     Constants.ITEM_ID_FIELD
 ]
+
+
+records_file_path = Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
+    '_context_%s_records_' + Constants.TOPIC_MODEL_TYPE + '_' + \
+    Constants.EVALUATION_METRIC + '_' + \
+    Constants.CROSS_VALIDATION_STRATEGY + \
+    '_cycle:%d|' + str(Constants.NUM_CYCLES) + \
+    '_fold:%d|' + \
+    '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
+    '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
+    '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
+    '_bow:' + str(Constants.BOW_TYPE) + \
+    '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
+    '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+    '.pkl'
 
 
 def build_headers(context_rich_topics):
@@ -166,7 +182,7 @@ class ContextTopNRunner(object):
         self.top_n_evaluator = None
         self.headers = None
         self.important_records = None
-        self.context_rich_topics = []
+        self.context_rich_topics = None
         self.context_topics_map = None
         self.csv_train_file = None
         self.csv_test_file = None
@@ -187,7 +203,7 @@ class ContextTopNRunner(object):
         self.top_n_evaluator = None
         self.headers = None
         self.important_records = None
-        self.context_rich_topics = []
+        self.context_rich_topics = None
         self.context_topics_map = None
 
         if Constants.SOLVER == Constants.LIBFM:
@@ -318,24 +334,24 @@ class ContextTopNRunner(object):
 
         if Constants.CACHE_TOPIC_MODEL:
             print('loading topic model')
-            lda_based_context = topic_model_creator.load_topic_model(
+            context_extractor = topic_model_creator.load_topic_model(
                 cycle_index, fold_index)
         elif not Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
             print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
             if Constants.TOPIC_MODEL_TYPE == 'lda':
-                lda_based_context = LdaBasedContext(self.train_records)
-                lda_based_context.generate_review_corpus()
-                lda_based_context.build_topic_model()
-                lda_based_context.update_reviews_with_topics()
-                lda_based_context.get_context_rich_topics()
+                context_extractor = LdaBasedContext(self.train_records)
+                context_extractor.generate_review_corpus()
+                context_extractor.build_topic_model()
+                context_extractor.update_reviews_with_topics()
+                context_extractor.get_context_rich_topics()
             elif Constants.TOPIC_MODEL_TYPE == 'nmf':
-                lda_based_context = NmfContextExtractor(self.train_records)
-                lda_based_context.generate_review_bows()
-                lda_based_context.build_document_term_matrix()
-                lda_based_context.build_stable_topic_model()
-                lda_based_context.update_reviews_with_topics()
-                lda_based_context.get_context_rich_topics()
+                context_extractor = NmfContextExtractor(self.train_records)
+                context_extractor.generate_review_bows()
+                context_extractor.build_document_term_matrix()
+                context_extractor.build_stable_topic_model()
+                context_extractor.update_reviews_with_topics()
+                context_extractor.get_context_rich_topics()
             else:
                 raise ValueError('Unrecognized topic model type')
         else:
@@ -343,18 +359,60 @@ class ContextTopNRunner(object):
                   'True then the cache_topic_model must also be True'
             raise ValueError(msg)
 
-        self.context_rich_topics = lda_based_context.context_rich_topics
-        print('Trained LDA Model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        self.context_rich_topics = context_extractor.context_rich_topics
 
-        return lda_based_context
+        topics_file_path = records_file_path % (
+            'topics', cycle_index + 1, fold_index + 1)
+        ETLUtils.save_json_file(
+            topics_file_path, [dict(self.context_rich_topics)])
+        print('Trained Context Extractor: %s' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    def find_reviews_topics(self, lda_based_context):
+        return context_extractor
+
+    def load_context_reviews(self, cycle_index, fold_index):
+
+        train_records_file_path = records_file_path % (
+            'train', cycle_index + 1, fold_index + 1)
+        important_records_file_path = records_file_path % (
+            'important', cycle_index + 1, fold_index + 1)
+        topics_file_path = records_file_path % (
+            'topics', cycle_index + 1, fold_index + 1)
+
+        self.train_records = ETLUtils.load_json_file(train_records_file_path)
+        self.important_records = \
+            ETLUtils.load_json_file(important_records_file_path)
+        self.context_rich_topics = sorted(
+            ETLUtils.load_json_file(topics_file_path)[0].items(),
+            key=operator.itemgetter(1), reverse=True)
+        print('topics after', self.context_rich_topics)
+
+        self.context_topics_map = {}
+        for record in self.important_records:
+            self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] = \
+                record[Constants.CONTEXT_TOPICS_FIELD]
+
+        # self.train_records = self.filter_context_words(self.train_records)
+        # self.print_context_topics(self.important_records)
+
+        self.important_records = None
+        gc.collect()
+
+    def find_reviews_topics(self, context_extractor, cycle_index, fold_index):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        lda_based_context.find_contextual_topics(self.train_records)
+        train_records_file_path = records_file_path % (
+            'train', cycle_index + 1, fold_index + 1)
+        important_records_file_path = records_file_path % (
+            'important', cycle_index + 1, fold_index + 1)
 
-        lda_based_context.find_contextual_topics(
+        context_extractor.find_contextual_topics(self.train_records)
+        ETLUtils.save_json_file(train_records_file_path, self.train_records)
+
+        context_extractor.find_contextual_topics(
             self.important_records, Constants.TEXT_SAMPLING_PROPORTION)
+        ETLUtils.save_json_file(
+            important_records_file_path, self.important_records)
 
         self.context_topics_map = {}
         for record in self.important_records:
@@ -693,8 +751,13 @@ class ContextTopNRunner(object):
                 # self.train_records = self.train_records[:subsample_size]
                 self.get_records_to_predict()
                 if Constants.USE_CONTEXT:
-                    lda_based_context = self.train_topic_model(i, j)
-                    self.find_reviews_topics(lda_based_context)
+                    if Constants.CACHE_CONTEXT_REVIEWS:
+                        self.load_context_reviews(i, j)
+                    else:
+                        context_extractor = self.train_topic_model(i, j)
+                        self.find_reviews_topics(context_extractor, i, j)
+                else:
+                    self.context_rich_topics = []
                 self.predict()
                 metric, specific_metric, generic_metric = self.evaluate()
                 metric_list.append(metric)
@@ -770,8 +833,8 @@ class ContextTopNRunner(object):
         # self.train_records = self.train_records[:subsample_size]
         self.get_records_to_predict()
         if Constants.USE_CONTEXT:
-            lda_based_context = self.train_topic_model(0, fold)
-            self.find_reviews_topics(lda_based_context)
+            context_extractor = self.train_topic_model(0, fold)
+            self.find_reviews_topics(context_extractor, 0, fold)
         self.predict()
         metric, specific_metric, generic_metric = self.evaluate()
 
