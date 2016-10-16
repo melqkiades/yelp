@@ -96,7 +96,7 @@ def get_combined_parameters():
     lda_multicore_list = [None]
     fm_num_factors_list = [1, 2, 4, 8, 16, 32]
     cross_validation_num_folds = None
-    use_context = False
+    use_context = None
     random_seed = None
     numpy_random_seed = None
     libfm_seed = None
