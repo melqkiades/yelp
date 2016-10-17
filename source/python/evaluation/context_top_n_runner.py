@@ -364,15 +364,11 @@ class ContextTopNRunner(object):
             'context_train_records', cycle_index, fold_index)
         important_records_file_path = utilities.generate_file_name(
             'context_important_records', cycle_index, fold_index)
-        topics_file_path = utilities.generate_file_name(
-            'context_topics', cycle_index, fold_index)
 
         self.train_records = ETLUtils.load_json_file(train_records_file_path)
         self.important_records = \
             ETLUtils.load_json_file(important_records_file_path)
-        self.context_rich_topics = sorted(
-            ETLUtils.load_json_file(topics_file_path)[0].items(),
-            key=operator.itemgetter(1), reverse=True)
+        self.load_cache_context_topics(cycle_index, fold_index)
 
         self.context_topics_map = {}
         for record in self.important_records:
@@ -384,6 +380,20 @@ class ContextTopNRunner(object):
 
         self.important_records = None
         gc.collect()
+
+    def load_cache_context_topics(self, cycle_index, fold_index):
+
+        topics_file_path = utilities.generate_file_name(
+            'context_topics', cycle_index, fold_index)
+
+        self.context_rich_topics = sorted(
+            ETLUtils.load_json_file(topics_file_path)[0].items(),
+            key=operator.itemgetter(1), reverse=True)
+
+        self.context_topics_map = {}
+        for record in self.important_records:
+            self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] = \
+                record[Constants.CONTEXT_TOPICS_FIELD]
 
     def find_reviews_topics(self, context_extractor, cycle_index, fold_index):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -738,11 +748,14 @@ class ContextTopNRunner(object):
                 # self.train_records = self.train_records[:subsample_size]
                 self.get_records_to_predict(True)
                 if Constants.USE_CONTEXT:
-                    if Constants.CACHE_CONTEXT_REVIEWS:
-                        self.load_context_reviews(i, j)
+                    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+                        self.load_cache_context_topics(None, None)
                     else:
-                        context_extractor = self.train_topic_model(i, j)
-                        self.find_reviews_topics(context_extractor, i, j)
+                        if Constants.CACHE_CONTEXT_REVIEWS:
+                            self.load_context_reviews(i, j)
+                        else:
+                            context_extractor = self.train_topic_model(i, j)
+                            self.find_reviews_topics(context_extractor, i, j)
                 else:
                     self.context_rich_topics = []
                 self.predict()
@@ -820,8 +833,16 @@ class ContextTopNRunner(object):
         # self.train_records = self.train_records[:subsample_size]
         self.get_records_to_predict(True)
         if Constants.USE_CONTEXT:
-            context_extractor = self.train_topic_model(0, fold)
-            self.find_reviews_topics(context_extractor, 0, fold)
+            if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+                self.load_cache_context_topics(None, None)
+            else:
+                if Constants.CACHE_CONTEXT_REVIEWS:
+                    self.load_context_reviews(0, fold)
+                else:
+                    context_extractor = self.train_topic_model(0, fold)
+                    self.find_reviews_topics(context_extractor, 0, fold)
+        else:
+            self.context_rich_topics = []
         self.predict()
         metric, specific_metric, generic_metric = self.evaluate()
 

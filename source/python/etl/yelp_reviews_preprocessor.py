@@ -20,7 +20,9 @@ from unbalanced_dataset.over_sampling import SMOTE
 
 from etl import ETLUtils
 from nlp import nlp_utils
+from topicmodeling.context import topic_model_creator
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
+from utils import utilities
 from utils.constants import Constants
 
 
@@ -236,7 +238,7 @@ class YelpReviewsPreprocessor:
 
     def export_records(self):
         print(
-            '%s: get_records_to_predict_topn records' %
+            '%s: get_records_to_predict_topn' %
             time.strftime("%Y/%m/%d-%H:%M:%S"))
         self.dictionary.save(Constants.DICTIONARY_FILE)
         ETLUtils.save_json_file(
@@ -246,20 +248,23 @@ class YelpReviewsPreprocessor:
 
     def separate_recsys_topic_model_records(self):
 
+        print('%s: separate_recsys_topic_model_records' %
+            time.strftime("%Y/%m/%d-%H:%M:%S"))
+
         num_records = len(self.records)
         topic_model_records = self.records[:num_records/2]
         recsys_records = self.records[num_records/2:]
+        topic_model = topic_model_creator.create_topic_model(
+            topic_model_records, None, None)
 
-        ETLUtils.save_json_file(
-            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE, topic_model_records)
+        topic_model.find_contextual_topics(recsys_records)
         ETLUtils.save_json_file(
             Constants.RECSYS_PROCESSED_RECORDS_FILE, recsys_records)
 
-        if False:
-            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE = \
-                Constants.PROCESSED_RECORDS_FILE
-            Constants.RECSYS_PROCESSED_RECORDS_FILE =\
-                Constants.PROCESSED_RECORDS_FILE
+        topics_file_path = utilities.generate_file_name(
+            'context_topics', None, None)
+        ETLUtils.save_json_file(
+            topics_file_path, [dict(topic_model.context_rich_topics)])
 
     def drop_unnecessary_fields(self):
         print(

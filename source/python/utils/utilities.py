@@ -27,13 +27,10 @@ def generate_file_name(data_type, cycle_index, fold_index):
         '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
         '.pkl'
 
-    if cycle_index is None and fold_index is None:
-
-        data_split = '_separated' \
-            if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS else '_full'
-
-        topic_model_file = prefix + data_split + \
-            suffix
+    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+        topic_model_file = prefix + '_separated' + suffix
+    elif cycle_index is None and fold_index is None:
+        topic_model_file = prefix + '_full' + suffix
     else:
         strategy = Constants.CROSS_VALIDATION_STRATEGY
         cross_validation_info = '_' + strategy
