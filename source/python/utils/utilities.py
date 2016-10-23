@@ -15,17 +15,17 @@ def plant_seeds():
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 
-def generate_file_name(data_type, cycle_index, fold_index):
+def generate_file_name(name, extension, folder, cycle_index, fold_index):
 
-    prefix = Constants.ITEM_TYPE + '_' + data_type + '_' + \
-        Constants.TOPIC_MODEL_TYPE
+    prefix = Constants.ITEM_TYPE + '_' + name + '_' + \
+             Constants.TOPIC_MODEL_TYPE
     suffix = '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
         '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
         '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
         '_bow:' + str(Constants.BOW_TYPE) + \
         '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
         '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
-        '.pkl'
+        '.' + extension
 
     if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
         topic_model_file = prefix + '_separated' + suffix
@@ -43,4 +43,4 @@ def generate_file_name(data_type, cycle_index, fold_index):
             '_fold:' + str(fold_index+1) + '|' + \
             str(Constants.CROSS_VALIDATION_NUM_FOLDS) + \
             suffix
-    return Constants.CACHE_FOLDER + topic_model_file
+    return folder + topic_model_file

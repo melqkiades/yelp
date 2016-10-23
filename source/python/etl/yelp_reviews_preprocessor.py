@@ -2,7 +2,6 @@ import random
 
 import time
 
-import numpy
 import operator
 from gensim import corpora
 from nltk import PerceptronTagger
@@ -66,12 +65,6 @@ class YelpReviewsPreprocessor:
         self.resampler = samplers[resampler]
         classifiers = None
         samplers = None
-
-    @staticmethod
-    def plant_seeds():
-        print('%s: plant seeds' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        random.seed(0)
-        numpy.random.seed(0)
 
     def load_records(self):
         print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -262,7 +255,7 @@ class YelpReviewsPreprocessor:
             Constants.RECSYS_PROCESSED_RECORDS_FILE, recsys_records)
 
         topics_file_path = utilities.generate_file_name(
-            'context_topics', None, None)
+            'context_topics', 'json', Constants.CACHE_FOLDER, None, None)
         ETLUtils.save_json_file(
             topics_file_path, [dict(topic_model.context_rich_topics)])
 
@@ -310,7 +303,7 @@ class YelpReviewsPreprocessor:
     def full_cycle(self):
         Constants.print_properties()
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        self.plant_seeds()
+        utilities.plant_seeds()
         self.load_records()
         self.shuffle_records()
         self.lemmatize_records()

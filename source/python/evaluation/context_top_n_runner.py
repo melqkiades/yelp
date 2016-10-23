@@ -6,7 +6,7 @@ import random
 from subprocess import call
 import time
 import cPickle as pickle
-import uuid
+# import uuid
 import gc
 import numpy
 import operator
@@ -209,22 +209,35 @@ class ContextTopNRunner(object):
         self.libfm_model_file = None
         gc.collect()
 
-    def create_tmp_file_names(self):
+    def create_tmp_file_names(self, cycle_index, fold_index):
 
-        unique_id = uuid.uuid4().hex
-        prefix = Constants.GENERATED_FOLDER + unique_id + '_' + \
-            Constants.ITEM_TYPE
+        # unique_id = uuid.uuid4().hex
+        # prefix = Constants.GENERATED_FOLDER + unique_id + '_' + \
+        #     Constants.ITEM_TYPE
         # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
 
-        print('unique id: %s' % unique_id)
+        # print('unique id: %s' % unique_id)
 
-        self.csv_train_file = prefix + '_train.csv'
-        self.csv_test_file = prefix + '_test.csv'
-        self.context_predictions_file = prefix + '_predictions.txt'
+        # self.csv_train_file = prefix + '_train.csv'
+        # self.csv_test_file = prefix + '_test.csv'
+        # self.context_predictions_file = prefix + '_predictions.txt'
+        # self.context_train_file = self.csv_train_file + '.libfm'
+        # self.context_test_file = self.csv_test_file + '.libfm'
+        # self.context_log_file = prefix + '.log'
+        # self.libfm_model_file = prefix + '_trained_model.libfm'
+
+        self.csv_train_file = utilities.generate_file_name(
+            'libfm_train', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+        self.csv_test_file = utilities.generate_file_name(
+            'libfm_test', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+        self.context_predictions_file = utilities.generate_file_name(
+            'libfm_predictions', 'txt', Constants.GENERATED_FOLDER, cycle_index, fold_index)
         self.context_train_file = self.csv_train_file + '.libfm'
         self.context_test_file = self.csv_test_file + '.libfm'
-        self.context_log_file = prefix + '.log'
-        self.libfm_model_file = prefix + '_trained_model.libfm'
+        self.context_log_file = utilities.generate_file_name(
+            'libfm_log', 'log', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+        self.libfm_model_file = utilities.generate_file_name(
+            'libfm_model', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index)
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -234,7 +247,7 @@ class ContextTopNRunner(object):
                 ETLUtils.load_json_file(Constants.RECSYS_PROCESSED_RECORDS_FILE)
         else:
             self.original_records =\
-                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)[:10000]
 
         print('num_records: %d' % len(self.original_records))
         user_ids = \
@@ -350,7 +363,8 @@ class ContextTopNRunner(object):
         self.context_rich_topics = context_extractor.context_rich_topics
 
         topics_file_path = utilities.generate_file_name(
-            'context_topics', cycle_index, fold_index)
+            'context_topics', 'json', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
         ETLUtils.save_json_file(
             topics_file_path, [dict(self.context_rich_topics)])
         print('Trained Context Extractor: %s' %
@@ -361,9 +375,11 @@ class ContextTopNRunner(object):
     def load_context_reviews(self, cycle_index, fold_index):
 
         train_records_file_path = utilities.generate_file_name(
-            'context_train_records', cycle_index, fold_index)
+            'context_train_records', 'json', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
         important_records_file_path = utilities.generate_file_name(
-            'context_important_records', cycle_index, fold_index)
+            'context_important_records', 'json', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
 
         self.train_records = ETLUtils.load_json_file(train_records_file_path)
         self.important_records = \
@@ -383,8 +399,11 @@ class ContextTopNRunner(object):
 
     def load_cache_context_topics(self, cycle_index, fold_index):
 
+        print('load cache context topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
         topics_file_path = utilities.generate_file_name(
-            'context_topics', cycle_index, fold_index)
+            'context_topics', 'json', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
 
         self.context_rich_topics = sorted(
             ETLUtils.load_json_file(topics_file_path)[0].items(),
@@ -399,9 +418,11 @@ class ContextTopNRunner(object):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         train_records_file_path = utilities.generate_file_name(
-            'context_train_records', cycle_index, fold_index)
+            'context_train_records', 'json', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
         important_records_file_path = utilities.generate_file_name(
-            'context_important_records', cycle_index, fold_index)
+            'context_important_records', 'json', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
 
         context_extractor.find_contextual_topics(self.train_records)
         ETLUtils.save_json_file(train_records_file_path, self.train_records)
@@ -740,7 +761,7 @@ class ContextTopNRunner(object):
                 cv_start = float(j) / num_folds
                 print('\nFold: %d/%d' % ((j+1), num_folds))
 
-                self.create_tmp_file_names()
+                self.create_tmp_file_names(i, j)
                 self.train_records, self.test_records = \
                     ETLUtils.split_train_test_copy(
                         self.records, split=split, start=cv_start)
@@ -769,7 +790,7 @@ class ContextTopNRunner(object):
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
                 total_cycle_time += fold_time
-                self.clear()
+                # self.clear()
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
         metric_name = Constants.EVALUATION_METRIC
@@ -825,7 +846,7 @@ class ContextTopNRunner(object):
         cv_start = float(fold) / num_folds
         print('\nFold: %d/%d' % ((fold + 1), num_folds))
 
-        self.create_tmp_file_names()
+        self.create_tmp_file_names(i, j)
         self.train_records, self.test_records = \
             ETLUtils.split_train_test_copy(
                 self.records, split=split, start=cv_start)

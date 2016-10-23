@@ -21,7 +21,9 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
     print('%s: Create topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     topic_model_file_path = \
-        utilities.generate_file_name('topic_model', cycle_index, fold_index)
+        utilities.generate_file_name(
+            'topic_model', 'pkl', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
 
     print(topic_model_file_path)
 
@@ -62,7 +64,9 @@ def train_context_extractor(records):
 
 def load_topic_model(cycle_index, fold_index):
     file_path = \
-        utilities.generate_file_name('topic_model', cycle_index, fold_index)
+        utilities.generate_file_name(
+            'topic_model', 'pkl', Constants.CACHE_FOLDER,
+            cycle_index, fold_index)
     print(file_path)
     with open(file_path, 'rb') as read_file:
         topic_model = pickle.load(read_file)
