@@ -68,10 +68,7 @@ class YelpReviewsPreprocessor:
 
     def load_records(self):
         print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        records_file =\
-            Constants.DATASET_FOLDER + 'yelp_training_set_review_' +\
-            Constants.ITEM_TYPE + 's.json'
-        self.records = ETLUtils.load_json_file(records_file)
+        self.records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
 
     def shuffle_records(self):
         print('%s: shuffle records' % time.strftime("%Y/%m/%d-%H:%M:%S"))

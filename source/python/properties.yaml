@@ -1,5 +1,5 @@
 # Properties for the recommender system
-business_type: hotel
+business_type: yelp_hotel
 fm_review_type:
 topic_model_review_type: specific
 topn_n: 10

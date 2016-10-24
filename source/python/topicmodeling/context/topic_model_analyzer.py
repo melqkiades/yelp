@@ -101,8 +101,9 @@ grouped_restaurant_context_words = {
 }
 
 context_words = {
-    'hotel': grouped_hotel_context_words,
-    'restaurant': grouped_restaurant_context_words
+    'yelp_hotel': grouped_hotel_context_words,
+    'fourcity_hotel': grouped_hotel_context_words,
+    'yelp_restaurant': grouped_restaurant_context_words
 }
 
 hotel_context_words = set()
@@ -114,8 +115,9 @@ for groups in grouped_restaurant_context_words.values():
     restaurant_context_words |= groups
 
 all_context_words = {
-    'hotel': hotel_context_words,
-    'restaurant': restaurant_context_words
+    'yelp_hotel': hotel_context_words,
+    'fourcity_hotel': hotel_context_words,
+    'yelp_restaurant': restaurant_context_words
 }
 
 
@@ -142,26 +144,30 @@ def split_topic(topic_string):
     """
 
     my_context_words = []
-    if Constants.ITEM_TYPE == 'hotel':
+    if 'hotel' in Constants.ITEM_TYPE:
         for values in grouped_hotel_context_words.values():
             my_context_words.extend(values)
-    elif Constants.ITEM_TYPE == 'restaurant':
+    elif 'restaurant' in Constants.ITEM_TYPE:
         for values in grouped_restaurant_context_words.values():
             my_context_words.extend(values)
 
     words_dict = {}
     index = 0
     topic_words = topic_string.split(' + ')
-    topic_score = 0.0
+    probability_score = 0.0
+    rank_score = 0
     for topic_word in topic_words:
         word = topic_word.split('*')[1]
-        word_score = float(topic_word.split('*')[0])
+        word_probability_score = float(topic_word.split('*')[0])
         words_dict['word' + str(index)] = topic_word.encode('utf-8')
         if word in my_context_words:
-            topic_score += word_score
+            probability_score += word_probability_score
+            word_rank_score = 5 - index if index < 5 else 0
+            rank_score += word_rank_score
         index += 1
 
-    words_dict['score'] = topic_score
+    words_dict['probability_score'] = probability_score
+    words_dict['rank_score'] = rank_score
 
     return words_dict
 
@@ -180,7 +186,8 @@ def analyze_topics(include_stability=True):
     for topic in range(Constants.TOPIC_MODEL_NUM_TOPICS):
         result = {}
         result['topic_id'] = topic
-        result.update(split_topic(context_extractor.print_topic_model()[topic]))
+        result.update(split_topic(context_extractor.print_topic_model(
+            num_terms=Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)[topic]))
         result['ratio'] = context_extractor.topic_ratio_map[topic]
         result['weighted_frequency'] = \
             context_extractor.topic_weighted_frequency_map[topic]
@@ -191,12 +198,18 @@ def analyze_topics(include_stability=True):
 
     scores = {}
     scores['num_topics'] = Constants.TOPIC_MODEL_NUM_TOPICS
-    topic_model_score = data_frame['score'].mean()
-    scores['topic_model_score'] = topic_model_score
+    probability_score = data_frame['probability_score'].mean()
+    rank_score = data_frame['rank_score'].mean()
+    scores['probability_score'] = probability_score
+    scores['rank_score'] = rank_score
     high_ratio_mean_score = data_frame[
-        (data_frame.ratio > Constants.CONTEXT_EXTRACTOR_BETA)]['score'].mean()
+        (data_frame.ratio > Constants.CONTEXT_EXTRACTOR_BETA)]['probability_score'].mean()
     low_ratio_mean_score = data_frame[
-        (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['score'].mean()
+        (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['probability_score'].mean()
+    high_rank_ratio_mean_score = data_frame[
+        (data_frame.ratio > Constants.CONTEXT_EXTRACTOR_BETA)]['rank_score'].mean()
+    low_rank_ratio_mean_score = data_frame[
+        (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['rank_score'].mean()
 
     stability = None
     if include_stability:
@@ -207,14 +220,21 @@ def analyze_topics(include_stability=True):
         (high_ratio_mean_score / low_ratio_mean_score)\
         if low_ratio_mean_score != 0\
         else 'N/A'
+    rank_separation_score =\
+        (high_rank_ratio_mean_score / low_rank_ratio_mean_score)\
+        if low_ratio_mean_score != 0\
+        else 'N/A'
     scores['separation_score'] = separation_score
+    scores['rank_separation_score'] = rank_separation_score
     scores['combined_score'] =\
-        (topic_model_score * separation_score)\
-        if topic_model_score != 'N/A' and separation_score != 'N/A'\
+        (probability_score * separation_score)\
+        if probability_score != 'N/A' and separation_score != 'N/A'\
         else 'N/A'
 
-    print('topic model score: %f' % scores['topic_model_score'])
+    print('probability score: %f' % scores['probability_score'])
+    print('rank score: %f' % scores['rank_score'])
     print('separation score:', scores['separation_score'])
+    print('rank separation score:', scores['rank_separation_score'])
     print('combined score:', scores['combined_score'])
 
     end_time = time.time()
@@ -308,10 +328,10 @@ def calculate_stability(all_term_rankings):
 
 def generate_excel_file(records):
     my_context_words = []
-    if Constants.ITEM_TYPE == 'hotel':
+    if 'hotel' in Constants.ITEM_TYPE:
         for values in grouped_hotel_context_words.values():
             my_context_words.extend(values)
-    elif Constants.ITEM_TYPE == 'restaurant':
+    elif 'restaurant' in Constants.ITEM_TYPE:
         for values in grouped_restaurant_context_words.values():
             my_context_words.extend(values)
 
@@ -335,9 +355,11 @@ def generate_excel_file(records):
     headers = [
         'topic_id',
         'ratio',
-        'score',
+        'probability_score',
+        'rank_score',
         'weighted_frequency'
     ]
+    num_headers = len(headers)
     for i in range(Constants.TOPIC_MODEL_STABILITY_NUM_TERMS):
         headers.append('word' + str(i))
 
@@ -346,21 +368,21 @@ def generate_excel_file(records):
     num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
 
     for row_index, row_data in enumerate(data):
-        for column_index, cell_value in enumerate(row_data[:4]):
+        for column_index, cell_value in enumerate(row_data[:num_headers]):
             worksheet7.write(row_index + 2, column_index + 1, cell_value)
 
     # Add words
     for row_index, row_data in enumerate(data):
-        for column_index, cell_value in enumerate(row_data[4:]):
+        for column_index, cell_value in enumerate(row_data[num_headers:]):
             word = cell_value.split('*')[1]
             if word in my_context_words:
                 worksheet7.write(
-                    row_index + 2, column_index + 5,
+                    row_index + 2, column_index + num_headers + 1,
                     cell_value.decode('utf-8'), cyan_format
                 )
             else:
                 worksheet7.write(
-                    row_index + 2, column_index + 5, cell_value.decode('utf-8'))
+                    row_index + 2, column_index + num_headers + 1, cell_value.decode('utf-8'))
 
     worksheet7.conditional_format(2, 3, num_topics + 1, 3, {
         'type': 'cell',
@@ -369,7 +391,7 @@ def generate_excel_file(records):
         'format': yellow_format})
 
     worksheet7.add_table(
-        1, 1, num_topics + 1, 4 + Constants.TOPIC_MODEL_STABILITY_NUM_TERMS,
+        1, 1, num_topics + 1, num_headers + Constants.TOPIC_MODEL_STABILITY_NUM_TERMS,
         {'columns': headers})
 
     # Set widths

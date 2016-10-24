@@ -161,8 +161,7 @@ class Constants(object):
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
     # RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
     #                ITEM_TYPE + 's_shuffled_tagged.json'
-    RECORDS_FILE =\
-        DATASET_FOLDER + 'yelp_training_set_review_' + ITEM_TYPE + 's.json'
+    RECORDS_FILE = DATASET_FOLDER + ITEM_TYPE + '_reviews.json'
     CLASSIFIED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE +\
         '_reviews' + ('' if DOCUMENT_LEVEL == 'review' else '_sentences') +\
         '.json'
@@ -296,8 +295,7 @@ class Constants(object):
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
         Constants.RECORDS_FILE =\
-            Constants.DATASET_FOLDER + 'yelp_training_set_review_' +\
-            Constants.ITEM_TYPE + 's_shuffled_tagged.json'
+            Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_reviews.json'
         Constants.CLASSIFIED_RECORDS_FILE = Constants.DATASET_FOLDER + \
             'classified_' + Constants.ITEM_TYPE + '_reviews' +\
             ('' if Constants.DOCUMENT_LEVEL == 'review' else '_sentences') + \
