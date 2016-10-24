@@ -1,3 +1,4 @@
+import os
 import random
 
 import time
@@ -27,7 +28,8 @@ from utils.constants import Constants
 
 class YelpReviewsPreprocessor:
 
-    def __init__(self):
+    def __init__(self, use_cache=False):
+        self.use_cache = use_cache
         self.records = None
         self.dictionary = None
 
@@ -204,6 +206,10 @@ class YelpReviewsPreprocessor:
     def build_dictionary(self):
         print('%s: build dictionary' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
+        if self.use_cache and os.path.exists(Constants.DICTIONARY_FILE):
+            print('Dictionary already exists')
+            return corpora.Dictionary.load(Constants.DICTIONARY_FILE)
+
         all_words = []
 
         for record in self.records:
@@ -219,18 +225,14 @@ class YelpReviewsPreprocessor:
             Constants.MIN_DICTIONARY_WORD_COUNT,
             Constants.MAX_DICTIONARY_WORD_COUNT)
 
+        self.dictionary.save(Constants.DICTIONARY_FILE)
+
     def build_corpus(self):
         print('%s: build corpus' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         for record in self.records:
             record[Constants.CORPUS_FIELD] =\
                 self.dictionary.doc2bow(record[Constants.BOW_FIELD])
-
-    def export_records(self):
-        print(
-            '%s: get_records_to_predict_topn' %
-            time.strftime("%Y/%m/%d-%H:%M:%S"))
-        self.dictionary.save(Constants.DICTIONARY_FILE)
         ETLUtils.save_json_file(
             Constants.FULL_PROCESSED_RECORDS_FILE, self.records)
         self.drop_unnecessary_fields()
@@ -247,9 +249,15 @@ class YelpReviewsPreprocessor:
         topic_model = topic_model_creator.create_topic_model(
             topic_model_records, None, None)
 
+        recsys_records_file = utilities.generate_file_name(
+            'recsys_records', 'json', Constants.CACHE_FOLDER, None, None)
+
+        if self.use_cache and os.path.exists(recsys_records_file):
+            print('Recsys records have already been generated')
+            return
+
         topic_model.find_contextual_topics(recsys_records)
-        ETLUtils.save_json_file(
-            Constants.RECSYS_PROCESSED_RECORDS_FILE, recsys_records)
+        ETLUtils.save_json_file(recsys_records_file, recsys_records)
 
         topics_file_path = utilities.generate_file_name(
             'context_topics', 'json', Constants.CACHE_FOLDER, None, None)
@@ -263,7 +271,7 @@ class YelpReviewsPreprocessor:
         unnecessary_fields = [
             Constants.TEXT_FIELD,
             Constants.POS_TAGS_FIELD,
-            Constants.VOTES_FIELD,
+            # Constants.VOTES_FIELD,
             # Constants.BOW_FIELD
         ]
 
@@ -301,18 +309,24 @@ class YelpReviewsPreprocessor:
         Constants.print_properties()
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         utilities.plant_seeds()
-        self.load_records()
-        self.shuffle_records()
-        self.lemmatize_records()
-        print('total_records: %d' % len(self.records))
-        self.classify_reviews()
-        self.build_bag_of_words()
 
-        # self.load_full_records()
+        if self.use_cache and os.path.exists(Constants.FULL_PROCESSED_RECORDS_FILE):
+            print('Records have already been processed')
+            self.records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+            self.drop_unnecessary_fields()
+            ETLUtils.save_json_file(
+                Constants.PROCESSED_RECORDS_FILE, self.records)
+        else:
+            self.load_records()
+            self.shuffle_records()
+            self.lemmatize_records()
+            print('total_records: %d' % len(self.records))
+            self.classify_reviews()
+            self.build_bag_of_words()
+            # self.load_full_records()
+            self.build_dictionary()
+            self.build_corpus()
 
-        self.build_dictionary()
-        self.build_corpus()
-        self.export_records()
         self.count_specific_generic_ratio()
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
@@ -320,7 +334,7 @@ class YelpReviewsPreprocessor:
 
 
 def main():
-    reviews_preprocessor = YelpReviewsPreprocessor()
+    reviews_preprocessor = YelpReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
 
 # start = time.time()
