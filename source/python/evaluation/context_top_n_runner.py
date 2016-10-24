@@ -247,7 +247,7 @@ class ContextTopNRunner(object):
                 ETLUtils.load_json_file(Constants.RECSYS_PROCESSED_RECORDS_FILE)
         else:
             self.original_records =\
-                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)[:10000]
+                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
         print('num_records: %d' % len(self.original_records))
         user_ids = \
