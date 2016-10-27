@@ -336,7 +336,7 @@ def generate_excel_file(records):
             my_context_words.extend(values)
 
     file_name = utilities.generate_file_name(
-        'topic_model', 'xlsx', Constants.DATASET_FOLDER, None, None)
+        'topic_model', 'xlsx', Constants.DATASET_FOLDER, None, None, True)
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
 

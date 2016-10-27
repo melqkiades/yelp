@@ -1,9 +1,12 @@
+import json
 import os
 import random
 
 import time
 
 import operator
+
+import numpy
 from gensim import corpora
 from nltk import PerceptronTagger
 from nltk.corpus import stopwords
@@ -22,6 +25,7 @@ from etl import ETLUtils
 from nlp import nlp_utils
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
+from tripadvisor.fourcity import extractor
 from utils import utilities
 from utils.constants import Constants
 
@@ -75,6 +79,24 @@ class YelpReviewsPreprocessor:
     def shuffle_records(self):
         print('%s: shuffle records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         random.shuffle(self.records)
+        self.records = self.records
+
+    def transform_fourcity_records(self):
+        new_records = []
+
+        for record in self.records:
+            new_records.append(
+                {
+                    Constants.REVIEW_ID_FIELD: record['id'],
+                    Constants.USER_ID_FIELD: record['author']['id'],
+                    Constants.ITEM_ID_FIELD: record['offering_id'],
+                    Constants.RATING_FIELD: record['ratings']['overall'],
+                    Constants.TEXT_FIELD: record['text'],
+
+                }
+            )
+
+        self.records = new_records
 
     @staticmethod
     def pos_tag_reviews(records):
@@ -227,6 +249,31 @@ class YelpReviewsPreprocessor:
 
         self.dictionary.save(Constants.DICTIONARY_FILE)
 
+    def create_user_item_map(self):
+        print('%s: creating user-item map, this could take a long time'
+              % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        if os.path.exists(Constants.USER_ITEM_MAP_FILE):
+            print('User-item map already exists')
+            with open(Constants.USER_ITEM_MAP_FILE, 'r') as fp:
+                user_item_map = json.load(fp)
+            return user_item_map
+
+        user_ids = extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
+        user_item_map = {}
+
+        for user_id in user_ids:
+            user_records = ETLUtils.filter_records(
+                self.records, Constants.USER_ID_FIELD, [user_id])
+            user_items = extractor.get_groupby_list(
+                user_records, Constants.ITEM_ID_FIELD)
+            user_item_map[user_id] = user_items
+
+        with open(Constants.USER_ITEM_MAP_FILE, 'w') as fp:
+            json.dump(user_item_map, fp)
+
+        return user_item_map
+
     def build_corpus(self):
         print('%s: build corpus' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -250,17 +297,21 @@ class YelpReviewsPreprocessor:
             topic_model_records, None, None)
 
         recsys_records_file = utilities.generate_file_name(
-            'recsys_records', 'json', Constants.CACHE_FOLDER, None, None)
+            'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False)
 
         if self.use_cache and os.path.exists(recsys_records_file):
             print('Recsys records have already been generated')
             return
 
+        recsys_topics_records_file = utilities.generate_file_name(
+            'recsys_topics_records', 'json', Constants.CACHE_FOLDER, None, None,
+            True)
+
         topic_model.find_contextual_topics(recsys_records)
-        ETLUtils.save_json_file(recsys_records_file, recsys_records)
+        ETLUtils.save_json_file(recsys_topics_records_file, recsys_records)
 
         topics_file_path = utilities.generate_file_name(
-            'context_topics', 'json', Constants.CACHE_FOLDER, None, None)
+            'context_topics', 'json', Constants.CACHE_FOLDER, None, None, True)
         ETLUtils.save_json_file(
             topics_file_path, [dict(topic_model.context_rich_topics)])
 
@@ -302,8 +353,39 @@ class YelpReviewsPreprocessor:
         print('Specific reviews: %d' % specific_count)
         print('Generic reviews: %d' % generic_count)
 
-        # for i in [0, 10, 100, 200, 300, 1000, 2000, 3000, 4000]:
-        #     print(self.records[i])
+    def export_to_triplet(self):
+        print('%s: export to triplet' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        users_map = {}
+        items_map = {}
+        user_index = 0
+        item_index = 0
+        triplet_list = []
+
+        for record in self.records:
+            user_id = record[Constants.USER_ID_FIELD]
+            item_id = record[Constants.ITEM_ID_FIELD]
+
+            if user_id not in users_map:
+                users_map[user_id] = user_index
+                user_index += 1
+
+            if item_id not in items_map:
+                items_map[item_id] = item_index
+                item_index += 1
+
+            triplet = [users_map[user_id], items_map[item_id],
+                       record[Constants.RATING_FIELD]]
+            triplet_list.append(triplet)
+
+        matrix = numpy.array(triplet_list)
+        print('matrix shape', matrix.shape)
+
+        output_file = Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
+            '_ratings.txt'
+
+        with open(output_file, 'w') as f:
+            numpy.savetxt(f, matrix, fmt='%d')
 
     def full_cycle(self):
         Constants.print_properties()
@@ -318,6 +400,10 @@ class YelpReviewsPreprocessor:
                 Constants.PROCESSED_RECORDS_FILE, self.records)
         else:
             self.load_records()
+
+            if 'fourcity' in Constants.ITEM_TYPE:
+                self.transform_fourcity_records()
+
             self.shuffle_records()
             self.lemmatize_records()
             print('total_records: %d' % len(self.records))
@@ -327,7 +413,9 @@ class YelpReviewsPreprocessor:
             self.build_dictionary()
             self.build_corpus()
 
+        self.create_user_item_map()
         self.count_specific_generic_ratio()
+        self.export_to_triplet()
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
             self.separate_recsys_topic_model_records()
@@ -337,8 +425,8 @@ def main():
     reviews_preprocessor = YelpReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
 
-# start = time.time()
-# main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+start = time.time()
+main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)

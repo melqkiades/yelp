@@ -15,14 +15,19 @@ def plant_seeds():
         numpy.random.seed(Constants.NUMPY_RANDOM_SEED)
 
 
-def generate_file_name(name, extension, folder, cycle_index, fold_index):
+def generate_file_name(
+        name, extension, folder, cycle_index, fold_index, uses_context):
 
     prefix = Constants.ITEM_TYPE + '_' + name + '_' + \
              Constants.TOPIC_MODEL_TYPE
-    suffix = '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
-        '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
-        '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
-        '_bow:' + str(Constants.BOW_TYPE) + \
+    context_suffix = ''
+    if uses_context:
+        context_suffix = \
+            '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
+            '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
+            '_passes:' + str(Constants.TOPIC_MODEL_PASSES) + \
+            '_bow:' + str(Constants.BOW_TYPE)
+    suffix = context_suffix + \
         '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
         '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
         '.' + extension

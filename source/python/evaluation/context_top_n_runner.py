@@ -5,7 +5,6 @@ import os
 import random
 from subprocess import call
 import time
-import cPickle as pickle
 # import uuid
 import gc
 import numpy
@@ -23,8 +22,6 @@ from evaluation import parameter_combinator
 # from recommenders import fastfm_recommender
 from topicmodeling.context import topic_model_analyzer
 from topicmodeling.context import topic_model_creator
-from topicmodeling.context.lda_based_context import LdaBasedContext
-from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from tripadvisor.fourcity import extractor
 from utils import utilities
 from utils.constants import Constants
@@ -47,29 +44,6 @@ def build_headers(context_rich_topics):
     if Constants.USE_NO_CONTEXT_TOPICS_SUM:
         headers.append('nocontexttopics')
     return headers
-
-
-def create_user_item_map(records):
-    print('creating user-item map: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    user_ids = extractor.get_groupby_list(records, Constants.USER_ID_FIELD)
-    user_item_map = {}
-    user_count = 0
-
-    for user_id in user_ids:
-        user_records =\
-            ETLUtils.filter_records(records, Constants.USER_ID_FIELD, [user_id])
-        user_items =\
-            extractor.get_groupby_list(user_records, Constants.ITEM_ID_FIELD)
-        user_item_map[user_id] = user_items
-        user_count += 1
-
-        # print("user count %d" % user_count),
-        print 'user count: {0}\r'.format(user_count),
-
-    print
-
-    return user_item_map
 
 
 def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
@@ -227,59 +201,51 @@ class ContextTopNRunner(object):
         # self.libfm_model_file = prefix + '_trained_model.libfm'
 
         self.csv_train_file = utilities.generate_file_name(
-            'libfm_train', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+            'libfm_train', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
         self.csv_test_file = utilities.generate_file_name(
-            'libfm_test', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+            'libfm_test', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
         self.context_predictions_file = utilities.generate_file_name(
-            'libfm_predictions', 'txt', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+            'libfm_predictions', 'txt', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
         self.context_train_file = self.csv_train_file + '.libfm'
         self.context_test_file = self.csv_test_file + '.libfm'
         self.context_log_file = utilities.generate_file_name(
-            'libfm_log', 'log', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+            'libfm_log', 'log', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
         self.libfm_model_file = utilities.generate_file_name(
-            'libfm_model', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index)
+            'libfm_model', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+            recsys_topics_records_file = utilities.generate_file_name(
+                'recsys_topics_records', 'json', Constants.CACHE_FOLDER, None,
+                None, True)
             self.original_records =\
-                ETLUtils.load_json_file(Constants.RECSYS_PROCESSED_RECORDS_FILE)
+                ETLUtils.load_json_file(recsys_topics_records_file)
         else:
             self.original_records =\
                 ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
         print('num_records: %d' % len(self.original_records))
-        user_ids = \
-            extractor.get_groupby_list(self.original_records, Constants.USER_ID_FIELD)
-        item_ids = \
-            extractor.get_groupby_list(self.original_records, Constants.ITEM_ID_FIELD)
+        user_ids = extractor.get_groupby_list(
+            self.original_records, Constants.USER_ID_FIELD)
+        item_ids = extractor.get_groupby_list(
+            self.original_records, Constants.ITEM_ID_FIELD)
         print('total users', len(user_ids))
         print('total items', len(item_ids))
-
-        if not os.path.exists(Constants.USER_ITEM_MAP_FILE):
-            records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
-            user_item_map = create_user_item_map(records)
-            with open(Constants.USER_ITEM_MAP_FILE, 'wb') as write_file:
-                pickle.dump(user_item_map, write_file, pickle.HIGHEST_PROTOCOL)
 
     def shuffle(self, records):
         print('shuffle: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         random.shuffle(records)
 
     def get_records_to_predict_topn(self):
-        print(
-            'get_records_to_predict_topn: %s'
-            % time.strftime("%Y/%m/%d-%H:%M:%S")
-        )
-
-        with open(Constants.USER_ITEM_MAP_FILE, 'rb') as read_file:
-            user_item_map = pickle.load(read_file)
+        print('get_records_to_predict_topn: %s'
+              % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         self.top_n_evaluator = TopNEvaluator(
             self.records, self.test_records, Constants.ITEM_TYPE, 10,
             Constants.TOPN_NUM_ITEMS)
-        self.top_n_evaluator.initialize(user_item_map)
+        self.top_n_evaluator.initialize()
         self.important_records = self.top_n_evaluator.important_records
 
         if Constants.TEST_CONTEXT_REVIEWS_ONLY:
@@ -333,38 +299,13 @@ class ContextTopNRunner(object):
 
     def train_topic_model(self, cycle_index, fold_index):
 
-        if Constants.CACHE_TOPIC_MODEL:
-            print('loading topic model')
-            context_extractor = topic_model_creator.load_topic_model(
-                cycle_index, fold_index)
-        elif not Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-            print('train topic model: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-            if Constants.TOPIC_MODEL_TYPE == 'lda':
-                context_extractor = LdaBasedContext(self.train_records)
-                context_extractor.generate_review_corpus()
-                context_extractor.build_topic_model()
-                context_extractor.update_reviews_with_topics()
-                context_extractor.get_context_rich_topics()
-            elif Constants.TOPIC_MODEL_TYPE == 'nmf':
-                context_extractor = NmfContextExtractor(self.train_records)
-                context_extractor.generate_review_bows()
-                context_extractor.build_document_term_matrix()
-                context_extractor.build_stable_topic_model()
-                context_extractor.update_reviews_with_topics()
-                context_extractor.get_context_rich_topics()
-            else:
-                raise ValueError('Unrecognized topic model type')
-        else:
-            msg = 'If the separate_topic_model_recsys_reviews property is ' \
-                  'True then the cache_topic_model must also be True'
-            raise ValueError(msg)
-
+        context_extractor = topic_model_creator.create_topic_model(
+            self.train_records, cycle_index, fold_index)
         self.context_rich_topics = context_extractor.context_rich_topics
 
         topics_file_path = utilities.generate_file_name(
             'context_topics', 'json', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, True)
         ETLUtils.save_json_file(
             topics_file_path, [dict(self.context_rich_topics)])
         print('Trained Context Extractor: %s' %
@@ -376,10 +317,10 @@ class ContextTopNRunner(object):
 
         train_records_file_path = utilities.generate_file_name(
             'context_train_records', 'json', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, True)
         important_records_file_path = utilities.generate_file_name(
             'context_important_records', 'json', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, True)
 
         self.train_records = ETLUtils.load_json_file(train_records_file_path)
         self.important_records = \
@@ -403,7 +344,7 @@ class ContextTopNRunner(object):
 
         topics_file_path = utilities.generate_file_name(
             'context_topics', 'json', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, True)
 
         self.context_rich_topics = sorted(
             ETLUtils.load_json_file(topics_file_path)[0].items(),
@@ -419,18 +360,26 @@ class ContextTopNRunner(object):
 
         train_records_file_path = utilities.generate_file_name(
             'context_train_records', 'json', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
-        important_records_file_path = utilities.generate_file_name(
-            'context_important_records', 'json', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, Constants.USE_CONTEXT)
 
-        context_extractor.find_contextual_topics(self.train_records)
-        ETLUtils.save_json_file(train_records_file_path, self.train_records)
-
+        if os.path.exists(train_records_file_path):
+            self.train_records = \
+                ETLUtils.load_json_file(train_records_file_path)
+        else:
+            context_extractor.find_contextual_topics(self.train_records)
+            ETLUtils.save_json_file(train_records_file_path, self.train_records)
+        # important_records_file_path = utilities.generate_file_name(
+        #     Constants.EVALUATION_METRIC + '_context_important_records', 'json',
+        #     Constants.CACHE_FOLDER, cycle_index, fold_index,
+        #     Constants.USE_CONTEXT)
+        # if os.path.exists(important_records_file_path):
+        #     self.important_records = \
+        #         ETLUtils.load_json_file(important_records_file_path)
+        # else:
         context_extractor.find_contextual_topics(
             self.important_records, Constants.TEXT_SAMPLING_PROPORTION)
-        ETLUtils.save_json_file(
-            important_records_file_path, self.important_records)
+        # ETLUtils.save_json_file(
+        #     important_records_file_path, self.important_records)
 
         self.context_topics_map = {}
         for record in self.important_records:
@@ -846,7 +795,7 @@ class ContextTopNRunner(object):
         cv_start = float(fold) / num_folds
         print('\nFold: %d/%d' % ((fold + 1), num_folds))
 
-        self.create_tmp_file_names(i, j)
+        self.create_tmp_file_names(0, fold)
         self.train_records, self.test_records = \
             ETLUtils.split_train_test_copy(
                 self.records, split=split, start=cv_start)

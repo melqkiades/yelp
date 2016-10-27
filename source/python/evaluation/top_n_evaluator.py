@@ -1,4 +1,5 @@
 import copy
+import json
 import random
 import cPickle as pickle
 
@@ -47,14 +48,15 @@ class TopNEvaluator:
         self.records_to_predict = None
         self.user_item_map = None
 
-    def initialize(self, user_item_map):
+    def initialize(self):
         self.user_ids =\
             extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
         self.item_ids =\
             extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
         print('total users', len(self.user_ids))
         print('total items', len(self.item_ids))
-        self.user_item_map = user_item_map
+        with open(Constants.USER_ITEM_MAP_FILE, 'r') as fp:
+            self.user_item_map = json.load(fp)
 
         self.find_important_records()
 
@@ -133,7 +135,7 @@ class TopNEvaluator:
             if irrelevant_items is not None:
                 # add our relevant item for prediction
                 irrelevant_items.append(item_id)
-                user_item_key = user_id + '|' + item_id
+                user_item_key = str(user_id) + '|' + str(item_id)
                 all_items_to_predict[user_item_key] = irrelevant_items
 
                 for irrelevant_item in irrelevant_items:
@@ -186,7 +188,7 @@ class TopNEvaluator:
             user_id = record[Constants.USER_ID_FIELD]
             item_id = record[Constants.ITEM_ID_FIELD]
             review_type = record[Constants.PREDICTED_CLASS_FIELD]
-            user_item_key = user_id + '|' + item_id
+            user_item_key = str(user_id) + '|' + str(item_id)
 
             item_rating_map = {}
             irrelevant_items = self.items_to_predict[user_item_key]

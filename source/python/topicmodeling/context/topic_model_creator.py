@@ -23,7 +23,7 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
     topic_model_file_path = \
         utilities.generate_file_name(
             'topic_model', 'pkl', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, True)
 
     print(topic_model_file_path)
 
@@ -66,7 +66,7 @@ def load_topic_model(cycle_index, fold_index):
     file_path = \
         utilities.generate_file_name(
             'topic_model', 'pkl', Constants.CACHE_FOLDER,
-            cycle_index, fold_index)
+            cycle_index, fold_index, True)
     print(file_path)
     with open(file_path, 'rb') as read_file:
         topic_model = pickle.load(read_file)

@@ -196,7 +196,7 @@ class Constants(object):
     _properties['os_name'] = OS_NAME
     # Cache files
     USER_ITEM_MAP_FILE = CACHE_FOLDER +\
-        ITEM_TYPE + '_' + 'user_item_map.pkl'
+        ITEM_TYPE + '_' + 'user_item_map.json'
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
         ITEM_TYPE + '.pkl'
 
@@ -327,7 +327,7 @@ class Constants(object):
         Constants._properties['os_name'] = Constants.OS_NAME
         # Cache files
         Constants.USER_ITEM_MAP_FILE = Constants.CACHE_FOLDER +\
-            Constants.ITEM_TYPE + '_' + 'user_item_map.pkl'
+            Constants.ITEM_TYPE + '_' + 'user_item_map.json'
         Constants.TOPIC_MODEL_FILE = Constants.CACHE_FOLDER + 'topic_model_' +\
             Constants.ITEM_TYPE + '.pkl'
 
