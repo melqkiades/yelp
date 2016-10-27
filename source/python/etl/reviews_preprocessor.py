@@ -30,7 +30,7 @@ from utils import utilities
 from utils.constants import Constants
 
 
-class YelpReviewsPreprocessor:
+class ReviewsPreprocessor:
 
     def __init__(self, use_cache=False):
         self.use_cache = use_cache
@@ -422,7 +422,7 @@ class YelpReviewsPreprocessor:
 
 
 def main():
-    reviews_preprocessor = YelpReviewsPreprocessor(use_cache=True)
+    reviews_preprocessor = ReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
 
 start = time.time()
