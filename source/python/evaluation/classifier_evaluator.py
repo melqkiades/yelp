@@ -20,7 +20,7 @@ from unbalanced_dataset.over_sampling import RandomOverSampler
 from unbalanced_dataset.over_sampling import SMOTE
 
 from etl import ETLUtils
-from etl.yelp_reviews_preprocessor import YelpReviewsPreprocessor
+from etl.reviews_preprocessor import ReviewsPreprocessor
 from topicmodeling.context import review_metrics_extractor
 from utils import utilities
 from utils.constants import Constants
@@ -228,7 +228,7 @@ def preprocess_records(records):
     print('length after: %d' % len(records))
 
     # lemmatize_reviews(records)
-    YelpReviewsPreprocessor.lemmatize_reviews(records)
+    ReviewsPreprocessor.lemmatize_reviews(records)
 
 
 def plot_roc_curve(y_true, y_predictions):
