@@ -2,6 +2,7 @@ import math
 from pandas import DataFrame
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -20,14 +21,14 @@ class ReviewsDatasetAnalyzer:
             raise ValueError('Can not analyze an empty list')
 
         self.reviews = reviews
-        self.user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
-        self.item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
+        self.user_ids = extractor.get_groupby_list(self.reviews, Constants.USER_ID_FIELD)
+        self.item_ids = extractor.get_groupby_list(self.reviews, Constants.ITEM_ID_FIELD)
         self.num_reviews = len(self.reviews)
         self.num_users = len(self.user_ids)
         self.num_items = len(self.item_ids)
         self.data_frame = DataFrame(self.reviews)
-        self.users_count = self.data_frame.groupby('user_id').size()
-        self.items_count = self.data_frame.groupby('offering_id').size()
+        self.users_count = self.data_frame.groupby(Constants.USER_ID_FIELD).size()
+        self.items_count = self.data_frame.groupby(Constants.ITEM_ID_FIELD).size()
 
     def calculate_sparsity(self):
         """
@@ -41,15 +42,15 @@ class ReviewsDatasetAnalyzer:
         if not self.reviews:
             raise ValueError('Can not determine the sparsity for an empty list')
 
-        user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
-        item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
+        user_ids = extractor.get_groupby_list(self.reviews, Constants.USER_ID_FIELD)
+        item_ids = extractor.get_groupby_list(self.reviews, Constants.ITEM_ID_FIELD)
 
         non_missing_reviews = 0.
         total_expected_reviews = len(user_ids) * len(item_ids)
 
         for user in user_ids:
-            user_reviews = ETLUtils.filter_records(self.reviews, 'user_id', [user])
-            user_items = extractor.get_groupby_list(user_reviews, 'offering_id')
+            user_reviews = ETLUtils.filter_records(self.reviews, Constants.USER_ID_FIELD, [user])
+            user_items = extractor.get_groupby_list(user_reviews, Constants.ITEM_ID_FIELD)
 
             non_missing_reviews += len(set(item_ids).intersection(set(user_items)))
 
@@ -71,11 +72,33 @@ class ReviewsDatasetAnalyzer:
         if not self.reviews:
             raise ValueError('Can not determine the sparsity for an empty list')
 
-        user_ids = extractor.get_groupby_list(self.reviews, 'user_id')
-        item_ids = extractor.get_groupby_list(self.reviews, 'offering_id')
+        user_ids = extractor.get_groupby_list(self.reviews, Constants.USER_ID_FIELD)
+        item_ids = extractor.get_groupby_list(self.reviews, Constants.ITEM_ID_FIELD)
         total_expected_reviews = float(len(user_ids) * len(item_ids))
 
         return 1 - float(len(self.reviews)) / total_expected_reviews
+
+    def calculate_density_approx(self):
+        """
+        Returns the approximate percentage of missing ratings in the list of
+        reviews of this ReviewsDatasetAnalyzer. This method is an approximation
+        because it counts two reviews from the same user to the same item as
+        two, when the correct count should be one. This method was created to
+        calculate the sparsity in very big datasets where calculating the exact
+        sparsity can be a very slow process.
+
+        :return: the rate of approximate missing ratings
+        (i.e. number of missing ratings / (number of reviews))
+        :raise ValueError: in case an empty list is given
+        """
+        if not self.reviews:
+            raise ValueError('Can not determine the sparsity for an empty list')
+
+        user_ids = extractor.get_groupby_list(self.reviews, Constants.USER_ID_FIELD)
+        item_ids = extractor.get_groupby_list(self.reviews, Constants.ITEM_ID_FIELD)
+        total_expected_reviews = float(len(user_ids) * len(item_ids))
+
+        return float(len(self.reviews)) / total_expected_reviews
 
     def count_items_in_common(self):
         """
