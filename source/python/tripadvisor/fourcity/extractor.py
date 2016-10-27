@@ -218,11 +218,11 @@ def get_user_list(reviews, min_reviews):
     counts = data_frame.groupby(column).size()
     filtered_counts = counts[counts >= min_reviews]
     # print(filtered_counts)
-    num_users = len(filtered_counts)
-    num_reviews = filtered_counts.sum()
+    # num_users = len(filtered_counts)
+    # num_reviews = filtered_counts.sum()
 
-    print('Number of users: %i' % num_users)
-    print('Number of reviews: %i' % num_reviews)
+    # print('Number of users: %i' % num_users)
+    # print('Number of reviews: %i' % num_reviews)
 
     users = filtered_counts.index.get_level_values(0).tolist()
     return users
