@@ -178,8 +178,15 @@ def analyze_topics(include_stability=True):
 
     utilities.plant_seeds()
 
+    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+        records = ETLUtils.load_json_file(
+            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
+    else:
+        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+    print('num_reviews', len(records))
+
     context_extractor =\
-        topic_model_creator.create_single_topic_model(None, None)
+        topic_model_creator.create_topic_model(records, None, None)
 
     topic_data = []
 
