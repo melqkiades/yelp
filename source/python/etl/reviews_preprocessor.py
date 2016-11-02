@@ -81,6 +81,23 @@ class ReviewsPreprocessor:
         random.shuffle(self.records)
         self.records = self.records
 
+    def transform_yelp_records(self):
+        new_records = []
+
+        for record in self.records:
+            new_records.append(
+                {
+                    Constants.REVIEW_ID_FIELD: record['review_id'],
+                    Constants.USER_ID_FIELD: record['user_id'],
+                    Constants.ITEM_ID_FIELD: record['business_id'],
+                    Constants.RATING_FIELD: record['stars'],
+                    Constants.TEXT_FIELD: record['text'],
+
+                }
+            )
+
+        self.records = new_records
+
     def transform_fourcity_records(self):
         new_records = []
 
@@ -97,6 +114,15 @@ class ReviewsPreprocessor:
             )
 
         self.records = new_records
+
+    def remove_users_with_low_reviews(self):
+
+        # Remove from the dataset users with a low number of reviews
+        min_reviews_per_user = Constants.MIN_REVIEWS_PER_USER
+        if min_reviews_per_user is None or min_reviews_per_user < 2:
+            return
+        self.records = extractor.remove_users_with_low_reviews(
+            self.records, min_reviews_per_user)
 
     @staticmethod
     def pos_tag_reviews(records):
@@ -253,6 +279,8 @@ class ReviewsPreprocessor:
         print('%s: creating user-item map, this could take a long time'
               % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
+        print('user-item map file: %s' % Constants.USER_ITEM_MAP_FILE)
+
         if os.path.exists(Constants.USER_ITEM_MAP_FILE):
             print('User-item map already exists')
             with open(Constants.USER_ITEM_MAP_FILE, 'r') as fp:
@@ -381,10 +409,7 @@ class ReviewsPreprocessor:
         matrix = numpy.array(triplet_list)
         print('matrix shape', matrix.shape)
 
-        output_file = Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-            '_ratings.txt'
-
-        with open(output_file, 'w') as f:
+        with open(Constants.RATINGS_FILE, 'w') as f:
             numpy.savetxt(f, matrix, fmt='%d')
 
     def full_cycle(self):
@@ -401,10 +426,13 @@ class ReviewsPreprocessor:
         else:
             self.load_records()
 
-            if 'fourcity' in Constants.ITEM_TYPE:
+            if 'yelp' in Constants.ITEM_TYPE:
+                self.transform_yelp_records()
+            elif 'fourcity' in Constants.ITEM_TYPE:
                 self.transform_fourcity_records()
 
             self.shuffle_records()
+            self.remove_users_with_low_reviews()
             self.lemmatize_records()
             print('total_records: %d' % len(self.records))
             self.classify_reviews()
