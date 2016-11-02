@@ -156,6 +156,7 @@ class Constants(object):
         _properties['topic_model_stability_num_terms']
     SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
         _properties['separate_topic_model_recsys_reviews']
+    MIN_REVIEWS_PER_USER = _properties['min_reviews_per_user']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -165,25 +166,13 @@ class Constants(object):
     CLASSIFIED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE +\
         '_reviews' + ('' if DOCUMENT_LEVEL == 'review' else '_sentences') +\
         '.json'
-    PROCESSED_RECORDS_FILE =\
-        CACHE_FOLDER + ITEM_TYPE + '_processed_reviews' +\
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        '_' + str(DOCUMENT_LEVEL) + '.json'
-    FULL_PROCESSED_RECORDS_FILE =\
-        CACHE_FOLDER + ITEM_TYPE + '_full_processed_reviews' + \
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        '_' + str(DOCUMENT_LEVEL) + '.json'
-    TOPIC_MODEL_PROCESSED_RECORDS_FILE =\
-        CACHE_FOLDER + ITEM_TYPE + '_topic_model_processed_reviews' +\
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        '_' + str(DOCUMENT_LEVEL) + '.json'
-    RECSYS_PROCESSED_RECORDS_FILE =\
-        CACHE_FOLDER + ITEM_TYPE + '_recsys_processed_reviews' +\
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        '_' + str(DOCUMENT_LEVEL) + '.json'
-    DICTIONARY_FILE = CACHE_FOLDER + ITEM_TYPE + '_dictionary' + \
-        ('' if BOW_TYPE is None else '_' + BOW_TYPE) +\
-        '_' + str(DOCUMENT_LEVEL) + '.pkl'
+    PROCESSED_RECORDS_FILE = None
+    FULL_PROCESSED_RECORDS_FILE = None
+    TOPIC_MODEL_PROCESSED_RECORDS_FILE = None
+    RECSYS_PROCESSED_RECORDS_FILE = None
+    RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = None
+    DICTIONARY_FILE = None
+    RATINGS_FILE = None
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
     CSV_RESULTS_FILE = DATASET_FOLDER + \
         ITEM_TYPE + '_results.csv'
@@ -291,6 +280,8 @@ class Constants(object):
             Constants._properties['topic_model_stability_num_terms']
         Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
             Constants._properties['separate_topic_model_recsys_reviews']
+        Constants.MIN_REVIEWS_PER_USER = \
+            Constants._properties['min_reviews_per_user']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
@@ -300,20 +291,27 @@ class Constants(object):
             'classified_' + Constants.ITEM_TYPE + '_reviews' +\
             ('' if Constants.DOCUMENT_LEVEL == 'review' else '_sentences') + \
             '.json'
-        Constants.PROCESSED_RECORDS_FILE = \
-            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-            '_processed_reviews' + \
-            ('' if Constants.BOW_TYPE is None else '_' + Constants.BOW_TYPE) + \
-            '_' + str(Constants.DOCUMENT_LEVEL) + '.json'
-        Constants.FULL_PROCESSED_RECORDS_FILE = \
-            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-            '_full_processed_reviews' + \
-            ('' if Constants.BOW_TYPE is None else '_' + Constants.BOW_TYPE) + \
-            '_' + str(Constants.DOCUMENT_LEVEL) + '.json'
-        Constants.DICTIONARY_FILE = Constants.CACHE_FOLDER + \
-            Constants.ITEM_TYPE + '_dictionary' + \
-            ('' if Constants.BOW_TYPE is None else '_' + Constants.BOW_TYPE) + \
-            '_' + str(Constants.DOCUMENT_LEVEL) + '.pkl'
+        Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+            'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
+            False, True)
+        Constants.FULL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+            'full_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
+            False,
+            True)
+        Constants.RECSYS_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+            'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False,
+            True)
+        Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+            'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, False,
+            True)
+        Constants.DICTIONARY_FILE = Constants.generate_file_name(
+            'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False,
+            True)
+        Constants.RATINGS_FILE = Constants.generate_file_name(
+            'ratings', 'txt', Constants.CACHE_FOLDER, None, None, False, True)
+        Constants.USER_ITEM_MAP_FILE = Constants.generate_file_name(
+            'user_item_map', 'json', Constants.CACHE_FOLDER, None, None, False,
+            True)
         Constants.REVIEWS_FILE = Constants.DATASET_FOLDER + 'reviews_' + \
             Constants.ITEM_TYPE + '_shuffled.pkl'
         Constants.CSV_RESULTS_FILE = Constants.DATASET_FOLDER + \
@@ -334,3 +332,64 @@ class Constants(object):
     @staticmethod
     def print_properties():
         print(Constants._properties)
+
+    @staticmethod
+    def generate_file_name(
+            name, extension, folder, cycle_index, fold_index, uses_context,
+            is_etl=False):
+
+        prefix = Constants.ITEM_TYPE + '_' + name
+        context_suffix = ''
+        if uses_context:
+            context_suffix = \
+                '_' + Constants.TOPIC_MODEL_TYPE + \
+                '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
+                '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
+                '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
+                '_passes:' + str(Constants.TOPIC_MODEL_PASSES)
+        suffix = context_suffix + \
+            '_bow:' + str(Constants.BOW_TYPE) + \
+            '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+            ('' if Constants.MIN_REVIEWS_PER_USER is None
+             else '_min_user_reviews:' + str(Constants.MIN_REVIEWS_PER_USER)) +\
+            '.' + extension
+
+        if is_etl:
+            topic_model_file = prefix + suffix
+        elif Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+            topic_model_file = prefix + '_separated' + suffix
+        elif cycle_index is None and fold_index is None:
+            topic_model_file = prefix + '_full' + suffix
+        else:
+            strategy = Constants.CROSS_VALIDATION_STRATEGY
+            cross_validation_info = '_' + strategy
+            if strategy == 'nested_validate':
+                cross_validation_info += \
+                    ':' + str(Constants.NESTED_CROSS_VALIDATION_CYCLE)
+            topic_model_file = prefix + \
+                cross_validation_info + \
+                '_cycle:' + str(cycle_index + 1) + '|' + \
+                str(Constants.NUM_CYCLES) + \
+                '_fold:' + str(fold_index + 1) + '|' + \
+                str(Constants.CROSS_VALIDATION_NUM_FOLDS) + \
+                suffix
+        return folder + topic_model_file
+
+Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+    'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False, True)
+Constants.FULL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+    'full_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False,
+    True)
+Constants.RECSYS_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+    'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False, True)
+Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+    'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, False, True)
+Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
+    'topic_model_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False,
+    True)
+Constants.DICTIONARY_FILE = Constants.generate_file_name(
+    'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False, True)
+Constants.RATINGS_FILE = Constants.generate_file_name(
+    'ratings', 'txt', Constants.CACHE_FOLDER, None, None, False, True)
+Constants.USER_ITEM_MAP_FILE = Constants.generate_file_name(
+    'user_item_map', 'json', Constants.CACHE_FOLDER, None, None, False, True)

@@ -21,7 +21,7 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
     print('%s: Create topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     topic_model_file_path = \
-        utilities.generate_file_name(
+        Constants.generate_file_name(
             'topic_model', 'pkl', Constants.CACHE_FOLDER,
             cycle_index, fold_index, True)
 
@@ -64,7 +64,7 @@ def train_context_extractor(records):
 
 def load_topic_model(cycle_index, fold_index):
     file_path = \
-        utilities.generate_file_name(
+        Constants.generate_file_name(
             'topic_model', 'pkl', Constants.CACHE_FOLDER,
             cycle_index, fold_index, True)
     print(file_path)

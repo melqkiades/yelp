@@ -324,21 +324,16 @@ class ReviewsPreprocessor:
         topic_model = topic_model_creator.create_topic_model(
             topic_model_records, None, None)
 
-        recsys_records_file = utilities.generate_file_name(
-            'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False)
-
-        if self.use_cache and os.path.exists(recsys_records_file):
+        if self.use_cache and os.path.exists(
+                Constants.RECSYS_PROCESSED_RECORDS_FILE):
             print('Recsys records have already been generated')
             return
 
-        recsys_topics_records_file = utilities.generate_file_name(
-            'recsys_topics_records', 'json', Constants.CACHE_FOLDER, None, None,
-            True)
-
         topic_model.find_contextual_topics(recsys_records)
-        ETLUtils.save_json_file(recsys_topics_records_file, recsys_records)
+        ETLUtils.save_json_file(
+            Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE, recsys_records)
 
-        topics_file_path = utilities.generate_file_name(
+        topics_file_path = Constants.generate_file_name(
             'context_topics', 'json', Constants.CACHE_FOLDER, None, None, True)
         ETLUtils.save_json_file(
             topics_file_path, [dict(topic_model.context_rich_topics)])

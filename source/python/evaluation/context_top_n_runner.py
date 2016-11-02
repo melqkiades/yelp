@@ -200,28 +200,26 @@ class ContextTopNRunner(object):
         # self.context_log_file = prefix + '.log'
         # self.libfm_model_file = prefix + '_trained_model.libfm'
 
-        self.csv_train_file = utilities.generate_file_name(
+        self.csv_train_file = Constants.generate_file_name(
             'libfm_train', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
-        self.csv_test_file = utilities.generate_file_name(
+        self.csv_test_file = Constants.generate_file_name(
             'libfm_test', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
-        self.context_predictions_file = utilities.generate_file_name(
+        self.context_predictions_file = Constants.generate_file_name(
             'libfm_predictions', 'txt', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
         self.context_train_file = self.csv_train_file + '.libfm'
         self.context_test_file = self.csv_test_file + '.libfm'
-        self.context_log_file = utilities.generate_file_name(
+        self.context_log_file = Constants.generate_file_name(
             'libfm_log', 'log', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
-        self.libfm_model_file = utilities.generate_file_name(
+        self.libfm_model_file = Constants.generate_file_name(
             'libfm_model', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-            recsys_topics_records_file = utilities.generate_file_name(
-                'recsys_topics_records', 'json', Constants.CACHE_FOLDER, None,
-                None, True)
             self.original_records =\
-                ETLUtils.load_json_file(recsys_topics_records_file)
+                ETLUtils.load_json_file(
+                    Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE)
         else:
             self.original_records =\
                 ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
@@ -303,7 +301,7 @@ class ContextTopNRunner(object):
             self.train_records, cycle_index, fold_index)
         self.context_rich_topics = context_extractor.context_rich_topics
 
-        topics_file_path = utilities.generate_file_name(
+        topics_file_path = Constants.generate_file_name(
             'context_topics', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, True)
         ETLUtils.save_json_file(
@@ -315,10 +313,10 @@ class ContextTopNRunner(object):
 
     def load_context_reviews(self, cycle_index, fold_index):
 
-        train_records_file_path = utilities.generate_file_name(
+        train_records_file_path = Constants.generate_file_name(
             'context_train_records', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, True)
-        important_records_file_path = utilities.generate_file_name(
+        important_records_file_path = Constants.generate_file_name(
             'context_important_records', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, True)
 
@@ -342,7 +340,7 @@ class ContextTopNRunner(object):
 
         print('load cache context topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        topics_file_path = utilities.generate_file_name(
+        topics_file_path = Constants.generate_file_name(
             'context_topics', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, True)
 
@@ -358,7 +356,7 @@ class ContextTopNRunner(object):
     def find_reviews_topics(self, context_extractor, cycle_index, fold_index):
         print('find topics: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        train_records_file_path = utilities.generate_file_name(
+        train_records_file_path = Constants.generate_file_name(
             'context_train_records', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, Constants.USE_CONTEXT)
 

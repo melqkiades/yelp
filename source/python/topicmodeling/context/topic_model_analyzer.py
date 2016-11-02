@@ -342,7 +342,7 @@ def generate_excel_file(records):
         for values in grouped_restaurant_context_words.values():
             my_context_words.extend(values)
 
-    file_name = utilities.generate_file_name(
+    file_name = Constants.generate_file_name(
         'topic_model', 'xlsx', Constants.DATASET_FOLDER, None, None, True)
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
@@ -471,7 +471,7 @@ def main():
 
         Constants.update_properties(new_dict)
         results = Constants.get_properties_copy()
-        results.update(analyze_topics(include_stability=True))
+        results.update(analyze_topics(include_stability=False))
 
         write_results_to_csv(csv_file_name, results)
         write_results_to_json(json_file_name, results)
