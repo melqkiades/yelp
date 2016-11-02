@@ -78,14 +78,10 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
     Constants.print_properties()
     print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    if cycle_index is None and fold_index is None:
-        if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-            train_records = ETLUtils.load_json_file(
-                Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
-        else:
-            train_records = ETLUtils.load_json_file(
-                Constants.PROCESSED_RECORDS_FILE)
-        return create_topic_model(train_records, None, None, check_exists)
+    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+        msg = 'This function shouldn\'t be used when the ' \
+              'separate_topic_model_recsys_reviews property is set to True'
+        raise ValueError(msg)
 
     records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
