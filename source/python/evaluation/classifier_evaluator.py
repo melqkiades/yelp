@@ -325,16 +325,16 @@ def test_classifier(x_matrix, y_vector, sampler_type, my_classifier):
 
     results.update(plot_roc_curve(y_true_values, y_probabilities))
 
-    importances = my_classifier.feature_importances_
-    indices = numpy.argsort(importances)[::-1]
-
-    # Print the feature ranking
-    print("Feature ranking:")
-
-    for f in range(x_matrix.shape[1]):
-        print(
-            "%d. feature %d (%f)" %
-            (f + 1, indices[f], importances[indices[f]]))
+    # importances = my_classifier.feature_importances_
+    # indices = numpy.argsort(importances)[::-1]
+    #
+    # # Print the feature ranking
+    # print("Feature ranking:")
+    #
+    # for f in range(x_matrix.shape[1]):
+    #     print(
+    #         "%d. feature %d (%f)" %
+    #         (f + 1, indices[f], importances[indices[f]]))
 
     # std = numpy.std([
     #         tree.feature_importances_ for tree in my_classifier.estimators_],
