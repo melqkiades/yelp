@@ -30,6 +30,7 @@ def generate_file_name(
     suffix = context_suffix + \
         '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
         '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+        '_min_user_reviews:' + str(Constants.MIN_REVIEWS_PER_USER) + \
         '.' + extension
 
     if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
