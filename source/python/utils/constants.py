@@ -169,6 +169,7 @@ class Constants(object):
         '.json'
     PROCESSED_RECORDS_FILE = None
     FULL_PROCESSED_RECORDS_FILE = None
+    USER_ITEM_MAP_FILE = None
     TOPIC_MODEL_PROCESSED_RECORDS_FILE = None
     RECSYS_PROCESSED_RECORDS_FILE = None
     RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = None
@@ -185,8 +186,6 @@ class Constants(object):
     OS_NAME = platform.system() + ' ' + platform.release()
     _properties['os_name'] = OS_NAME
     # Cache files
-    USER_ITEM_MAP_FILE = CACHE_FOLDER +\
-        ITEM_TYPE + '_' + 'user_item_map.json'
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
         ITEM_TYPE + '.pkl'
 
@@ -327,8 +326,6 @@ class Constants(object):
         Constants.OS_NAME = platform.system() + ' ' + platform.release()
         Constants._properties['os_name'] = Constants.OS_NAME
         # Cache files
-        Constants.USER_ITEM_MAP_FILE = Constants.CACHE_FOLDER +\
-            Constants.ITEM_TYPE + '_' + 'user_item_map.json'
         Constants.TOPIC_MODEL_FILE = Constants.CACHE_FOLDER + 'topic_model_' +\
             Constants.ITEM_TYPE + '.pkl'
 
