@@ -177,12 +177,11 @@ def analyze_topics(include_stability=True):
     start_time = time.time()
 
     utilities.plant_seeds()
+    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
 
     if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-        records = ETLUtils.load_json_file(
-            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
-    else:
-        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+        num_records = len(records)
+        records = records[:num_records / 2]
     print('num_reviews', len(records))
 
     context_extractor =\
