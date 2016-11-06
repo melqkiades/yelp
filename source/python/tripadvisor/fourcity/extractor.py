@@ -6,7 +6,7 @@ from pandas import DataFrame
 
 from etl import ETLUtils
 from tripadvisor.fourcity.user import User
-
+from utils.constants import Constants
 
 __author__ = 'fpena'
 
@@ -21,7 +21,8 @@ def remove_empty_user_reviews(reviews):
     users who have an empty ID
     """
     filtered_reviews = [review for review in reviews if
-                        review['user_id'] != '' and review['user_id'] != 'null']
+                        review[Constants.USER_ID_FIELD] != '' and
+                        review[Constants.USER_ID_FIELD] != 'null']
     return filtered_reviews
 
 
@@ -51,7 +52,7 @@ def extract_fields(reviews):
     ]
 
     for review in reviews:
-        review['user_id'] = review['author']['id']
+        review[Constants.USER_ID_FIELD] = review['author']['id']
         review['overall_rating'] = review['ratings']['overall']
 
         ratings = review['ratings']
@@ -78,7 +79,7 @@ def remove_users_with_low_reviews(reviews, min_reviews):
     users who have made less than min_reviews reviews
     """
     users = get_user_list(reviews, min_reviews)
-    return ETLUtils.filter_records(reviews, 'user_id', users)
+    return ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, users)
 
 
 def remove_items_with_low_reviews(reviews, min_reviews):
@@ -91,7 +92,7 @@ def remove_items_with_low_reviews(reviews, min_reviews):
     that just have been reviewed once
     """
     items = get_item_list(reviews, min_reviews)
-    return ETLUtils.filter_records(reviews, 'offering_id', items)
+    return ETLUtils.filter_records(reviews, Constants.ITEM_ID_FIELD, items)
 
 
 def remove_missing_ratings_reviews(reviews):
@@ -214,7 +215,7 @@ def get_user_list(reviews, min_reviews):
     :return: a list of user IDs
     """
     data_frame = DataFrame(reviews)
-    column = 'user_id'
+    column = Constants.USER_ID_FIELD
     counts = data_frame.groupby(column).size()
     filtered_counts = counts[counts >= min_reviews]
     # print(filtered_counts)
@@ -254,15 +255,9 @@ def get_item_list(reviews, min_reviews):
     :return: a list of item IDs
     """
     data_frame = DataFrame(reviews)
-    column = 'offering_id'
+    column = Constants.ITEM_ID_FIELD
     counts = data_frame.groupby(column).size()
     filtered_counts = counts[counts >= min_reviews]
-    # print(filtered_counts)
-    num_items = len(filtered_counts)
-    num_reviews = filtered_counts.sum()
-
-    print('Number of items: %i' % num_items)
-    print('Number of reviews: %i' % num_reviews)
 
     items = filtered_counts.index.get_level_values(0).tolist()
     return items
@@ -279,7 +274,8 @@ def get_user_average_overall_rating(reviews, user_id, apply_filter=True):
     given to all the items he/she has reviewed
     """
     if apply_filter:
-        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user_reviews = \
+            ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, [user_id])
     else:
         user_reviews = reviews
 
@@ -306,7 +302,7 @@ def get_item_average_overall_rating(reviews, item_id, apply_filter=True):
     """
     if apply_filter:
         user_reviews =\
-            ETLUtils.filter_records(reviews, 'offering_id', [item_id])
+            ETLUtils.filter_records(reviews, Constants.ITEM_ID_FIELD, [item_id])
     else:
         user_reviews = reviews
 
@@ -330,7 +326,8 @@ def get_criteria_weights(reviews, user_id, apply_filter=True):
     :return: a list with the weights for each of the criterion of the given user
     """
     if apply_filter:
-        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user_reviews = \
+            ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, [user_id])
     else:
         user_reviews = reviews
 
@@ -391,12 +388,13 @@ def initialize_users(reviews, is_multi_criteria):
     :return: a dictionary with the users initialized, the keys of the
     dictionaries are the users' ID
     """
-    user_ids = get_groupby_list(reviews, 'user_id')
+    user_ids = get_groupby_list(reviews, Constants.USER_ID_FIELD)
     user_dictionary = {}
 
     for user_id in user_ids:
         user = User(user_id)
-        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user_reviews = \
+            ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, [user_id])
         user.average_overall_rating = get_user_average_overall_rating(
             user_reviews, user_id, apply_filter=False)
         user.item_ratings = get_user_item_ratings(user_reviews, user_id)
@@ -419,12 +417,13 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
     :return: a dictionary with the users initialized, the keys of the
     dictionaries are the users' ID
     """
-    user_ids = get_groupby_list(reviews, 'user_id')
+    user_ids = get_groupby_list(reviews, Constants.USER_ID_FIELD)
     user_dictionary = {}
 
     for user_id in user_ids:
         user = User(user_id)
-        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user_reviews = \
+            ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, [user_id])
         user.average_overall_rating = get_user_average_overall_rating(
             user_reviews, user_id, apply_filter=False)
         user.criteria_weights = get_criteria_weights(
@@ -432,7 +431,8 @@ def initialize_cluster_users(reviews, significant_criteria_ranges=None):
         _, user.cluster = get_significant_criteria(
             user.criteria_weights, significant_criteria_ranges)
         user.item_ratings = get_user_item_ratings(user_reviews, user_id)
-        user.item_multi_ratings = get_user_item_multi_ratings(user_reviews, user_id)
+        user.item_multi_ratings = \
+            get_user_item_multi_ratings(user_reviews, user_id)
         user_dictionary[user_id] = user
 
     # print('Total users: %i' % len(user_ids))
@@ -456,7 +456,8 @@ def get_user_item_ratings(reviews, user_id, apply_filter=False):
     """
 
     if apply_filter:
-        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user_reviews = \
+            ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, [user_id])
     else:
         user_reviews = reviews
 
@@ -464,7 +465,7 @@ def get_user_item_ratings(reviews, user_id, apply_filter=False):
         return {}
 
     data_frame = DataFrame(user_reviews)
-    column = 'offering_id'
+    column = Constants.ITEM_ID_FIELD
     counts = data_frame.groupby(column).mean()
 
     items = counts.index.get_level_values(0).tolist()
@@ -493,14 +494,15 @@ def get_user_item_multi_ratings(reviews, user_id, apply_filter=False):
     """
 
     if apply_filter:
-        user_reviews = ETLUtils.filter_records(reviews, 'user_id', [user_id])
+        user_reviews = \
+            ETLUtils.filter_records(reviews, Constants.USER_ID_FIELD, [user_id])
     else:
         user_reviews = reviews
 
     user_multi_item_ratings = {}
 
     for item_id, item_reviews_it in itertools.groupby(
-            user_reviews, operator.itemgetter('offering_id')):
+            user_reviews, operator.itemgetter(Constants.ITEM_ID_FIELD)):
 
         item_reviews = list(item_reviews_it)
         averaged_multi_ratings = [0] * len(item_reviews[0]['multi_ratings'])
@@ -531,7 +533,7 @@ def get_five_star_hotels_from_user(user_reviews, min_value):
     overall rating higher than min_value
     """
     data_frame = DataFrame(user_reviews)
-    column = 'offering_id'
+    column = Constants.ITEM_ID_FIELD
     counts = data_frame.groupby(column).mean()
     filtered_counts = counts[counts['overall_rating'] >= min_value]
 
