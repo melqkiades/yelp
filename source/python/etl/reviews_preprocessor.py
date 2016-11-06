@@ -22,6 +22,7 @@ from unbalanced_dataset.over_sampling import RandomOverSampler
 from unbalanced_dataset.over_sampling import SMOTE
 
 from etl import ETLUtils
+from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
 from nlp import nlp_utils
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
@@ -123,6 +124,15 @@ class ReviewsPreprocessor:
             return
         self.records = extractor.remove_users_with_low_reviews(
             self.records, min_reviews_per_user)
+
+    def remove_items_with_low_reviews(self):
+
+        # Remove from the dataset items with a low number of reviews
+        min_reviews_per_item = Constants.MIN_REVIEWS_PER_ITEM
+        if min_reviews_per_item is None or min_reviews_per_item < 2:
+            return
+        self.records = extractor.remove_items_with_low_reviews(
+            self.records, min_reviews_per_item)
 
     @staticmethod
     def pos_tag_reviews(records):
@@ -325,8 +335,8 @@ class ReviewsPreprocessor:
             topic_model_records, None, None)
 
         if self.use_cache and os.path.exists(
-                Constants.RECSYS_PROCESSED_RECORDS_FILE):
-            print('Recsys records have already been generated')
+                Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE):
+            print('Recsys contextual records have already been generated')
             return
 
         topic_model.find_contextual_topics(recsys_records)
@@ -428,6 +438,7 @@ class ReviewsPreprocessor:
 
             self.shuffle_records()
             self.remove_users_with_low_reviews()
+            self.remove_items_with_low_reviews()
             self.lemmatize_records()
             print('total_records: %d' % len(self.records))
             self.classify_reviews()
@@ -435,6 +446,9 @@ class ReviewsPreprocessor:
             # self.load_full_records()
             self.build_dictionary()
             self.build_corpus()
+            rda = ReviewsDatasetAnalyzer(self.records)
+            print('density: %f' % rda.calculate_density_approx())
+            print('sparsity: %f' % rda.calculate_sparsity_approx())
 
         self.create_user_item_map()
         self.count_specific_generic_ratio()

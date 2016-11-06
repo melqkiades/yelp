@@ -157,6 +157,7 @@ class Constants(object):
     SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
         _properties['separate_topic_model_recsys_reviews']
     MIN_REVIEWS_PER_USER = _properties['min_reviews_per_user']
+    MIN_REVIEWS_PER_ITEM = _properties['min_reviews_per_item']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -282,6 +283,8 @@ class Constants(object):
             Constants._properties['separate_topic_model_recsys_reviews']
         Constants.MIN_REVIEWS_PER_USER = \
             Constants._properties['min_reviews_per_user']
+        Constants.MIN_REVIEWS_PER_ITEM = \
+            Constants._properties['min_reviews_per_item']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
@@ -352,6 +355,8 @@ class Constants(object):
             '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
             ('' if Constants.MIN_REVIEWS_PER_USER is None
              else '_min_user_reviews:' + str(Constants.MIN_REVIEWS_PER_USER)) +\
+            ('' if Constants.MIN_REVIEWS_PER_USER is None
+             else '_min_item_reviews:' + str(Constants.MIN_REVIEWS_PER_ITEM)) +\
             '.' + extension
 
         if is_etl:
