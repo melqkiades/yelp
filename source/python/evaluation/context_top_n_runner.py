@@ -736,7 +736,7 @@ class ContextTopNRunner(object):
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
                 total_cycle_time += fold_time
-                # self.clear()
+                self.clear()
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
         metric_name = Constants.EVALUATION_METRIC
