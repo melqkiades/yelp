@@ -304,7 +304,7 @@ class Constants(object):
             'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False,
             True)
         Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-            'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, False,
+            'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, True,
             True)
         Constants.DICTIONARY_FILE = Constants.generate_file_name(
             'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False,
@@ -385,7 +385,7 @@ Constants.FULL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
 Constants.RECSYS_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
     'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False, True)
 Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-    'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, False, True)
+    'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, True, True)
 Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
     'topic_model_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False,
     True)
