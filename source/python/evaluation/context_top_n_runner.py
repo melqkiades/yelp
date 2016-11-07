@@ -5,7 +5,7 @@ import os
 import random
 from subprocess import call
 import time
-# import uuid
+import uuid
 import gc
 import numpy
 import operator
@@ -185,33 +185,32 @@ class ContextTopNRunner(object):
 
     def create_tmp_file_names(self, cycle_index, fold_index):
 
-        # unique_id = uuid.uuid4().hex
-        # prefix = Constants.GENERATED_FOLDER + unique_id + '_' + \
-        #     Constants.ITEM_TYPE
-        # prefix = constants.GENERATED_FOLDER + constants.ITEM_TYPE
+        unique_id = uuid.uuid4().hex
+        prefix = Constants.GENERATED_FOLDER + unique_id + '_' + \
+            Constants.ITEM_TYPE
 
-        # print('unique id: %s' % unique_id)
+        print('unique id: %s' % unique_id)
 
-        # self.csv_train_file = prefix + '_train.csv'
-        # self.csv_test_file = prefix + '_test.csv'
-        # self.context_predictions_file = prefix + '_predictions.txt'
-        # self.context_train_file = self.csv_train_file + '.libfm'
-        # self.context_test_file = self.csv_test_file + '.libfm'
-        # self.context_log_file = prefix + '.log'
-        # self.libfm_model_file = prefix + '_trained_model.libfm'
-
-        self.csv_train_file = Constants.generate_file_name(
-            'libfm_train', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
-        self.csv_test_file = Constants.generate_file_name(
-            'libfm_test', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
-        self.context_predictions_file = Constants.generate_file_name(
-            'libfm_predictions', 'txt', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
+        self.csv_train_file = prefix + '_train.csv'
+        self.csv_test_file = prefix + '_test.csv'
+        self.context_predictions_file = prefix + '_predictions.txt'
         self.context_train_file = self.csv_train_file + '.libfm'
         self.context_test_file = self.csv_test_file + '.libfm'
-        self.context_log_file = Constants.generate_file_name(
-            'libfm_log', 'log', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
-        self.libfm_model_file = Constants.generate_file_name(
-            'libfm_model', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
+        self.context_log_file = prefix + '.log'
+        self.libfm_model_file = prefix + '_trained_model.libfm'
+
+        # self.csv_train_file = Constants.generate_file_name(
+        #     'libfm_train', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
+        # self.csv_test_file = Constants.generate_file_name(
+        #     'libfm_test', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
+        # self.context_predictions_file = Constants.generate_file_name(
+        #     'libfm_predictions', 'txt', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
+        # self.context_train_file = self.csv_train_file + '.libfm'
+        # self.context_test_file = self.csv_test_file + '.libfm'
+        # self.context_log_file = Constants.generate_file_name(
+        #     'libfm_log', 'log', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
+        # self.libfm_model_file = Constants.generate_file_name(
+        #     'libfm_model', 'csv', Constants.GENERATED_FOLDER, cycle_index, fold_index, Constants.USE_CONTEXT)
 
     def load(self):
         print('load: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -360,12 +359,12 @@ class ContextTopNRunner(object):
             'context_train_records', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, Constants.USE_CONTEXT)
 
-        if os.path.exists(train_records_file_path):
-            self.train_records = \
-                ETLUtils.load_json_file(train_records_file_path)
-        else:
-            context_extractor.find_contextual_topics(self.train_records)
-            ETLUtils.save_json_file(train_records_file_path, self.train_records)
+        # if os.path.exists(train_records_file_path):
+        self.train_records = \
+            ETLUtils.load_json_file(train_records_file_path)
+        # else:
+        #     context_extractor.find_contextual_topics(self.train_records)
+        #     ETLUtils.save_json_file(train_records_file_path, self.train_records)
         # important_records_file_path = utilities.generate_file_name(
         #     Constants.EVALUATION_METRIC + '_context_important_records', 'json',
         #     Constants.CACHE_FOLDER, cycle_index, fold_index,
