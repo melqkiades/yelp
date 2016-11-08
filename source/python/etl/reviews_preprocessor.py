@@ -198,6 +198,12 @@ class ReviewsPreprocessor:
 
     def lemmatize_records(self):
 
+        if os.path.exists(Constants.LEMMATIZED_RECORDS_FILE):
+            print('Records were already lemmatized')
+            self.records = \
+                ETLUtils.load_json_file(Constants.LEMMATIZED_RECORDS_FILE)
+            return
+
         if Constants.DOCUMENT_LEVEL == 'review':
             self.records = self.lemmatize_reviews(self.records)
         elif Constants.DOCUMENT_LEVEL == 'sentence' or\
@@ -297,7 +303,8 @@ class ReviewsPreprocessor:
                 user_item_map = json.load(fp)
             return user_item_map
 
-        user_ids = extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
+        user_ids = \
+            extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
         user_item_map = {}
 
         for user_id in user_ids:
@@ -326,7 +333,7 @@ class ReviewsPreprocessor:
     def separate_recsys_topic_model_records(self):
 
         print('%s: separate_recsys_topic_model_records' %
-            time.strftime("%Y/%m/%d-%H:%M:%S"))
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         num_records = len(self.records)
         topic_model_records = self.records[:num_records/2]
@@ -422,9 +429,11 @@ class ReviewsPreprocessor:
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         utilities.plant_seeds()
 
-        if self.use_cache and os.path.exists(Constants.FULL_PROCESSED_RECORDS_FILE):
+        if self.use_cache and \
+                os.path.exists(Constants.FULL_PROCESSED_RECORDS_FILE):
             print('Records have already been processed')
-            self.records = ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+            self.records = \
+                ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
             self.drop_unnecessary_fields()
             ETLUtils.save_json_file(
                 Constants.PROCESSED_RECORDS_FILE, self.records)
@@ -437,22 +446,23 @@ class ReviewsPreprocessor:
                 self.transform_fourcity_records()
 
             self.shuffle_records()
+            self.lemmatize_records()
             self.remove_users_with_low_reviews()
             self.remove_items_with_low_reviews()
-            self.lemmatize_records()
             print('total_records: %d' % len(self.records))
             self.classify_reviews()
             self.build_bag_of_words()
             # self.load_full_records()
             self.build_dictionary()
             self.build_corpus()
-            rda = ReviewsDatasetAnalyzer(self.records)
-            print('density: %f' % rda.calculate_density_approx())
-            print('sparsity: %f' % rda.calculate_sparsity_approx())
 
         self.create_user_item_map()
         self.count_specific_generic_ratio()
         self.export_to_triplet()
+
+        rda = ReviewsDatasetAnalyzer(self.records)
+        print('density: %f' % rda.calculate_density_approx())
+        print('sparsity: %f' % rda.calculate_sparsity_approx())
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
             self.separate_recsys_topic_model_records()
@@ -462,8 +472,8 @@ def main():
     reviews_preprocessor = ReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
