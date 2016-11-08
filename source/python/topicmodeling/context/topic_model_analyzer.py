@@ -332,7 +332,7 @@ def calculate_stability(all_term_rankings):
     return all_scores
 
 
-def generate_excel_file(records):
+def generate_excel_file(records, file_name=None):
     my_context_words = []
     if 'hotel' in Constants.ITEM_TYPE:
         for values in grouped_hotel_context_words.values():
@@ -341,8 +341,9 @@ def generate_excel_file(records):
         for values in grouped_restaurant_context_words.values():
             my_context_words.extend(values)
 
-    file_name = Constants.generate_file_name(
-        'topic_model', 'xlsx', Constants.DATASET_FOLDER, None, None, True)
+    if file_name is None:
+        file_name = Constants.generate_file_name(
+            'topic_model', 'xlsx', Constants.DATASET_FOLDER, None, None, True)
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
 
@@ -409,11 +410,12 @@ def generate_excel_file(records):
 
 
 def main():
-    base_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
-                     Constants.ITEM_TYPE
 
-    csv_file_name = base_file_name + '.csv'
-    json_file_name = base_file_name + '.json'
+    csv_file_name = Constants.generate_file_name(
+        'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
+        False)
+    json_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
+                     Constants.ITEM_TYPE + '.json'
     print(csv_file_name)
 
     # export_lda_topics(0, 0)
@@ -424,7 +426,7 @@ def main():
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
     # num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
     # num_topics_list = [150, 300]
-    num_topics_list = [10, 20, 30]
+    num_topics_list = range(1, 101)
     bow_type_list = ['NN']
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
