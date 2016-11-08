@@ -210,6 +210,8 @@ class ReviewsPreprocessor:
                 isinstance(Constants.DOCUMENT_LEVEL, (int, long)):
             self.records = self.lemmatize_sentences(self.records)
 
+        ETLUtils.save_json_file(Constants.LEMMATIZED_RECORDS_FILE, self.records)
+
     def classify_reviews(self):
         print('%s: classify reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         print(Constants.CLASSIFIED_RECORDS_FILE)
