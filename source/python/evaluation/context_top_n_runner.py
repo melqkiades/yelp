@@ -276,7 +276,7 @@ class ContextTopNRunner(object):
 
         if Constants.TEST_CONTEXT_REVIEWS_ONLY:
             self.important_records = self.filter_context_words(
-                self.test_records)
+                self.important_records)
 
         self.records_to_predict = self.important_records
         self.test_records = None
@@ -359,32 +359,19 @@ class ContextTopNRunner(object):
             'context_train_records', 'json', Constants.CACHE_FOLDER,
             cycle_index, fold_index, Constants.USE_CONTEXT)
 
-        # if os.path.exists(train_records_file_path):
-        self.train_records = \
-            ETLUtils.load_json_file(train_records_file_path)
-        # else:
-        #     context_extractor.find_contextual_topics(self.train_records)
-        #     ETLUtils.save_json_file(train_records_file_path, self.train_records)
-        # important_records_file_path = utilities.generate_file_name(
-        #     Constants.EVALUATION_METRIC + '_context_important_records', 'json',
-        #     Constants.CACHE_FOLDER, cycle_index, fold_index,
-        #     Constants.USE_CONTEXT)
-        # if os.path.exists(important_records_file_path):
-        #     self.important_records = \
-        #         ETLUtils.load_json_file(important_records_file_path)
-        # else:
+        if os.path.exists(train_records_file_path):
+            self.train_records = \
+                ETLUtils.load_json_file(train_records_file_path)
+        else:
+            context_extractor.find_contextual_topics(self.train_records)
+            ETLUtils.save_json_file(train_records_file_path, self.train_records)
         context_extractor.find_contextual_topics(
             self.important_records, Constants.TEXT_SAMPLING_PROPORTION)
-        # ETLUtils.save_json_file(
-        #     important_records_file_path, self.important_records)
 
         self.context_topics_map = {}
         for record in self.important_records:
             self.context_topics_map[record[Constants.REVIEW_ID_FIELD]] = \
                 record[Constants.CONTEXT_TOPICS_FIELD]
-
-        # self.train_records = self.filter_context_words(self.train_records)
-        # self.print_context_topics(self.important_records)
 
         self.important_records = None
         gc.collect()
