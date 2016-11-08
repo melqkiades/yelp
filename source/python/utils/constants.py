@@ -168,7 +168,7 @@ class Constants(object):
         '_reviews' + ('' if DOCUMENT_LEVEL == 'review' else '_sentences') +\
         '.json'
     LEMMATIZED_RECORDS_FILE = CACHE_FOLDER + ITEM_TYPE + \
-        '_document_level_' + str(DOCUMENT_LEVEL) + '-lemmatized_reviews.json'
+        '_lemmatized_reviews_document_level:' + str(DOCUMENT_LEVEL) + '.json'
     PROCESSED_RECORDS_FILE = None
     FULL_PROCESSED_RECORDS_FILE = None
     USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_user_item_map.json'
@@ -297,8 +297,8 @@ class Constants(object):
             '.json'
         Constants.LEMMATIZED_RECORDS_FILE = \
             Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-            '_document_level_' + str(Constants.DOCUMENT_LEVEL) + \
-            '_lemmatized_reviews.json'
+            '_lemmatized_reviews_document_level:' + \
+            str(Constants.DOCUMENT_LEVEL) + '.json'
         Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
             'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
             False, True)
