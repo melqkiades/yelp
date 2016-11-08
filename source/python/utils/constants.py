@@ -167,9 +167,11 @@ class Constants(object):
     CLASSIFIED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE +\
         '_reviews' + ('' if DOCUMENT_LEVEL == 'review' else '_sentences') +\
         '.json'
+    LEMMATIZED_RECORDS_FILE = CACHE_FOLDER + ITEM_TYPE + \
+        '_document_level_' + str(DOCUMENT_LEVEL) + '-lemmatized_reviews.json'
     PROCESSED_RECORDS_FILE = None
     FULL_PROCESSED_RECORDS_FILE = None
-    USER_ITEM_MAP_FILE = None
+    USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_user_item_map.json'
     TOPIC_MODEL_PROCESSED_RECORDS_FILE = None
     RECSYS_PROCESSED_RECORDS_FILE = None
     RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = None
@@ -293,6 +295,10 @@ class Constants(object):
             'classified_' + Constants.ITEM_TYPE + '_reviews' +\
             ('' if Constants.DOCUMENT_LEVEL == 'review' else '_sentences') + \
             '.json'
+        Constants.LEMMATIZED_RECORDS_FILE = \
+            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
+            '_document_level_' + str(Constants.DOCUMENT_LEVEL) + \
+            '_lemmatized_reviews.json'
         Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
             'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
             False, True)
@@ -311,9 +317,8 @@ class Constants(object):
             True)
         Constants.RATINGS_FILE = Constants.generate_file_name(
             'ratings', 'txt', Constants.CACHE_FOLDER, None, None, False, True)
-        Constants.USER_ITEM_MAP_FILE = Constants.generate_file_name(
-            'user_item_map', 'json', Constants.CACHE_FOLDER, None, None, False,
-            True)
+        Constants.USER_ITEM_MAP_FILE = \
+            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + '_user_item_map.json'
         Constants.REVIEWS_FILE = Constants.DATASET_FOLDER + 'reviews_' + \
             Constants.ITEM_TYPE + '_shuffled.pkl'
         Constants.CSV_RESULTS_FILE = Constants.DATASET_FOLDER + \
@@ -352,7 +357,7 @@ class Constants(object):
             '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
             ('' if Constants.MIN_REVIEWS_PER_USER is None
              else '_min_user_reviews:' + str(Constants.MIN_REVIEWS_PER_USER)) +\
-            ('' if Constants.MIN_REVIEWS_PER_USER is None
+            ('' if Constants.MIN_REVIEWS_PER_ITEM is None
              else '_min_item_reviews:' + str(Constants.MIN_REVIEWS_PER_ITEM)) +\
             '.' + extension
 
@@ -393,5 +398,3 @@ Constants.DICTIONARY_FILE = Constants.generate_file_name(
     'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False, True)
 Constants.RATINGS_FILE = Constants.generate_file_name(
     'ratings', 'txt', Constants.CACHE_FOLDER, None, None, False, True)
-Constants.USER_ITEM_MAP_FILE = Constants.generate_file_name(
-    'user_item_map', 'json', Constants.CACHE_FOLDER, None, None, False, True)

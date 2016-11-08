@@ -434,6 +434,7 @@ class ReviewsPreprocessor:
             print('Records have already been processed')
             self.records = \
                 ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
+            self.create_user_item_map()
             self.drop_unnecessary_fields()
             ETLUtils.save_json_file(
                 Constants.PROCESSED_RECORDS_FILE, self.records)
@@ -446,6 +447,7 @@ class ReviewsPreprocessor:
                 self.transform_fourcity_records()
 
             self.shuffle_records()
+            self.create_user_item_map()
             self.lemmatize_records()
             self.remove_users_with_low_reviews()
             self.remove_items_with_low_reviews()
@@ -456,7 +458,6 @@ class ReviewsPreprocessor:
             self.build_dictionary()
             self.build_corpus()
 
-        self.create_user_item_map()
         self.count_specific_generic_ratio()
         self.export_to_triplet()
 
