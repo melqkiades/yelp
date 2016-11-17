@@ -82,6 +82,7 @@ class Constants(object):
     USER_ID_FIELD = 'user_id'
     VOTES_FIELD = 'votes'
     BOW_TYPE_FIELD = 'bow_type'
+    HAS_CONTEXT_FIELD = 'has_context'
 
     SPECIFIC = 'specific'
     GENERIC = 'generic'
@@ -302,16 +303,17 @@ class Constants(object):
         Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
             'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
             False, True)
-        Constants.FULL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-            'full_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
-            False,
-            True)
+        Constants.FULL_PROCESSED_RECORDS_FILE = \
+            Constants.generate_file_name(
+                'full_processed_reviews', 'json', Constants.CACHE_FOLDER, None,
+                None, False, True)
         Constants.RECSYS_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
             'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False,
             True)
-        Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-            'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, True,
-            True)
+        Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = \
+            Constants.generate_file_name(
+                'recsys_contextual_records', 'json', Constants.CACHE_FOLDER,
+                None, None, True, True)
         Constants.DICTIONARY_FILE = Constants.generate_file_name(
             'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False,
             True)
@@ -383,17 +385,20 @@ class Constants(object):
         return folder + topic_model_file
 
 Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-    'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False, True)
+    'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False, True
+)
 Constants.FULL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
     'full_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False,
     True)
 Constants.RECSYS_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
     'recsys_records', 'json', Constants.CACHE_FOLDER, None, None, False, True)
-Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-    'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None, None, True, True)
+Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = \
+    Constants.generate_file_name(
+        'recsys_contextual_records', 'json', Constants.CACHE_FOLDER, None,
+        None, True, True)
 Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE = Constants.generate_file_name(
-    'topic_model_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None, False,
-    True)
+    'topic_model_processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
+    False, True)
 Constants.DICTIONARY_FILE = Constants.generate_file_name(
     'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False, True)
 Constants.RATINGS_FILE = Constants.generate_file_name(

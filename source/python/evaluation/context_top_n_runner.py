@@ -246,8 +246,8 @@ class ContextTopNRunner(object):
         self.important_records = self.top_n_evaluator.important_records
 
         if Constants.TEST_CONTEXT_REVIEWS_ONLY:
-            self.important_records = self.filter_context_words(
-                self.important_records)
+            self.important_records = ETLUtils.filter_records(
+                self.important_records, Constants.HAS_CONTEXT_FIELD, [True])
 
             self.records_to_predict =\
                 self.top_n_evaluator.get_records_to_predict()
@@ -275,8 +275,8 @@ class ContextTopNRunner(object):
         self.important_records = self.test_records
 
         if Constants.TEST_CONTEXT_REVIEWS_ONLY:
-            self.important_records = self.filter_context_words(
-                self.important_records)
+            self.important_records = ETLUtils.filter_records(
+                self.important_records, Constants.HAS_CONTEXT_FIELD, [True])
 
         self.records_to_predict = self.important_records
         self.test_records = None
@@ -412,53 +412,6 @@ class ContextTopNRunner(object):
         print('all used context topics', all_context_topics)
         # print('all used context words count: %d' % len(all_context_words))
         print('all used context topics: %d' % len(all_context_topics))
-
-    @staticmethod
-    def filter_context_words(records):
-        """
-        Takes a list of records and based on the 'corpus' field looks at which
-        records have contextual words (the ones that appear in the manually
-        defined set in topics_analyzer.all_context_words) and returns a list
-        with those records
-
-        :param records: a list of reviews
-        :return: a list of the records that contain contextual words
-        """
-        dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
-
-        no_context_records = []
-        context_records = []
-        item_type = Constants.ITEM_TYPE
-        # print(topic_model_analyzer.all_context_words[item_type])
-
-        for record in records:
-            words = []
-            context_corpus = []
-            context_words = []
-            corpus = record[Constants.CORPUS_FIELD]
-
-            for element in corpus:
-                word_id = element[0]
-                word = dictionary[word_id]
-                words.append(word + ' (' + str(word_id) + ')')
-                if word in topic_model_analyzer.all_context_words[item_type]:
-                    context_corpus.append(element)
-                    context_words.append(word + ' (' + str(word_id) + ')')
-            record[Constants.CORPUS_FIELD] = context_corpus
-
-            if len(context_corpus) == 0:
-                no_context_records.append(record)
-            else:
-                context_records.append(record)
-
-            # print('words: %s' % ', '.join(words))
-            # print('context words: %s' % ', '.join(context_words))
-            # print('context corpus', context_corpus)
-
-        print('important records: %d' % len(records))
-        print('context records: %d' % len(context_records))
-        print('no context records: %d' % len(no_context_records))
-        return context_records
 
     def prepare_records_for_libfm(self):
         print('prepare_records_for_libfm: %s' %

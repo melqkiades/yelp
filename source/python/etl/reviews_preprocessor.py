@@ -29,6 +29,7 @@ from topicmodeling.context.reviews_classifier import ReviewsClassifier
 from tripadvisor.fourcity import extractor
 from utils import utilities
 from utils.constants import Constants
+from utils.utilities import all_context_words
 
 
 class ReviewsPreprocessor:
@@ -321,6 +322,32 @@ class ReviewsPreprocessor:
 
         return user_item_map
 
+    def tag_contextual_reviews(self):
+        """
+        Puts a tag of contextual or non-contextual to the the records that have
+        contextual words (the ones that appear in the manually defined set in
+        topics_analyzer.all_context_words)with those records
+        """
+
+        context_words = set(all_context_words[Constants.ITEM_TYPE])
+        num_context_records = 0
+        num_no_context_records = 0
+
+        for record in self.records:
+            words = set(record[Constants.BOW_FIELD])
+
+            # If there is an intersection
+            if context_words & words:
+                record[Constants.HAS_CONTEXT_FIELD] = True
+                num_context_records += 1
+            else:
+                record[Constants.HAS_CONTEXT_FIELD] = False
+                num_no_context_records += 1
+
+        print('important records: %d' % len(self.records))
+        print('context records: %d' % num_context_records)
+        print('no context records: %d' % num_no_context_records)
+
     def build_corpus(self):
         print('%s: build corpus' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -364,7 +391,6 @@ class ReviewsPreprocessor:
         unnecessary_fields = [
             Constants.TEXT_FIELD,
             Constants.POS_TAGS_FIELD,
-            # Constants.VOTES_FIELD,
             # Constants.BOW_FIELD
         ]
 
@@ -456,6 +482,7 @@ class ReviewsPreprocessor:
             print('total_records: %d' % len(self.records))
             self.classify_reviews()
             self.build_bag_of_words()
+            self.tag_contextual_reviews()
             # self.load_full_records()
             self.build_dictionary()
             self.build_corpus()
