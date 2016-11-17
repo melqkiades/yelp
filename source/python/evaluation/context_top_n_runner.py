@@ -806,7 +806,7 @@ class ContextTopNRunner(object):
         self.clear()
         print("Total fold %d time = %f seconds" % ((fold + 1), fold_time))
 
-        return metric
+        return metric, specific_metric, generic_metric
 
     def run(self):
 
@@ -836,6 +836,8 @@ def run_tests():
 
     test_cycle = 1
     num_tests = len(combined_parameters)
+    highest_value = -1
+    best_parameters = None
     for properties in combined_parameters:
         Constants.update_properties(properties)
         context_top_n_runner = ContextTopNRunner()
@@ -843,8 +845,14 @@ def run_tests():
         print('\n\n******************\nTest %d/%d\n******************\n' %
               (test_cycle, num_tests))
 
-        context_top_n_runner.run()
+        results = context_top_n_runner.run()
+        if results[Constants.EVALUATION_METRIC] > highest_value:
+            highest_value = results[Constants.EVALUATION_METRIC]
+            best_parameters = properties
         test_cycle += 1
+
+    print('highest %s: %f' % (Constants.EVALUATION_METRIC, highest_value))
+    print(best_parameters)
 
 
 def run_test_folds():
@@ -890,7 +898,7 @@ def run_test_folds():
          Constants.USE_CONTEXT_FIELD: False},
         {'fold': 8, Constants.FM_NUM_FACTORS_FIELD: 4,
          Constants.USE_CONTEXT_FIELD: False},
-        {'fold': 9, Constants.FM_NUM_FACTORS_FIELD: 128,
+        {'fold': 9, Constants.FM_NUM_FACTORS_FIELD: 1,
          Constants.USE_CONTEXT_FIELD: False}
     ]
 
@@ -898,13 +906,25 @@ def run_test_folds():
     context_results = []
     my_context_top_n_runner = ContextTopNRunner()
     for parameters in nocontext_parameters:
-        no_context_results.append(
-            my_context_top_n_runner.run_single_fold(parameters))
+        result = my_context_top_n_runner.run_single_fold(parameters)
+        no_context_results.append(result)
+        print(result)
     for parameters in context_parameters:
         context_results.append(
             my_context_top_n_runner.run_single_fold(parameters))
-    print('No context mean recall: %f' % numpy.mean(no_context_results))
-    print('Context mean recall: %f' % numpy.mean(context_results))
+    mean_context_results = \
+        list(map(lambda y: sum(y) / float(len(y)), zip(*context_results)))
+    mean_no_context_results = \
+        list(map(lambda y: sum(y) / float(len(y)), zip(*no_context_results)))
+
+    metric = Constants.EVALUATION_METRIC
+
+    print('No context mean %s: %f' % (metric, mean_no_context_results[0]))
+    print('Context mean %s: %f' % (metric, mean_context_results[0]))
+    print('No context mean specific %s: %f' % (metric, mean_no_context_results[1]))
+    print('Context mean specific %s: %f' % (metric, mean_context_results[1]))
+    print('No context generic %s: %f' % (metric, mean_no_context_results[2]))
+    print('Context mean generic %s: %f' % (metric, mean_context_results[2]))
 
 # start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
