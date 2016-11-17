@@ -466,6 +466,13 @@ class ReviewsPreprocessor:
         rda = ReviewsDatasetAnalyzer(self.records)
         print('density: %f' % rda.calculate_density_approx())
         print('sparsity: %f' % rda.calculate_sparsity_approx())
+        print('total_records: %d' % len(self.records))
+        user_ids = \
+            extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
+        item_ids = \
+            extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
+        print('total users', len(user_ids))
+        print('total items', len(item_ids))
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
             self.separate_recsys_topic_model_records()
