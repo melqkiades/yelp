@@ -38,6 +38,16 @@ class TopNEvaluator:
         self.generic_recall = 0
         self.generic_precision = 0
 
+        self.num_has_context_hits = 0
+        self.num_has_context_misses = 0
+        self.has_context_recall = 0
+        self.has_context_precision = 0
+
+        self.num_has_no_context_hits = 0
+        self.num_has_no_context_misses = 0
+        self.has_no_context_recall = 0
+        self.has_no_context_precision = 0
+
         self.records = records
         self.training_set = None
         self.test_records = test_records
@@ -83,6 +93,8 @@ class TopNEvaluator:
         self.precision = self.recall / self.N
         self.specific_precision = self.specific_recall / self.N
         self.generic_precision = self.generic_recall / self.N
+        self.has_context_precision = self.has_context_recall / self.N
+        self.has_no_context_precision = self.has_no_context_recall / self.N
 
     def calculate_recall(self):
         self.recall = float(self.num_hits) / (self.num_hits + self.num_misses)
@@ -90,13 +102,21 @@ class TopNEvaluator:
             (self.num_specific_hits + self.num_specific_misses)
         self.generic_recall = float(self.num_generic_hits) /\
             (self.num_generic_hits + self.num_generic_misses)
+        self.has_context_recall = float(self.num_has_context_hits) / \
+                                  (self.num_has_context_hits + self.num_has_context_misses)
+        self.has_no_context_recall = float(self.num_has_no_context_hits) / \
+                                     (self.num_has_no_context_hits + self.num_has_no_context_misses)
 
     def evaluate_pr(self):
         self.calculate_recall()
         self.calculate_precision()
         return self.precision, self.recall
 
-    def update_num_hits(self, top_n_list, item, review_type):
+    def update_num_hits(self, top_n_list, record):
+
+        item = record[Constants.ITEM_ID_FIELD]
+        review_type = record[Constants.PREDICTED_CLASS_FIELD]
+        has_context = record[Constants.HAS_CONTEXT_FIELD]
 
         if item in top_n_list:
             self.num_hits += 1
@@ -104,6 +124,10 @@ class TopNEvaluator:
                 self.num_specific_hits += 1
             elif review_type == Constants.GENERIC:
                 self.num_generic_hits += 1
+            if has_context:
+                self.num_has_context_hits += 1
+            else:
+                self.num_has_no_context_hits += 1
             # print 'hit for item:%s\n' % item
         else:
             self.num_misses += 1
@@ -111,6 +135,10 @@ class TopNEvaluator:
                 self.num_specific_misses += 1
             elif review_type == Constants.GENERIC:
                 self.num_generic_misses += 1
+            if has_context:
+                self.num_has_context_misses += 1
+            else:
+                self.num_has_no_context_misses += 1
             # print 'miss for item:%s\n' % item
 
     def get_records_to_predict(self):
@@ -183,11 +211,14 @@ class TopNEvaluator:
         self.num_specific_misses = 0
         self.num_generic_hits = 0
         self.num_generic_misses = 0
+        self.num_has_context_hits = 0
+        self.num_has_context_misses = 0
+        self.num_has_no_context_hits = 0
+        self.num_has_no_context_misses = 0
 
         for record in self.important_records:
             user_id = record[Constants.USER_ID_FIELD]
             item_id = record[Constants.ITEM_ID_FIELD]
-            review_type = record[Constants.PREDICTED_CLASS_FIELD]
             user_item_key = str(user_id) + '|' + str(item_id)
 
             item_rating_map = {}
@@ -202,7 +233,7 @@ class TopNEvaluator:
 
             top_n_list = self.create_top_n_list(item_rating_map, self.N)
             # use this inf. for calculating PR
-            self.update_num_hits(top_n_list, item_id, review_type)
+            self.update_num_hits(top_n_list, record)
 
         self.calculate_precision()
         self.calculate_recall()

@@ -8,8 +8,8 @@ import subprocess
 __author__ = 'fpena'
 
 
-CODE_FOLDER = '/home/fpena/yelp/source/python/'
-# CODE_FOLDER = '/Users/fpena/UCC/Thesis/projects/yelp/source/python/'
+# CODE_FOLDER = '/home/fpena/yelp/source/python/'
+CODE_FOLDER = '/Users/fpena/UCC/Thesis/projects/yelp/source/python/'
 PROPERTIES_FILE = CODE_FOLDER + 'properties.yaml'
 
 
@@ -26,6 +26,8 @@ class Constants(object):
     BOW_FIELD = 'bow'
     BUSINESS_TYPE_FIELD = 'business_type'
     CACHE_TOPIC_MODEL_FIELD = 'cache_topic_model'
+    HAS_CONTEXT = 'has_context'
+    HAS_NO_CONTEXT = 'has_no_context'
     CONTEXT_EXTRACTOR_ALPHA_FIELD = 'context_extractor_alpha'
     CONTEXT_EXTRACTOR_BETA_FIELD = 'context_extractor_beta'
     CONTEXT_EXTRACTOR_EPSILON_FIELD = 'context_extractor_epsilon'
@@ -77,6 +79,7 @@ class Constants(object):
     TOPICS_FIELD = 'topics'
     TOPN_N_FIELD = 'topn_n'
     TOPN_NUM_ITEMS_FIELD = 'topn_num_items'
+    TOPN_RECALL = 'topn_recall'
     USE_CONTEXT_FIELD = 'use_context'
     USE_NO_CONTEXT_TOPICS_SUM_FIELD = 'use_no_context_topics_sum'
     USER_ID_FIELD = 'user_id'
@@ -92,10 +95,10 @@ class Constants(object):
     FASTFM = 'fastfm'
 
     # Folders
-    DATASET_FOLDER = '/home/fpena/data/'
-    LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
-    # DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
-    # LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
+    # DATASET_FOLDER = '/home/fpena/data/'
+    # LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
+    DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
+    LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
     GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 
     _properties = load_properties()

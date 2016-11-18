@@ -20,7 +20,6 @@ from evaluation import rmse_calculator
 from evaluation.top_n_evaluator import TopNEvaluator
 from evaluation import parameter_combinator
 # from recommenders import fastfm_recommender
-from topicmodeling.context import topic_model_analyzer
 from topicmodeling.context import topic_model_creator
 from tripadvisor.fourcity import extractor
 from utils import utilities
@@ -554,8 +553,19 @@ class ContextTopNRunner(object):
         print('Specific recall: %f' % self.top_n_evaluator.specific_recall)
         print('Generic recall: %f' % self.top_n_evaluator.generic_recall)
 
-        return recall, self.top_n_evaluator.specific_recall,\
-            self.top_n_evaluator.generic_recall
+        results = {
+            Constants.TOPN_RECALL: self.top_n_evaluator.recall,
+            Constants.SPECIFIC + '_' + Constants.TOPN_RECALL:
+                self.top_n_evaluator.specific_recall,
+            Constants.GENERIC + '_' + Constants.TOPN_RECALL:
+                self.top_n_evaluator.generic_recall,
+            Constants.HAS_CONTEXT + '_' + Constants.TOPN_RECALL:
+                self.top_n_evaluator.context_recall,
+            Constants.HAS_NO_CONTEXT + '_' + Constants.TOPN_RECALL:
+                self.top_n_evaluator.no_context_recall,
+        }
+
+        return results
 
     def evaluate_rmse(self):
         print('evaluate_rmse: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -622,14 +632,13 @@ class ContextTopNRunner(object):
 
         # self.plant_seeds()
 
-        metric_list = []
-        specific_metric_list = []
-        generic_metric_list = []
+        metrics_list = []
         total_cycle_time = 0.0
         num_cycles = Constants.NUM_CYCLES
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
         total_iterations = num_cycles * num_folds
         split = 1 - (1/float(num_folds))
+        metric_name = Constants.EVALUATION_METRIC
 
         # self.load()
 
@@ -666,12 +675,11 @@ class ContextTopNRunner(object):
                 else:
                     self.context_rich_topics = []
                 self.predict()
-                metric, specific_metric, generic_metric = self.evaluate()
-                metric_list.append(metric)
-                specific_metric_list.append(specific_metric)
-                generic_metric_list.append(generic_metric)
-                print('Accumulated ' + Constants.EVALUATION_METRIC + ': %f' %
-                      numpy.mean(metric_list))
+                metrics = self.evaluate()
+
+                metrics_list.append(metrics)
+                print('Accumulated %s: %f' % (metric_name,
+                    numpy.mean([k[metric_name] for k in metrics_list])))
 
                 fold_end = time.time()
                 fold_time = fold_end - fold_start
@@ -679,27 +687,58 @@ class ContextTopNRunner(object):
                 self.clear()
                 print("Total fold %d time = %f seconds" % ((j+1), fold_time))
 
-        metric_name = Constants.EVALUATION_METRIC
-        metric_average = numpy.mean(metric_list)
-        metric_stdev = numpy.std(metric_list)
-        average_specific_metric = numpy.mean(specific_metric_list)
-        average_generic_metric = numpy.mean(generic_metric_list)
+        results = self.summarize_results(metrics_list)
+
         average_cycle_time = total_cycle_time / total_iterations
-        print('average %s: %f' % (metric_name, metric_average))
-        print(
-            'average specific %s: %f' % (metric_name, average_specific_metric))
-        print('average generic %s: %f' % (metric_name, average_generic_metric))
-        print('standard deviation %s: %f (%f%%)' %
-              (metric_name, metric_stdev, (metric_stdev/metric_average*100)))
+        results['cycle_time'] = average_cycle_time
         print('average cycle time: %f' % average_cycle_time)
+
+        write_results_to_csv(results)
+        write_results_to_json(results)
+
+        return results
+
+    @staticmethod
+    def summarize_results(metrics_list):
+
+        metric_name = Constants.EVALUATION_METRIC
+        specific_metric_name = Constants.SPECIFIC + '_' + metric_name
+        generic_metric_name = Constants.GENERIC + '_' + metric_name
+        has_context_metric_name = Constants.HAS_CONTEXT + '_' + metric_name
+        has_no_context_metric_name = Constants.HAS_NO_CONTEXT + '_' + metric_name
+
+        metric_average = \
+            numpy.mean(numpy.mean([k[metric_name] for k in metrics_list]))
+        metric_stdev = numpy.std([k[metric_name] for k in metrics_list])
+        average_specific_metric = numpy.mean(
+            [k[specific_metric_name] for k in metrics_list])
+        average_generic_metric = numpy.mean(
+            [k[generic_metric_name] for k in metrics_list])
+        average_context_metric = numpy.mean(
+            [k[has_context_metric_name] for k in metrics_list])
+        average_no_context_metric = numpy.mean(
+            [k[has_no_context_metric_name] for k in metrics_list])
+
+        print('average %s:\t\t\t%f' % (metric_name, metric_average))
+        print('average specific %s:\t%f' % (
+            metric_name, average_specific_metric))
+        print('average generic %s:\t%f' % (
+            metric_name, average_generic_metric))
+        print('average context %s:\t%f' % (
+            metric_name, average_context_metric))
+        print('average no context %s:\t%f' % (
+            metric_name, average_no_context_metric))
+        print('standard deviation %s:\t%f (%f%%)' % (
+            metric_name, metric_stdev, (metric_stdev / metric_average * 100)))
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         #
         results = Constants.get_properties_copy()
-        results[Constants.EVALUATION_METRIC] = metric_average
-        results['specific_' + metric_name] = average_specific_metric
-        results['generic_' + metric_name] = average_generic_metric
+        results[metric_name] = metric_average
+        results[specific_metric_name] = average_specific_metric
+        results[generic_metric_name] = average_generic_metric
+        results[has_context_metric_name] = average_specific_metric
+        results[has_no_context_metric_name] = average_generic_metric
         results[metric_name + '_stdev'] = metric_stdev
-        results['cycle_time'] = average_cycle_time
         results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
         write_results_to_csv(results)
@@ -751,7 +790,7 @@ class ContextTopNRunner(object):
         else:
             self.context_rich_topics = []
         self.predict()
-        metric, specific_metric, generic_metric = self.evaluate()
+        metrics = self.evaluate()
 
         fold_end = time.time()
         fold_time = fold_end - fold_start
@@ -759,7 +798,7 @@ class ContextTopNRunner(object):
         self.clear()
         print("Total fold %d time = %f seconds" % ((fold + 1), fold_time))
 
-        return metric, specific_metric, generic_metric
+        return metrics
 
     def run(self):
 
@@ -865,19 +904,36 @@ def run_test_folds():
     for parameters in context_parameters:
         context_results.append(
             my_context_top_n_runner.run_single_fold(parameters))
-    mean_context_results = \
-        list(map(lambda y: sum(y) / float(len(y)), zip(*context_results)))
-    mean_no_context_results = \
-        list(map(lambda y: sum(y) / float(len(y)), zip(*no_context_results)))
 
-    metric = Constants.EVALUATION_METRIC
+    print('\nContext results')
+    context_results = ContextTopNRunner.summarize_results(context_results)
 
-    print('No context mean %s: %f' % (metric, mean_no_context_results[0]))
-    print('Context mean %s: %f' % (metric, mean_context_results[0]))
-    print('No context mean specific %s: %f' % (metric, mean_no_context_results[1]))
-    print('Context mean specific %s: %f' % (metric, mean_context_results[1]))
-    print('No context generic %s: %f' % (metric, mean_no_context_results[2]))
-    print('Context mean generic %s: %f' % (metric, mean_context_results[2]))
+    print('\nNo Context results')
+    no_context_results = ContextTopNRunner.summarize_results(no_context_results)
+
+    print('\nImprovement')
+    metric_name = Constants.EVALUATION_METRIC
+    specific_metric_name = Constants.SPECIFIC + '_' + metric_name
+    generic_metric_name = Constants.GENERIC + '_' + metric_name
+    context_metric_name = Constants.HAS_CONTEXT + '_' + metric_name
+    no_context_metric_name = Constants.HAS_NO_CONTEXT + '_' + metric_name
+
+    metric_improvement = \
+        (context_results[metric_name] / no_context_results[metric_name] - 1) * 100
+    specific_metric_improvement = \
+        (context_results[specific_metric_name] / no_context_results[specific_metric_name] - 1) * 100
+    generic_metric_improvement = \
+        (context_results[generic_metric_name] / no_context_results[generic_metric_name] - 1) * 100
+    context_metric_improvement = \
+        (context_results[context_metric_name] / no_context_results[context_metric_name] - 1) * 100
+    no_context_metric_improvement = \
+        (context_results[no_context_metric_name] / no_context_results[no_context_metric_name] - 1) * 100
+    print('%s improvement:\t\t\t%f%%' % (metric_name, metric_improvement))
+    print('specific %s improvement:\t%f%%' % (metric_name, specific_metric_improvement))
+    print('generic %s improvement:\t%f%%' % (metric_name, generic_metric_improvement))
+    print('context %s improvement:\t%f%%' % (metric_name, context_metric_improvement))
+    print('no context %s improvement:\t%f%%' % (metric_name, no_context_metric_improvement))
+#
 
 # start = time.time()
 # my_context_top_n_runner = ContextTopNRunner()
