@@ -3,7 +3,7 @@ business_type: yelp_hotel
 fm_review_type:
 topic_model_review_type: specific
 topn_n: 10
-topn_num_items: 270
+topn_num_items: 90
 random_seed: 0
 numpy_random_seed: 0
 num_cycles: 1
@@ -38,7 +38,7 @@ evaluation_metric: topn_recall
 resampler: smote-enn
 document_classifier: random_forest
 document_classifier_seed: 0
-test_context_reviews_only: True
+test_context_reviews_only: False
 # Use a feature with the sum of all the non-contextual topic probabilities
 use_no_context_topics_sum: False
 fm_num_factors: 10
@@ -58,10 +58,10 @@ nested_cross_validation_cycle: 0
 # set to test
 # nested_test means that the train+validate sets are use to train data and test
 # set to test
-cross_validation_strategy: nested_validate
+cross_validation_strategy: nested_test
 topic_model_type: nmf
 topic_model_stability_iterations: 5
 topic_model_stability_num_terms: 5
 separate_topic_model_recsys_reviews: False
 min_reviews_per_user:
-min_reviews_per_item:
+min_reviews_per_item: 10
