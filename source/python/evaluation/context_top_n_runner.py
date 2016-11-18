@@ -560,9 +560,9 @@ class ContextTopNRunner(object):
             Constants.GENERIC + '_' + Constants.TOPN_RECALL:
                 self.top_n_evaluator.generic_recall,
             Constants.HAS_CONTEXT + '_' + Constants.TOPN_RECALL:
-                self.top_n_evaluator.context_recall,
+                self.top_n_evaluator.has_context_recall,
             Constants.HAS_NO_CONTEXT + '_' + Constants.TOPN_RECALL:
-                self.top_n_evaluator.no_context_recall,
+                self.top_n_evaluator.has_no_context_recall,
         }
 
         return results
