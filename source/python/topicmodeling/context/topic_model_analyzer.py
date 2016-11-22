@@ -119,7 +119,7 @@ def analyze_topics(include_stability=True):
 
     stability = None
     if include_stability:
-        stability = calculate_topic_stability().mean()
+        stability = calculate_topic_stability(records).mean()
     scores['stability'] = stability
 
     separation_score =\
@@ -152,7 +152,7 @@ def analyze_topics(include_stability=True):
     return scores
 
 
-def calculate_topic_stability():
+def calculate_topic_stability(records):
 
     Constants.update_properties({
         Constants.NUMPY_RANDOM_SEED_FIELD: Constants.NUMPY_RANDOM_SEED + 10,
@@ -162,10 +162,8 @@ def calculate_topic_stability():
     Constants.print_properties()
 
     if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-        records = ETLUtils.load_json_file(
-            Constants.TOPIC_MODEL_PROCESSED_RECORDS_FILE)
-    else:
-        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+        num_records = len(records)
+        records = records[:num_records / 2]
     print('num_reviews', len(records))
 
     all_term_rankings = []
