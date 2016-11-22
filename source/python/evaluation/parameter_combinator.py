@@ -81,7 +81,7 @@ def combine_parameters(
 
 def get_combined_parameters():
     business_type = 'yelp_hotel'
-    topn_num_items = 270
+    topn_num_items = 90
     # business_type = 'yelp_restaurant'
     # topn_num_items = 1000
     review_type = None

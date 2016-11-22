@@ -578,6 +578,10 @@ class ContextTopNRunner(object):
         specific_predictions = []
         generic_true_values = []
         generic_predictions = []
+        has_context_true_values = []
+        has_context_predictions = []
+        has_no_context_true_values = []
+        has_no_context_predictions = []
 
         index = 0
         for record, prediction in zip(
@@ -588,6 +592,12 @@ class ContextTopNRunner(object):
             elif record[Constants.PREDICTED_CLASS_FIELD] == 'generic':
                 generic_true_values.append(record[Constants.RATING_FIELD])
                 generic_predictions.append(prediction)
+            if record[Constants.HAS_CONTEXT_FIELD]:
+                has_context_true_values.append(record[Constants.RATING_FIELD])
+                has_context_predictions.append(prediction)
+            else:
+                has_no_context_true_values.append(record[Constants.RATING_FIELD])
+                has_no_context_predictions.append(prediction)
             index += 1
 
         metric = Constants.EVALUATION_METRIC
@@ -595,6 +605,8 @@ class ContextTopNRunner(object):
         overall_result = None
         specific_result = None
         generic_result = None
+        has_context_result = None
+        has_no_context_result = None
 
         if metric == 'rmse':
             overall_result = \
@@ -603,6 +615,10 @@ class ContextTopNRunner(object):
                 specific_true_values, specific_predictions)
             generic_result = rmse_calculator.calculate_rmse(
                 generic_true_values, generic_predictions)
+            has_context_result = rmse_calculator.calculate_rmse(
+                has_context_true_values, has_context_predictions)
+            has_no_context_result = rmse_calculator.calculate_rmse(
+                has_no_context_true_values, has_no_context_predictions)
         elif metric == 'mae':
             overall_result = \
                 rmse_calculator.calculate_mae(true_values, self.predictions)
@@ -610,12 +626,26 @@ class ContextTopNRunner(object):
                 specific_true_values, specific_predictions)
             generic_result = rmse_calculator.calculate_mae(
                 generic_true_values, generic_predictions)
+            has_context_result = rmse_calculator.calculate_mae(
+                has_context_true_values, has_context_predictions)
+            has_no_context_result = rmse_calculator.calculate_mae(
+                has_no_context_true_values, has_no_context_predictions)
 
         print(metric + ': %f' % overall_result)
         print('Specific ' + metric + ': %f' % specific_result)
         print('Generic ' + metric + ': %f' % generic_result)
+        print('Has context ' + metric + ': %f' % has_context_result)
+        print('Has no ' + metric + ': %f' % has_no_context_result)
 
-        return overall_result, specific_result, generic_result
+        results = {
+            metric: overall_result,
+            Constants.SPECIFIC + '_' + metric: specific_result,
+            Constants.GENERIC + '_' + metric: generic_result,
+            Constants.HAS_CONTEXT + '_' + metric: has_context_result,
+            Constants.HAS_NO_CONTEXT + '_' + metric: has_no_context_result,
+        }
+
+        return results
 
     def evaluate(self):
 
@@ -714,9 +744,9 @@ class ContextTopNRunner(object):
             [k[specific_metric_name] for k in metrics_list])
         average_generic_metric = numpy.mean(
             [k[generic_metric_name] for k in metrics_list])
-        average_context_metric = numpy.mean(
+        average_has_context_metric = numpy.mean(
             [k[has_context_metric_name] for k in metrics_list])
-        average_no_context_metric = numpy.mean(
+        average_has_no_context_metric = numpy.mean(
             [k[has_no_context_metric_name] for k in metrics_list])
 
         print('average %s:\t\t\t%f' % (metric_name, metric_average))
@@ -724,10 +754,10 @@ class ContextTopNRunner(object):
             metric_name, average_specific_metric))
         print('average generic %s:\t%f' % (
             metric_name, average_generic_metric))
-        print('average context %s:\t%f' % (
-            metric_name, average_context_metric))
-        print('average no context %s:\t%f' % (
-            metric_name, average_no_context_metric))
+        print('average has context %s:\t%f' % (
+            metric_name, average_has_context_metric))
+        print('average has no context %s:\t%f' % (
+            metric_name, average_has_no_context_metric))
         print('standard deviation %s:\t%f (%f%%)' % (
             metric_name, metric_stdev, (metric_stdev / metric_average * 100)))
         print('End: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -736,8 +766,8 @@ class ContextTopNRunner(object):
         results[metric_name] = metric_average
         results[specific_metric_name] = average_specific_metric
         results[generic_metric_name] = average_generic_metric
-        results[has_context_metric_name] = average_specific_metric
-        results[has_no_context_metric_name] = average_generic_metric
+        results[has_context_metric_name] = average_has_context_metric
+        results[has_no_context_metric_name] = average_has_no_context_metric
         results[metric_name + '_stdev'] = metric_stdev
         results['timestamp'] = time.strftime("%Y/%m/%d-%H:%M:%S")
 
@@ -900,10 +930,9 @@ def run_test_folds():
     for parameters in nocontext_parameters:
         result = my_context_top_n_runner.run_single_fold(parameters)
         no_context_results.append(result)
-        print(result)
     for parameters in context_parameters:
-        context_results.append(
-            my_context_top_n_runner.run_single_fold(parameters))
+        result = my_context_top_n_runner.run_single_fold(parameters)
+        context_results.append(result)
 
     print('\nContext results')
     context_results = ContextTopNRunner.summarize_results(context_results)
@@ -915,8 +944,8 @@ def run_test_folds():
     metric_name = Constants.EVALUATION_METRIC
     specific_metric_name = Constants.SPECIFIC + '_' + metric_name
     generic_metric_name = Constants.GENERIC + '_' + metric_name
-    context_metric_name = Constants.HAS_CONTEXT + '_' + metric_name
-    no_context_metric_name = Constants.HAS_NO_CONTEXT + '_' + metric_name
+    has_context_metric_name = Constants.HAS_CONTEXT + '_' + metric_name
+    has_no_context_metric_name = Constants.HAS_NO_CONTEXT + '_' + metric_name
 
     metric_improvement = \
         (context_results[metric_name] / no_context_results[metric_name] - 1) * 100
@@ -924,15 +953,15 @@ def run_test_folds():
         (context_results[specific_metric_name] / no_context_results[specific_metric_name] - 1) * 100
     generic_metric_improvement = \
         (context_results[generic_metric_name] / no_context_results[generic_metric_name] - 1) * 100
-    context_metric_improvement = \
-        (context_results[context_metric_name] / no_context_results[context_metric_name] - 1) * 100
-    no_context_metric_improvement = \
-        (context_results[no_context_metric_name] / no_context_results[no_context_metric_name] - 1) * 100
+    has_context_metric_improvement = \
+        (context_results[has_context_metric_name] / no_context_results[has_context_metric_name] - 1) * 100
+    has_no_context_metric_improvement = \
+        (context_results[has_no_context_metric_name] / no_context_results[has_no_context_metric_name] - 1) * 100
     print('%s improvement:\t\t\t%f%%' % (metric_name, metric_improvement))
     print('specific %s improvement:\t%f%%' % (metric_name, specific_metric_improvement))
     print('generic %s improvement:\t%f%%' % (metric_name, generic_metric_improvement))
-    print('context %s improvement:\t%f%%' % (metric_name, context_metric_improvement))
-    print('no context %s improvement:\t%f%%' % (metric_name, no_context_metric_improvement))
+    print('has context %s improvement:\t%f%%' % (metric_name, has_context_metric_improvement))
+    print('has no context %s improvement:\t%f%%' % (metric_name, has_no_context_metric_improvement))
 #
 
 # start = time.time()

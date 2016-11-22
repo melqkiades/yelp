@@ -103,9 +103,9 @@ class TopNEvaluator:
         self.generic_recall = float(self.num_generic_hits) /\
             (self.num_generic_hits + self.num_generic_misses)
         self.has_context_recall = float(self.num_has_context_hits) / \
-                                  (self.num_has_context_hits + self.num_has_context_misses)
+            (self.num_has_context_hits + self.num_has_context_misses)
         self.has_no_context_recall = float(self.num_has_no_context_hits) / \
-                                     (self.num_has_no_context_hits + self.num_has_no_context_misses)
+            (self.num_has_no_context_hits + self.num_has_no_context_misses)
 
     def evaluate_pr(self):
         self.calculate_recall()
