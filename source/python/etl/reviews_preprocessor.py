@@ -6,6 +6,9 @@ import time
 
 import operator
 
+import langdetect
+from langdetect import DetectorFactory
+from langdetect.lang_detect_exception import LangDetectException
 import numpy
 from gensim import corpora
 from nltk import PerceptronTagger
@@ -116,6 +119,44 @@ class ReviewsPreprocessor:
             )
 
         self.records = new_records
+
+    def tag_reviews_language(self):
+
+        print('%s: tag reviews language' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        if os.path.exists(Constants.LANGUAGE_RECORDS_FILE):
+            print('Records have already been tagged with language field')
+            self.records = \
+                ETLUtils.load_json_file(Constants.LANGUAGE_RECORDS_FILE)
+            return
+
+        DetectorFactory.seed = 0
+
+        for record in self.records:
+            try:
+                language = langdetect.detect(record[Constants.TEXT_FIELD])
+            except LangDetectException:
+                language = 'unknown'
+            record[Constants.LANGUAGE_FIELD] = language
+
+        ETLUtils.save_json_file(Constants.LANGUAGE_RECORDS_FILE, self.records)
+
+    def remove_foreign_reviews(self):
+
+        print('%s: remove foreign reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        initial_length = len(self.records)
+
+        self.records = ETLUtils.filter_records(
+            self.records, Constants.LANGUAGE_FIELD, [Constants.LANGUAGE])
+        final_length = len(self.records)
+        removed_records_count = initial_length - final_length
+        percentage = removed_records_count / float(initial_length) * 100
+
+        msg = "A total of %d (%f%%) records were removed because their " \
+              "language was not '%s'" % (
+                removed_records_count, percentage, Constants.LANGUAGE)
+        print(msg)
 
     def remove_users_with_low_reviews(self):
 
@@ -474,8 +515,10 @@ class ReviewsPreprocessor:
             elif 'fourcity' in Constants.ITEM_TYPE:
                 self.transform_fourcity_records()
 
+            self.tag_reviews_language()
             self.shuffle_records()
             self.create_user_item_map()
+            self.remove_foreign_reviews()
             self.lemmatize_records()
             self.remove_users_with_low_reviews()
             self.remove_items_with_low_reviews()

@@ -48,6 +48,7 @@ class Constants(object):
     FM_USE_BIAS_FIELD = 'fm_use_bias'
     FM_USEWAY_INTERACTIONS_FIELD = 'fm_useway_interactions'
     ITEM_ID_FIELD = 'business_id'
+    LANGUAGE_FIELD = 'language'
     LDA_BETA_COMPARISON_OPERATOR_FIELD = 'lda_beta_comparison_operator'
     LDA_MULTICORE_FIELD = 'lda_multicore'
     LEMMATIZE_FIELD = 'lemmatize'
@@ -162,17 +163,23 @@ class Constants(object):
         _properties['separate_topic_model_recsys_reviews']
     MIN_REVIEWS_PER_USER = _properties['min_reviews_per_user']
     MIN_REVIEWS_PER_ITEM = _properties['min_reviews_per_item']
+    LANGUAGE = _properties['language']
+    LANGDETECT_SEED = _properties['langdetect_seed']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
     # RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
     #                ITEM_TYPE + 's_shuffled_tagged.json'
     RECORDS_FILE = DATASET_FOLDER + ITEM_TYPE + '_reviews.json'
+    LANGUAGE_RECORDS_FILE = \
+        CACHE_FOLDER + ITEM_TYPE + '_language_reviews.json'
     CLASSIFIED_RECORDS_FILE = DATASET_FOLDER + 'classified_' + ITEM_TYPE +\
         '_reviews' + ('' if DOCUMENT_LEVEL == 'review' else '_sentences') +\
         '.json'
     LEMMATIZED_RECORDS_FILE = CACHE_FOLDER + ITEM_TYPE + \
-        '_lemmatized_reviews_document_level:' + str(DOCUMENT_LEVEL) + '.json'
+        '_lemmatized_reviews' + \
+        ('' if LANGUAGE is None else '_lang:' + LANGUAGE) + \
+        '_document_level:' + str(DOCUMENT_LEVEL) + '.json'
     PROCESSED_RECORDS_FILE = None
     FULL_PROCESSED_RECORDS_FILE = None
     USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_user_item_map.json'
@@ -290,18 +297,26 @@ class Constants(object):
             Constants._properties['min_reviews_per_user']
         Constants.MIN_REVIEWS_PER_ITEM = \
             Constants._properties['min_reviews_per_item']
+        Constants.LANGUAGE = Constants._properties['language']
+        Constants.LANGDETECT_SEED = Constants._properties['langdetect_seed']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
         Constants.RECORDS_FILE =\
             Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_reviews.json'
+        Constants.LANGUAGE_RECORDS_FILE =\
+            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
+            '_lang:' + Constants.LANGUAGE + '_reviews.json'
         Constants.CLASSIFIED_RECORDS_FILE = Constants.DATASET_FOLDER + \
             'classified_' + Constants.ITEM_TYPE + '_reviews' +\
             ('' if Constants.DOCUMENT_LEVEL == 'review' else '_sentences') + \
             '.json'
         Constants.LEMMATIZED_RECORDS_FILE = \
             Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-            '_lemmatized_reviews_document_level:' + \
+            '_lemmatized_reviews' + \
+            ('' if Constants.LANGUAGE is None
+             else '_lang:' + Constants.LANGUAGE) + \
+            '_document_level:' + \
             str(Constants.DOCUMENT_LEVEL) + '.json'
         Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
             'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
@@ -358,6 +373,8 @@ class Constants(object):
                 '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
                 '_passes:' + str(Constants.TOPIC_MODEL_PASSES)
         suffix = context_suffix + \
+            ('' if Constants.LANGUAGE is None
+             else '_lang:' + Constants.LANGUAGE) + \
             '_bow:' + str(Constants.BOW_TYPE) + \
             '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
             ('' if Constants.MIN_REVIEWS_PER_USER is None

@@ -65,3 +65,5 @@ topic_model_stability_num_terms: 5
 separate_topic_model_recsys_reviews: False
 min_reviews_per_user:
 min_reviews_per_item: 10
+language: en
+langdetect_seed: 0
