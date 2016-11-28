@@ -306,7 +306,7 @@ class Constants(object):
             Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_reviews.json'
         Constants.LANGUAGE_RECORDS_FILE =\
             Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
-            '_lang:' + Constants.LANGUAGE + '_reviews.json'
+            '_language_reviews.json'
         Constants.CLASSIFIED_RECORDS_FILE = Constants.DATASET_FOLDER + \
             'classified_' + Constants.ITEM_TYPE + '_reviews' +\
             ('' if Constants.DOCUMENT_LEVEL == 'review' else '_sentences') + \
