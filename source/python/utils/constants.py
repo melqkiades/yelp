@@ -178,11 +178,10 @@ class Constants(object):
         '.json'
     LEMMATIZED_RECORDS_FILE = CACHE_FOLDER + ITEM_TYPE + \
         '_lemmatized_reviews' + \
-        ('' if LANGUAGE is None else '_lang:' + LANGUAGE) + \
-        '_document_level:' + str(DOCUMENT_LEVEL) + '.json'
+        ('' if LANGUAGE is None else '_lang-' + LANGUAGE) + \
+        '_document_level-' + str(DOCUMENT_LEVEL) + '.json'
     PROCESSED_RECORDS_FILE = None
     FULL_PROCESSED_RECORDS_FILE = None
-    USER_ITEM_MAP_FILE = CACHE_FOLDER + ITEM_TYPE + '_user_item_map.json'
     TOPIC_MODEL_PROCESSED_RECORDS_FILE = None
     RECSYS_PROCESSED_RECORDS_FILE = None
     RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = None
@@ -315,8 +314,8 @@ class Constants(object):
             Constants.CACHE_FOLDER + Constants.ITEM_TYPE + \
             '_lemmatized_reviews' + \
             ('' if Constants.LANGUAGE is None
-             else '_lang:' + Constants.LANGUAGE) + \
-            '_document_level:' + \
+             else '_lang-' + Constants.LANGUAGE) + \
+            '_document_level-' + \
             str(Constants.DOCUMENT_LEVEL) + '.json'
         Constants.PROCESSED_RECORDS_FILE = Constants.generate_file_name(
             'processed_reviews', 'json', Constants.CACHE_FOLDER, None, None,
@@ -337,8 +336,6 @@ class Constants(object):
             True)
         Constants.RATINGS_FILE = Constants.generate_file_name(
             'ratings', 'txt', Constants.CACHE_FOLDER, None, None, False, True)
-        Constants.USER_ITEM_MAP_FILE = \
-            Constants.CACHE_FOLDER + Constants.ITEM_TYPE + '_user_item_map.json'
         Constants.REVIEWS_FILE = Constants.DATASET_FOLDER + 'reviews_' + \
             Constants.ITEM_TYPE + '_shuffled.pkl'
         Constants.CSV_RESULTS_FILE = Constants.DATASET_FOLDER + \
@@ -368,19 +365,19 @@ class Constants(object):
         if uses_context:
             context_suffix = \
                 '_' + Constants.TOPIC_MODEL_TYPE + \
-                '_reviewtype:' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
-                '_numtopics:' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
-                '_iterations:' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
-                '_passes:' + str(Constants.TOPIC_MODEL_PASSES)
+                '_reviewtype-' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
+                '_numtopics-' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
+                '_iterations-' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
+                '_passes-' + str(Constants.TOPIC_MODEL_PASSES)
         suffix = context_suffix + \
             ('' if Constants.LANGUAGE is None
-             else '_lang:' + Constants.LANGUAGE) + \
-            '_bow:' + str(Constants.BOW_TYPE) + \
-            '_document_level:' + str(Constants.DOCUMENT_LEVEL) + \
+             else '_lang-' + Constants.LANGUAGE) + \
+            '_bow-' + str(Constants.BOW_TYPE) + \
+            '_document_level-' + str(Constants.DOCUMENT_LEVEL) + \
             ('' if Constants.MIN_REVIEWS_PER_USER is None
-             else '_min_user_reviews:' + str(Constants.MIN_REVIEWS_PER_USER)) +\
+             else '_min_user_reviews-' + str(Constants.MIN_REVIEWS_PER_USER)) +\
             ('' if Constants.MIN_REVIEWS_PER_ITEM is None
-             else '_min_item_reviews:' + str(Constants.MIN_REVIEWS_PER_ITEM)) +\
+             else '_min_item_reviews-' + str(Constants.MIN_REVIEWS_PER_ITEM)) +\
             '.' + extension
 
         if is_etl:
@@ -394,12 +391,12 @@ class Constants(object):
             cross_validation_info = '_' + strategy
             if strategy == 'nested_validate':
                 cross_validation_info += \
-                    ':' + str(Constants.NESTED_CROSS_VALIDATION_CYCLE)
+                    '-' + str(Constants.NESTED_CROSS_VALIDATION_CYCLE)
             topic_model_file = prefix + \
                 cross_validation_info + \
-                '_cycle:' + str(cycle_index + 1) + '|' + \
+                '_cycle-' + str(cycle_index + 1) + '|' + \
                 str(Constants.NUM_CYCLES) + \
-                '_fold:' + str(fold_index + 1) + '|' + \
+                '_fold-' + str(fold_index + 1) + '|' + \
                 str(Constants.CROSS_VALIDATION_NUM_FOLDS) + \
                 suffix
         return folder + topic_model_file

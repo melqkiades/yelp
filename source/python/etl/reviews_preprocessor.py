@@ -335,34 +335,6 @@ class ReviewsPreprocessor:
 
         self.dictionary.save(Constants.DICTIONARY_FILE)
 
-    def create_user_item_map(self):
-        print('%s: creating user-item map, this could take a long time'
-              % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-        print('user-item map file: %s' % Constants.USER_ITEM_MAP_FILE)
-
-        if os.path.exists(Constants.USER_ITEM_MAP_FILE):
-            print('User-item map already exists')
-            with open(Constants.USER_ITEM_MAP_FILE, 'r') as fp:
-                user_item_map = json.load(fp)
-            return user_item_map
-
-        user_ids = \
-            extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
-        user_item_map = {}
-
-        for user_id in user_ids:
-            user_records = ETLUtils.filter_records(
-                self.records, Constants.USER_ID_FIELD, [user_id])
-            user_items = extractor.get_groupby_list(
-                user_records, Constants.ITEM_ID_FIELD)
-            user_item_map[user_id] = user_items
-
-        with open(Constants.USER_ITEM_MAP_FILE, 'w') as fp:
-            json.dump(user_item_map, fp)
-
-        return user_item_map
-
     def tag_contextual_reviews(self):
         """
         Puts a tag of contextual or non-contextual to the the records that have
@@ -503,7 +475,6 @@ class ReviewsPreprocessor:
             print('Records have already been processed')
             self.records = \
                 ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
-            self.create_user_item_map()
             self.drop_unnecessary_fields()
             ETLUtils.save_json_file(
                 Constants.PROCESSED_RECORDS_FILE, self.records)
@@ -517,7 +488,6 @@ class ReviewsPreprocessor:
 
             self.tag_reviews_language()
             self.shuffle_records()
-            self.create_user_item_map()
             self.remove_foreign_reviews()
             self.lemmatize_records()
             self.remove_users_with_low_reviews()

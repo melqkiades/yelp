@@ -4,6 +4,7 @@ import random
 import cPickle as pickle
 
 import numpy
+import time
 
 from etl import ETLUtils
 from tripadvisor.fourcity import extractor
@@ -65,10 +66,25 @@ class TopNEvaluator:
             extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
         print('total users', len(self.user_ids))
         print('total items', len(self.item_ids))
-        with open(Constants.USER_ITEM_MAP_FILE, 'r') as fp:
-            self.user_item_map = json.load(fp)
+        self.user_item_map = self.create_user_item_map()
 
         self.find_important_records()
+
+    def create_user_item_map(self):
+        print('%s: creating user-item map' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        user_item_map = {}
+
+        for record in self.records:
+
+            user = record[Constants.USER_ID_FIELD]
+            item = record[Constants.ITEM_ID_FIELD]
+
+            if user not in user_item_map:
+                user_item_map[user] = set()
+            user_item_map[user].add(item)
+
+        return user_item_map
 
     def get_irrelevant_items(self, user_id):
         user_items = self.user_item_map[user_id]
