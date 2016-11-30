@@ -47,6 +47,7 @@ def train_context_extractor(records):
         context_extractor.build_topic_model()
         context_extractor.update_reviews_with_topics()
         context_extractor.get_context_rich_topics()
+        context_extractor.clear_reviews()
     elif Constants.TOPIC_MODEL_TYPE == 'nmf':
         context_extractor = NmfContextExtractor(records)
         context_extractor.generate_review_bows()
@@ -54,6 +55,7 @@ def train_context_extractor(records):
         context_extractor.build_stable_topic_model()
         context_extractor.update_reviews_with_topics()
         context_extractor.get_context_rich_topics()
+        context_extractor.clear_reviews()
     else:
         raise ValueError('Unrecognized topic model type')
 

@@ -16,10 +16,6 @@ class LdaBasedContext:
         self.records = records
         self.specific_reviews = None
         self.generic_reviews = None
-        self.all_nouns = None
-        self.all_senses = None
-        self.sense_groups = None
-        self.review_topics_list = None
         self.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
@@ -240,6 +236,13 @@ class LdaBasedContext:
             self.topic_model.print_topic(topic_id, num_terms)
             for topic_id in range(self.num_topics)
             ]
+
+    def clear_reviews(self):
+        self.records = None
+        self.specific_reviews = None
+        self.generic_reviews = None
+        self.specific_corpus = None
+        self.generic_corpus = None
 
 
 def main():
