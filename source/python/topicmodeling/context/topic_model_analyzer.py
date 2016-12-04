@@ -55,16 +55,20 @@ def split_topic(topic_string):
     index = 0
     topic_words = topic_string.split(' + ')
     probability_score = 0.0
-    rank_score = 0
+    rank_score = 0.0
+    num_terms = Constants.TOPIC_MODEL_STABILITY_NUM_TERMS
     for topic_word in topic_words:
         word = topic_word.split('*')[1]
         word_probability_score = float(topic_word.split('*')[0])
         words_dict['word' + str(index)] = topic_word.encode('utf-8')
         if word in my_context_words:
             probability_score += word_probability_score
-            word_rank_score = 5 - index if index < 5 else 0
+            word_rank_score = num_terms - index if index < num_terms else 0
             rank_score += word_rank_score
         index += 1
+
+    max_rank_score = float(num_terms * (num_terms + 1) / 2)
+    rank_score /= max_rank_score
 
     words_dict['probability_score'] = probability_score
     words_dict['rank_score'] = rank_score
@@ -132,11 +136,9 @@ def analyze_topics(include_stability=True):
         else 'N/A'
     joint_separation_score =\
         (high_ratio_mean_score + (1 - low_ratio_mean_score)) / 2
-    num_terms = Constants.TOPIC_MODEL_STABILITY_NUM_TERMS
-    max_rank_score = num_terms * (num_terms - 1) / 2
     joint_rank_separation_score =\
         (high_rank_ratio_mean_score +
-         (max_rank_score - low_rank_ratio_mean_score)) / 2
+         (1 - low_rank_ratio_mean_score)) / 2
     f1_separation_score =\
         2 * (high_ratio_mean_score * low_ratio_mean_score) / \
         (high_ratio_mean_score + low_ratio_mean_score)
