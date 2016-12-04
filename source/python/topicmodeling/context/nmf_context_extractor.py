@@ -379,6 +379,8 @@ class NmfContextExtractor:
         self.generic_reviews = None
         self.specific_bows = None
         self.generic_bows = None
+        self.document_term_matrix = None
+        self.document_topic_matrix = None
 
 
 def main():
