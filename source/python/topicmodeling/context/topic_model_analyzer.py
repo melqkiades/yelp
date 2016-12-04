@@ -139,18 +139,10 @@ def analyze_topics(include_stability=True):
     joint_rank_separation_score =\
         (high_rank_ratio_mean_score +
          (1 - low_rank_ratio_mean_score)) / 2
-    f1_separation_score =\
-        2 * (high_ratio_mean_score * low_ratio_mean_score) / \
-        (high_ratio_mean_score + low_ratio_mean_score)
-    f1_rank_separation_score = \
-        2 * (high_rank_ratio_mean_score * low_rank_ratio_mean_score) / \
-        (high_rank_ratio_mean_score + low_rank_ratio_mean_score)
     scores['separation_score'] = separation_score
     scores['rank_separation_score'] = rank_separation_score
     scores['joint_separation_score'] = joint_separation_score
     scores['joint_rank_separation_score'] = joint_rank_separation_score
-    scores['f1_separation_score'] = f1_separation_score
-    scores['f1_rank_separation_score'] = f1_rank_separation_score
     scores['combined_score'] =\
         (probability_score * separation_score)\
         if probability_score != 'N/A' and separation_score != 'N/A'\
