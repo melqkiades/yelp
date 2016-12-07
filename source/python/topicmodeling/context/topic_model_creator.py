@@ -229,11 +229,30 @@ def main():
     parser.add_argument(
         '-f', '--fold', metavar='int', type=int,
         nargs=1, help='The index of the cross validation fold')
+    parser.add_argument(
+        '-t', '--numtopics', metavar='int', type=int,
+        nargs=1, help='The number of topics of the topic model')
 
     args = parser.parse_args()
-    fold = args.fold[0]
-    cycle = args.cycle[0]
-    create_single_topic_model(cycle, fold)
+    fold = args.fold[0] if args.fold is not None else None
+    cycle = args.cycle[0] if args.cycle is not None else None
+    num_topics = args.numtopics[0] if args.numtopics is not None else None
+
+    if num_topics is not None:
+        Constants.update_properties(
+            {Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics})
+
+    if fold is None and cycle is None:
+        records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+
+        if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
+            num_records = len(records)
+            records = records[:num_records / 2]
+        print('num_reviews', len(records))
+
+        create_topic_model(records, None, None)
+    else:
+        create_single_topic_model(cycle, fold)
 
 # start = time.time()
 # create_single_topic_model(None, None)
