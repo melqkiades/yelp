@@ -20,7 +20,6 @@ use_context: True
 shuffle_data: True
 num_cores:
 cache_topic_model: True
-cache_context_reviews: False
 text_sampling_proportion:
 # Possible values: Probability, binary, all_topics
 topic_weighting_method: probability

@@ -88,23 +88,6 @@ def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
     call(command, stdout=f)
 
 
-def filter_reviews(records, reviews, review_type):
-    print('filter: %s' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    if not review_type:
-        return records, reviews
-
-    filtered_records = []
-    filtered_reviews = []
-
-    for record, review in zip(records, reviews):
-        if record[Constants.PREDICTED_CLASS_FIELD] == review_type:
-            filtered_records.append(record)
-            filtered_reviews.append(review)
-
-    return filtered_records, filtered_reviews
-
-
 def write_results_to_csv(results):
     if not os.path.exists(Constants.CSV_RESULTS_FILE):
         with open(Constants.CSV_RESULTS_FILE, 'w') as f:
@@ -697,11 +680,8 @@ class ContextTopNRunner(object):
                     if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
                         self.load_cache_context_topics(None, None)
                     else:
-                        if Constants.CACHE_CONTEXT_REVIEWS:
-                            self.load_context_reviews(i, j)
-                        else:
-                            context_extractor = self.train_topic_model(i, j)
-                            self.find_reviews_topics(context_extractor, i, j)
+                        context_extractor = self.train_topic_model(i, j)
+                        self.find_reviews_topics(context_extractor, i, j)
                 else:
                     self.context_rich_topics = []
                 self.predict()
@@ -812,11 +792,8 @@ class ContextTopNRunner(object):
             if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
                 self.load_cache_context_topics(None, None)
             else:
-                if Constants.CACHE_CONTEXT_REVIEWS:
-                    self.load_context_reviews(0, fold)
-                else:
-                    context_extractor = self.train_topic_model(0, fold)
-                    self.find_reviews_topics(context_extractor, 0, fold)
+                context_extractor = self.train_topic_model(0, fold)
+                self.find_reviews_topics(context_extractor, 0, fold)
         else:
             self.context_rich_topics = []
         self.predict()

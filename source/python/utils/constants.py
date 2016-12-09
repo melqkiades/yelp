@@ -126,7 +126,6 @@ class Constants(object):
     USE_CONTEXT = _properties['use_context']
     NUM_CORES = _properties['num_cores']
     CACHE_TOPIC_MODEL = _properties['cache_topic_model']
-    CACHE_CONTEXT_REVIEWS = _properties['cache_context_reviews']
     TEXT_SAMPLING_PROPORTION = _properties['text_sampling_proportion']
     TOPIC_WEIGHTING_METHOD = _properties['topic_weighting_method']
     LDA_BETA_COMPARISON_OPERATOR = _properties['lda_beta_comparison_operator']
@@ -239,8 +238,6 @@ class Constants(object):
         Constants.USE_CONTEXT = Constants._properties['use_context']
         Constants.NUM_CORES = Constants._properties['num_cores']
         Constants.CACHE_TOPIC_MODEL = Constants._properties['cache_topic_model']
-        Constants.CACHE_CONTEXT_REVIEWS = \
-            Constants._properties['cache_context_reviews']
         Constants.TEXT_SAMPLING_PROPORTION =\
             Constants._properties['text_sampling_proportion']
         Constants.TOPIC_WEIGHTING_METHOD =\
