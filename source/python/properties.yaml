@@ -66,3 +66,5 @@ min_reviews_per_user:
 min_reviews_per_item: 10
 language: en
 langdetect_seed: 0
+topic_model_target_type: context
+topic_model_target_reviews: specific

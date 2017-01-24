@@ -1,4 +1,3 @@
-import json
 import os
 import random
 
@@ -367,10 +366,26 @@ class ReviewsPreprocessor:
         for record in self.records:
             record[Constants.CORPUS_FIELD] =\
                 self.dictionary.doc2bow(record[Constants.BOW_FIELD])
+
+    def export_records(self):
+        print('%s: export records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
         ETLUtils.save_json_file(
             Constants.FULL_PROCESSED_RECORDS_FILE, self.records)
         self.drop_unnecessary_fields()
         ETLUtils.save_json_file(Constants.PROCESSED_RECORDS_FILE, self.records)
+
+    def label_review_targets(self):
+
+        if Constants.TOPIC_MODEL_TARGET_TYPE == 'context':
+            for record in self.records:
+                record[Constants.TOPIC_MODEL_TARGET_FIELD] = \
+                    record[Constants.PREDICTED_CLASS_FIELD]
+        elif Constants.TOPIC_MODEL_TARGET_TYPE == 'sentiment':
+            for record in self.records:
+                rating = record[Constants.RATING_FIELD]
+                sentiment = 'positive' if rating >= 4.0 else\
+                    ('neutral' if rating >= 3.0 else 'negative')
+                record[Constants.TOPIC_MODEL_TARGET_FIELD] = sentiment
 
     def separate_recsys_topic_model_records(self):
 
@@ -499,6 +514,8 @@ class ReviewsPreprocessor:
             # self.load_full_records()
             self.build_dictionary()
             self.build_corpus()
+            self.label_review_targets()
+            self.export_records()
 
         self.count_specific_generic_ratio()
         self.export_to_triplet()

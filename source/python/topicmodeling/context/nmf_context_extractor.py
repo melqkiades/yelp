@@ -18,8 +18,8 @@ class NmfContextExtractor:
 
     def __init__(self, records):
         self.records = records
-        self.specific_reviews = None
-        self.generic_reviews = None
+        self.target_reviews = None
+        self.non_target_reviews = None
         self.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
@@ -27,8 +27,8 @@ class NmfContextExtractor:
         self.context_rich_topics = None
         self.topic_weighted_frequency_map = None
         self.topic_ratio_map = None
-        self.specific_bows = None
-        self.generic_bows = None
+        self.target_bows = None
+        self.non_target_bows = None
         self.document_term_matrix = None
         self.document_topic_matrix = None
         self.topic_term_matrix = None
@@ -49,47 +49,38 @@ class NmfContextExtractor:
 
     def separate_reviews(self):
 
-        self.specific_reviews = []
-        self.generic_reviews = []
+        self.target_reviews = []
+        self.non_target_reviews = []
 
         for record in self.records:
-            if record[Constants.PREDICTED_CLASS_FIELD] == 'specific':
-                self.specific_reviews.append(record)
-            if record[Constants.PREDICTED_CLASS_FIELD] == 'generic':
-                self.generic_reviews.append(record)
+            if record[Constants.TOPIC_MODEL_TARGET_FIELD] == \
+                    Constants.TOPIC_MODEL_TARGET_REVIEWS:
+                self.target_reviews.append(record)
+            else:
+                self.non_target_reviews.append(record)
 
-        print("num specific reviews: %d" % len(self.specific_reviews))
-        print("num generic reviews: %d" % len(self.generic_reviews))
+        print("num target reviews: %d" % len(self.target_reviews))
+        print("num non-target reviews: %d" % len(self.non_target_reviews))
 
     def generate_review_bows(self):
 
         self.separate_reviews()
 
-        self.specific_bows = []
-        for record in self.specific_reviews:
-            self.specific_bows.append(" ".join(record[Constants.BOW_FIELD]))
-        self.generic_bows = []
-        for record in self.generic_reviews:
-            self.generic_bows.append(" ".join(record[Constants.BOW_FIELD]))
+        self.target_bows = []
+        for record in self.target_reviews:
+            self.target_bows.append(" ".join(record[Constants.BOW_FIELD]))
+        self.non_target_bows = []
+        for record in self.non_target_reviews:
+            self.non_target_bows.append(" ".join(record[Constants.BOW_FIELD]))
 
     def build_document_term_matrix(self):
-
-        if Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.SPECIFIC:
-            corpus = self.specific_bows
-        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.GENERIC:
-            corpus = self.generic_bows
-        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.ALL_REVIEWS:
-            corpus = self.specific_bows + self.generic_bows
-        else:
-            msg = 'Unrecognized ' + Constants.TOPIC_MODEL_REVIEW_TYPE_FIELD + \
-                  ' value'
-            raise ValueError(msg)
 
         self.tfidf_vectorizer = TfidfVectorizer(
             stop_words=ENGLISH_STOP_WORDS, lowercase=True,
             strip_accents="unicode",
             use_idf=True, norm="l2", min_df=0, max_df=0.2)
-        self.document_term_matrix = self.tfidf_vectorizer.fit_transform(corpus)
+        self.document_term_matrix = \
+            self.tfidf_vectorizer.fit_transform(self.target_bows)
 
         num_terms = len(self.tfidf_vectorizer.vocabulary_)
         self.terms = [""] * num_terms
@@ -160,24 +151,24 @@ class NmfContextExtractor:
 
     def update_reviews_with_topics(self):
 
-        specific_document_term_matrix =\
-            self.tfidf_vectorizer.transform(self.specific_bows)
-        specific_document_topic_matrix =\
-            self.topic_model.transform(specific_document_term_matrix)
-        for review_index in range(len(self.specific_reviews)):
-            review = self.specific_reviews[review_index]
+        target_document_term_matrix =\
+            self.tfidf_vectorizer.transform(self.target_bows)
+        target_document_topic_matrix =\
+            self.topic_model.transform(target_document_term_matrix)
+        for review_index in range(len(self.target_reviews)):
+            review = self.target_reviews[review_index]
             review[Constants.TOPICS_FIELD] =\
-                [(i, specific_document_topic_matrix[review_index][i])
+                [(i, target_document_topic_matrix[review_index][i])
                  for i in range(self.num_topics)]
 
-        generic_document_term_matrix = \
-            self.tfidf_vectorizer.transform(self.generic_bows)
-        generic_document_topic_matrix = \
-            self.topic_model.transform(generic_document_term_matrix)
-        for review_index in range(len(self.generic_reviews)):
-            review = self.generic_reviews[review_index]
+        non_target_document_term_matrix = \
+            self.tfidf_vectorizer.transform(self.non_target_bows)
+        non_target_document_topic_matrix = \
+            self.topic_model.transform(non_target_document_term_matrix)
+        for review_index in range(len(self.non_target_reviews)):
+            review = self.non_target_reviews[review_index]
             review[Constants.TOPICS_FIELD] = \
-                [(i, generic_document_topic_matrix[review_index][i])
+                [(i, non_target_document_topic_matrix[review_index][i])
                  for i in range(self.num_topics)]
 
         print('%s: updated reviews with topics' %
@@ -223,28 +214,28 @@ class NmfContextExtractor:
             # print('topic: %d' % topic)
             weighted_frq = self.calculate_topic_weighted_frequency(
                 topic, self.records)
-            specific_weighted_frq = \
+            target_weighted_frq = \
                 self.calculate_topic_weighted_frequency(
-                    topic, self.specific_reviews)
-            generic_weighted_frq = \
+                    topic, self.target_reviews)
+            non_target_weighted_frq = \
                 self.calculate_topic_weighted_frequency(
-                    topic, self.generic_reviews)
+                    topic, self.non_target_reviews)
 
             if weighted_frq < Constants.CONTEXT_EXTRACTOR_ALPHA:
                 non_contextual_topics.add(topic)
                 # print('non-contextual_topic: %d' % topic)
                 lower_than_alpha_count += 1.0
 
-            if generic_weighted_frq == 0:
+            if non_target_weighted_frq == 0:
                 # We can't know if the topic is good or not
                 non_contextual_topics.add(topic)
                 ratio = 'N/A'
                 # non_contextual_topics.add(topic)
             else:
-                ratio = specific_weighted_frq / generic_weighted_frq
+                ratio = target_weighted_frq / non_target_weighted_frq
 
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
-            #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
+            #       (topic, ratio, target_weighted_frq, non_target_weighted_frq))
 
             if self.lda_beta_comparison_operator(
                     ratio, Constants.CONTEXT_EXTRACTOR_BETA):
@@ -375,10 +366,10 @@ class NmfContextExtractor:
 
     def clear_reviews(self):
         self.records = None
-        self.specific_reviews = None
-        self.generic_reviews = None
-        self.specific_bows = None
-        self.generic_bows = None
+        self.target_reviews = None
+        self.non_target_reviews = None
+        self.target_bows = None
+        self.non_target_bows = None
         self.document_term_matrix = None
         self.document_topic_matrix = None
 

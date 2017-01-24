@@ -24,10 +24,9 @@ class Constants(object):
     # with the version control system (merging)
 
     BOW_FIELD = 'bow'
+    BOW_TYPE_FIELD = 'bow_type'
     BUSINESS_TYPE_FIELD = 'business_type'
     CACHE_TOPIC_MODEL_FIELD = 'cache_topic_model'
-    HAS_CONTEXT = 'has_context'
-    HAS_NO_CONTEXT = 'has_no_context'
     CONTEXT_EXTRACTOR_ALPHA_FIELD = 'context_extractor_alpha'
     CONTEXT_EXTRACTOR_BETA_FIELD = 'context_extractor_beta'
     CONTEXT_EXTRACTOR_EPSILON_FIELD = 'context_extractor_epsilon'
@@ -47,6 +46,9 @@ class Constants(object):
     FM_REVIEW_TYPE_FIELD = 'fm_review_type'
     FM_USE_BIAS_FIELD = 'fm_use_bias'
     FM_USEWAY_INTERACTIONS_FIELD = 'fm_useway_interactions'
+    HAS_CONTEXT = 'has_context'
+    HAS_CONTEXT_FIELD = 'has_context'
+    HAS_NO_CONTEXT = 'has_no_context'
     ITEM_ID_FIELD = 'business_id'
     LANGUAGE_FIELD = 'language'
     LDA_BETA_COMPARISON_OPERATOR_FIELD = 'lda_beta_comparison_operator'
@@ -75,6 +77,7 @@ class Constants(object):
     TOPIC_MODEL_NUM_TOPICS_FIELD = 'topic_model_num_topics'
     TOPIC_MODEL_PASSES_FIELD = 'topic_model_passes'
     TOPIC_MODEL_REVIEW_TYPE_FIELD = 'topic_model_review_type'
+    TOPIC_MODEL_TARGET_FIELD = 'topic_model_target'
     TOPIC_MODEL_TYPE_FIELD = 'topic_model_type'
     TOPIC_WEIGHTING_METHOD_FIELD = 'topic_weighting_method'
     TOPICS_FIELD = 'topics'
@@ -85,8 +88,6 @@ class Constants(object):
     USE_NO_CONTEXT_TOPICS_SUM_FIELD = 'use_no_context_topics_sum'
     USER_ID_FIELD = 'user_id'
     VOTES_FIELD = 'votes'
-    BOW_TYPE_FIELD = 'bow_type'
-    HAS_CONTEXT_FIELD = 'has_context'
 
     SPECIFIC = 'specific'
     GENERIC = 'generic'
@@ -164,6 +165,8 @@ class Constants(object):
     MIN_REVIEWS_PER_ITEM = _properties['min_reviews_per_item']
     LANGUAGE = _properties['language']
     LANGDETECT_SEED = _properties['langdetect_seed']
+    TOPIC_MODEL_TARGET_TYPE = _properties['topic_model_target_type']
+    TOPIC_MODEL_TARGET_REVIEWS = _properties['topic_model_target_reviews']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -295,6 +298,10 @@ class Constants(object):
             Constants._properties['min_reviews_per_item']
         Constants.LANGUAGE = Constants._properties['language']
         Constants.LANGDETECT_SEED = Constants._properties['langdetect_seed']
+        Constants.TOPIC_MODEL_TARGET_TYPE = \
+            Constants._properties['topic_model_target_type']
+        Constants.TOPIC_MODEL_TARGET_REVIEWS = \
+            Constants._properties['topic_model_target_reviews']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
@@ -362,15 +369,16 @@ class Constants(object):
         if uses_context:
             context_suffix = \
                 '_' + Constants.TOPIC_MODEL_TYPE + \
-                '_reviewtype-' + str(Constants.TOPIC_MODEL_REVIEW_TYPE) + \
                 '_numtopics-' + str(Constants.TOPIC_MODEL_NUM_TOPICS) + \
                 '_iterations-' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
-                '_passes-' + str(Constants.TOPIC_MODEL_PASSES)
+                '_passes-' + str(Constants.TOPIC_MODEL_PASSES) + \
+                '_targetreview-' + str(Constants.TOPIC_MODEL_TARGET_REVIEWS)
         suffix = context_suffix + \
             ('' if Constants.LANGUAGE is None
              else '_lang-' + Constants.LANGUAGE) + \
             '_bow-' + str(Constants.BOW_TYPE) + \
             '_document_level-' + str(Constants.DOCUMENT_LEVEL) + \
+            '_targettype-' + str(Constants.TOPIC_MODEL_TARGET_TYPE) + \
             ('' if Constants.MIN_REVIEWS_PER_USER is None
              else '_min_user_reviews-' + str(Constants.MIN_REVIEWS_PER_USER)) +\
             ('' if Constants.MIN_REVIEWS_PER_ITEM is None

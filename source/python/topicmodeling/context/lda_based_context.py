@@ -14,8 +14,8 @@ class LdaBasedContext:
 
     def __init__(self, records):
         self.records = records
-        self.specific_reviews = None
-        self.generic_reviews = None
+        self.target_reviews = None
+        self.non_target_reviews = None
         self.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
         self.topics = range(self.num_topics)
         self.topic_model = None
@@ -24,8 +24,8 @@ class LdaBasedContext:
         self.topic_ratio_map = None
         self.topic_statistics_map = None
         self.dictionary = None
-        self.specific_corpus = None
-        self.generic_corpus = None
+        self.target_corpus = None
+        self.non_target_corpus = None
         self.max_words = None
         self.lda_beta_comparison_operator = None
         if Constants.LDA_BETA_COMPARISON_OPERATOR == 'gt':
@@ -43,49 +43,44 @@ class LdaBasedContext:
 
     def separate_reviews(self):
 
-        self.specific_reviews = []
-        self.generic_reviews = []
+        self.target_reviews = []
+        self.non_target_reviews = []
 
         for record in self.records:
-            if record[Constants.PREDICTED_CLASS_FIELD] == 'specific':
-                self.specific_reviews.append(record)
-            if record[Constants.PREDICTED_CLASS_FIELD] == 'generic':
-                self.generic_reviews.append(record)
+            if record[Constants.TOPIC_MODEL_TARGET_FIELD] == \
+                    Constants.TOPIC_MODEL_TARGET_REVIEWS:
+                self.target_reviews.append(record)
+            else:
+                self.non_target_reviews.append(record)
+
+        print("num target reviews: %d" % len(self.target_reviews))
+        print("num non-target reviews: %d" % len(self.non_target_reviews))
 
     def generate_review_corpus(self):
 
         self.separate_reviews()
         self.dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
 
-        self.specific_corpus =\
-            [record[Constants.CORPUS_FIELD] for record in self.specific_reviews]
-        self.generic_corpus =\
-            [record[Constants.CORPUS_FIELD] for record in self.generic_reviews]
+        self.target_corpus =\
+            [record[Constants.CORPUS_FIELD] for record in self.target_reviews]
+        self.non_target_corpus =\
+            [record[Constants.CORPUS_FIELD] for record in self.non_target_reviews]
 
     def build_topic_model(self):
         print('%s: building topic model' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
-        if Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.SPECIFIC:
-            corpus = self.specific_corpus
-        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.GENERIC:
-            corpus = self.generic_corpus
-        elif Constants.TOPIC_MODEL_REVIEW_TYPE == Constants.ALL_REVIEWS:
-            corpus = self.specific_corpus + self.generic_corpus
-        else:
-            msg = 'Unrecognized ' + Constants.TOPIC_MODEL_REVIEW_TYPE_FIELD + \
-                  ' value'
-            raise ValueError(msg)
+
         self.topic_model = lda_context_utils.build_topic_model_from_corpus(
-            corpus, self.dictionary)
+            self.target_corpus, self.dictionary)
         print('%s: topic model built' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     def update_reviews_with_topics(self):
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, self.specific_corpus, self.specific_reviews,
+            self.topic_model, self.target_corpus, self.target_reviews,
             Constants.CONTEXT_EXTRACTOR_EPSILON)
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, self.generic_corpus, self.generic_reviews,
+            self.topic_model, self.non_target_corpus, self.non_target_reviews,
             Constants.CONTEXT_EXTRACTOR_EPSILON)
 
         print('%s: updated reviews with topics' %
@@ -131,28 +126,28 @@ class LdaBasedContext:
             # print('topic: %d' % topic)
             weighted_frq = lda_context_utils.calculate_topic_weighted_frequency(
                 topic, self.records)
-            specific_weighted_frq = \
+            target_weighted_frq = \
                 lda_context_utils.calculate_topic_weighted_frequency(
-                    topic, self.specific_reviews)
-            generic_weighted_frq = \
+                    topic, self.target_reviews)
+            non_target_weighted_frq = \
                 lda_context_utils.calculate_topic_weighted_frequency(
-                    topic, self.generic_reviews)
+                    topic, self.non_target_reviews)
 
             if weighted_frq < Constants.CONTEXT_EXTRACTOR_ALPHA:
                 non_contextual_topics.add(topic)
                 # print('non-contextual_topic: %d' % topic)
                 lower_than_alpha_count += 1.0
 
-            if generic_weighted_frq == 0:
+            if non_target_weighted_frq == 0:
                 # We can't know if the topic is good or not
                 non_contextual_topics.add(topic)
                 ratio = 'N/A'
                 # non_contextual_topics.add(topic)
             else:
-                ratio = specific_weighted_frq / generic_weighted_frq
+                ratio = target_weighted_frq / non_target_weighted_frq
 
             # print('topic: %d --> ratio: %f\tspecific: %f\tgeneric: %f' %
-            #       (topic, ratio, specific_weighted_frq, generic_weighted_frq))
+            #       (topic, ratio, target_weighted_frq, non_target_weighted_frq))
 
             if self.lda_beta_comparison_operator(
                     ratio, Constants.CONTEXT_EXTRACTOR_BETA):
@@ -204,7 +199,6 @@ class LdaBasedContext:
                 Constants.CONTEXT_EXTRACTOR_EPSILON, text_sampling_proportion,
                 self.max_words
             )
-            record[Constants.TOPICS_FIELD] = topic_distribution
 
             # We calculate the sum of the probabilities of the contextual topics
             # to then normalize the contextual vector
@@ -239,10 +233,10 @@ class LdaBasedContext:
 
     def clear_reviews(self):
         self.records = None
-        self.specific_reviews = None
-        self.generic_reviews = None
-        self.specific_corpus = None
-        self.generic_corpus = None
+        self.target_reviews = None
+        self.non_target_reviews = None
+        self.target_corpus = None
+        self.non_target_corpus = None
 
 
 def main():
