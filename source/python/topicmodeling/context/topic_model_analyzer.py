@@ -1,9 +1,10 @@
+import argparse
 import csv
 import json
 import os
+import random
 import time
 
-import cPickle as pickle
 import itertools
 
 import numpy
@@ -122,8 +123,9 @@ def analyze_topics(include_stability=True):
         (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['rank_score'].mean()
 
     stability = None
+    sample_ratio = Constants.TOPIC_MODEL_STABILITY_SAMPLE_RATIO
     if include_stability:
-        stability = calculate_topic_stability(records).mean()
+        stability = calculate_topic_stability(records, sample_ratio).mean()
     scores['stability'] = stability
 
     separation_score =\
@@ -163,7 +165,7 @@ def analyze_topics(include_stability=True):
     return scores
 
 
-def calculate_topic_stability(records):
+def calculate_topic_stability(records, sample_ratio=None):
 
     Constants.update_properties({
         Constants.NUMPY_RANDOM_SEED_FIELD: Constants.NUMPY_RANDOM_SEED + 10,
@@ -186,12 +188,27 @@ def calculate_topic_stability(records):
     all_term_rankings.append(terms_matrix)
 
     for _ in range(Constants.TOPIC_MODEL_STABILITY_ITERATIONS - 1):
-        context_extractor = topic_model_creator.train_context_extractor(records)
+
+        if sample_ratio is None:
+            sampled_records = records
+        else:
+            sampled_records = sample_list(records, sample_ratio)
+        context_extractor = \
+            topic_model_creator.train_context_extractor(sampled_records)
         terms_matrix = get_topic_model_terms(
             context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
         all_term_rankings.append(terms_matrix)
 
     return calculate_stability(all_term_rankings)
+
+
+def sample_list(lst, sample_ratio):
+
+    num_samples = int(len(lst) * sample_ratio)
+    sampled_list = [
+        lst[i] for i in sorted(random.sample(xrange(len(lst)), num_samples))]
+
+    return sampled_list
 
 
 def calculate_topic_stability_cross_validation():
@@ -389,6 +406,33 @@ def main():
         cycle_index += 1
 
 
+def cli_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-t', '--numtopics', metavar='int', type=int,
+        nargs=1, help='The number of topics of the topic model')
+
+    args = parser.parse_args()
+    num_topics = args.numtopics[0] if args.numtopics is not None else None
+
+    if num_topics is not None:
+        Constants.update_properties(
+            {Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics})
+
+    results = Constants.get_properties_copy()
+    results.update(analyze_topics(include_stability=True))
+
+    csv_file_name = Constants.generate_file_name(
+        'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
+        False)
+    json_file_name = Constants.generate_file_name(
+        'topic_model_analysis', 'json', Constants.DATASET_FOLDER, None, None,
+        False)
+
+    write_results_to_csv(csv_file_name, results)
+    write_results_to_json(json_file_name, results)
+
+
 def write_results_to_csv(file_name, results):
     if not os.path.exists(file_name):
         with open(file_name, 'w') as f:
@@ -411,20 +455,6 @@ def write_results_to_json(file_name, results):
             json.dump(results, f)
             f.write('\n')
 
-
-def calculate_topic_stability_files(file_list):
-    all_term_rankings = []
-
-    for file_path in file_list:
-        with open(file_path, 'rb') as read_file:
-            topic_model = pickle.load(read_file)
-            terms_matrix = get_topic_model_terms(
-                topic_model, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
-            all_term_rankings.append(terms_matrix)
-
-    return calculate_stability(all_term_rankings)
-
-
 # start = time.time()
 # main()
 # end = time.time()
@@ -432,7 +462,9 @@ def calculate_topic_stability_files(file_list):
 # print("Total time = %f seconds" % total_time)
 
 
-# fp1 = Constants.CACHE_FOLDER + 'restaurant_topic_model_nmf_separated_numtopics:28_iterations:200_passes:100_bow:NN_reviewtype:specific_document_level:1.pkl'
-# fp2 = Constants.CACHE_FOLDER + 'restaurant_topic_model_nmf_full_numtopics:28_iterations:200_passes:100_bow:NN_reviewtype:specific_document_level:1.pkl'
-#
-# calculate_topic_stability_files([fp1, fp2])
+if __name__ == '__main__':
+    start = time.time()
+    cli_main()
+    end = time.time()
+    total_time = end - start
+    print("Total time = %f seconds" % total_time)

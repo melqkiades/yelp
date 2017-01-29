@@ -59,8 +59,9 @@ nested_cross_validation_cycle: 0
 # set to test
 cross_validation_strategy: nested_test
 topic_model_type: nmf
-topic_model_stability_iterations: 5
+topic_model_stability_iterations: 50
 topic_model_stability_num_terms: 5
+topic_model_stability_sample_ratio: 0.8
 separate_topic_model_recsys_reviews: False
 min_reviews_per_user:
 min_reviews_per_item: 10

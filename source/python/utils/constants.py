@@ -159,6 +159,8 @@ class Constants(object):
         _properties['topic_model_stability_iterations']
     TOPIC_MODEL_STABILITY_NUM_TERMS = \
         _properties['topic_model_stability_num_terms']
+    TOPIC_MODEL_STABILITY_SAMPLE_RATIO = \
+        _properties['topic_model_stability_sample_ratio']
     SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
         _properties['separate_topic_model_recsys_reviews']
     MIN_REVIEWS_PER_USER = _properties['min_reviews_per_user']
@@ -251,7 +253,7 @@ class Constants(object):
         Constants.LEMMATIZE = Constants._properties['lemmatize']
         Constants.MIN_DICTIONARY_WORD_COUNT =\
             Constants._properties['min_dictionary_word_count']
-        Constants.MIN_DICTIONARY_WORD_COUNT =\
+        Constants.MAX_DICTIONARY_WORD_COUNT =\
             Constants._properties['max_dictionary_word_count']
         Constants.DOCUMENT_LEVEL = Constants._properties['document_level']
         Constants.SOLVER = Constants._properties['solver']
@@ -290,6 +292,8 @@ class Constants(object):
             Constants._properties['topic_model_stability_iterations']
         Constants.TOPIC_MODEL_STABILITY_NUM_TERMS = \
             Constants._properties['topic_model_stability_num_terms']
+        Constants.TOPIC_MODEL_STABILITY_SAMPLE_RATIO = \
+            Constants._properties['topic_model_stability_sample_ratio']
         Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS = \
             Constants._properties['separate_topic_model_recsys_reviews']
         Constants.MIN_REVIEWS_PER_USER = \
