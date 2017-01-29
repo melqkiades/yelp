@@ -78,14 +78,16 @@ class NmfContextExtractor:
         self.tfidf_vectorizer = TfidfVectorizer(
             stop_words=ENGLISH_STOP_WORDS, lowercase=True,
             strip_accents="unicode",
-            use_idf=True, norm="l2", min_df=0, max_df=0.2)
+            use_idf=True, norm="l2", min_df=Constants.MIN_DICTIONARY_WORD_COUNT,
+            max_df=Constants.MAX_DICTIONARY_WORD_COUNT, ngram_range=(1, 1))
         self.document_term_matrix = \
             self.tfidf_vectorizer.fit_transform(self.target_bows)
 
-        num_terms = len(self.tfidf_vectorizer.vocabulary_)
+        vocabulary = self.tfidf_vectorizer.vocabulary_
+        num_terms = len(vocabulary)
         self.terms = [""] * num_terms
-        for term in self.tfidf_vectorizer.vocabulary_.keys():
-            self.terms[self.tfidf_vectorizer.vocabulary_[term]] = term
+        for term in vocabulary.keys():
+            self.terms[vocabulary[term]] = term
 
         print "Created document-term matrix of size %d x %d" % (
             self.document_term_matrix.shape[0],
