@@ -5,6 +5,7 @@ import time
 
 import operator
 
+import arff
 import langdetect
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
@@ -158,6 +159,8 @@ class ReviewsPreprocessor:
         print(msg)
 
     def remove_users_with_low_reviews(self):
+        print('%s: remove users with low reviews' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         # Remove from the dataset users with a low number of reviews
         min_reviews_per_user = Constants.MIN_REVIEWS_PER_USER
@@ -167,6 +170,8 @@ class ReviewsPreprocessor:
             self.records, min_reviews_per_user)
 
     def remove_items_with_low_reviews(self):
+        print('%s: remove items with low reviews' % time.strftime(
+            "%Y/%m/%d-%H:%M:%S"))
 
         # Remove from the dataset items with a low number of reviews
         min_reviews_per_item = Constants.MIN_REVIEWS_PER_ITEM
@@ -480,6 +485,53 @@ class ReviewsPreprocessor:
         with open(Constants.RATINGS_FILE, 'w') as f:
             numpy.savetxt(f, matrix, fmt='%d')
 
+    def export_to_arff(self):
+        print('%s: export to ARFF' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        attributes = [
+            ('user', 'NUMERIC'),
+            ('item', 'NUMERIC'),
+            ('rating', 'NUMERIC'),
+            # ('time', 'NUMERIC'),
+            ('location', 'STRING'),
+        ]
+
+        data = []
+        user_id_map = {}
+        item_id_map = {}
+        user_index = 0
+        item_index = 0
+
+        for record in self.records:
+            user_id = record[Constants.USER_ID_FIELD]
+            if user_id not in user_id_map:
+                user_id_map[user_id] = user_index
+                user_index += 1
+            item_id = record[Constants.ITEM_ID_FIELD]
+            if item_id not in item_id_map:
+                item_id_map[item_id] = item_index
+                item_index += 1
+
+        for record in self.records:
+            row = [
+                user_id_map[record[Constants.USER_ID_FIELD]],
+                item_id_map[record[Constants.ITEM_ID_FIELD]],
+                record[Constants.RATING_FIELD],
+                # numpy.random.randint(1, 11),
+                'sdg'
+            ]
+            data.append(row)
+
+        arff_data = {
+            'attributes': attributes,
+            'data': data,
+            'description': Constants.ITEM_TYPE + '_dataset',
+            'relation': 'user-item'
+        }
+
+        with open('/Users/fpena/tmp/arff_test.arff', 'w') as arff_file:
+            arff.dump(arff_data, arff_file)
+
     def full_cycle(self):
         Constants.print_properties()
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -519,6 +571,7 @@ class ReviewsPreprocessor:
 
         self.count_specific_generic_ratio()
         self.export_to_triplet()
+        self.export_to_arff()
 
         rda = ReviewsDatasetAnalyzer(self.records)
         print('density: %f' % rda.calculate_density_approx())
