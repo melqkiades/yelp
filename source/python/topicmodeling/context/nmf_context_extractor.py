@@ -159,28 +159,23 @@ class NmfContextExtractor:
 
     def update_reviews_with_topics(self):
 
-        target_document_term_matrix =\
-            self.tfidf_vectorizer.transform(self.target_bows)
-        target_document_topic_matrix =\
-            self.topic_model.transform(target_document_term_matrix)
-        for review_index in range(len(self.target_reviews)):
-            review = self.target_reviews[review_index]
-            review[Constants.TOPICS_FIELD] =\
-                [(i, target_document_topic_matrix[review_index][i])
-                 for i in range(self.num_topics)]
-
-        non_target_document_term_matrix = \
-            self.tfidf_vectorizer.transform(self.non_target_bows)
-        non_target_document_topic_matrix = \
-            self.topic_model.transform(non_target_document_term_matrix)
-        for review_index in range(len(self.non_target_reviews)):
-            review = self.non_target_reviews[review_index]
-            review[Constants.TOPICS_FIELD] = \
-                [(i, non_target_document_topic_matrix[review_index][i])
-                 for i in range(self.num_topics)]
+        self.update_documents_with_topics(self.target_reviews, self.target_bows)
+        self.update_documents_with_topics(
+            self.non_target_reviews, self.non_target_bows)
 
         print('%s: updated reviews with topics' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    def update_documents_with_topics(self, reviews_list, bow_list):
+        document_term_matrix = \
+            self.tfidf_vectorizer.transform(bow_list)
+        document_topic_matrix = \
+            self.topic_model.transform(document_term_matrix)
+        for review_index in range(len(reviews_list)):
+            review = reviews_list[review_index]
+            review[Constants.TOPICS_FIELD] = \
+                [(i, document_topic_matrix[review_index][i])
+                 for i in range(self.num_topics)]
 
     def get_context_rich_topics(self):
         """
