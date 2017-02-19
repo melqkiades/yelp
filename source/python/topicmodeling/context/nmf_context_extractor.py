@@ -114,7 +114,10 @@ class NmfContextExtractor:
 
         topic_model = decomposition.NMF(
             init="nndsvd", n_components=self.num_topics,
-            max_iter=Constants.TOPIC_MODEL_ITERATIONS)
+            max_iter=Constants.TOPIC_MODEL_ITERATIONS,
+            alpha=Constants.NMF_REGULARIZATION,
+            l1_ratio=Constants.NMF_REGULARIZATION_RATIO
+        )
         topic_model.fit_transform(self.document_term_matrix)
         topic_term_matrix = topic_model.components_
 
@@ -127,18 +130,21 @@ class NmfContextExtractor:
             topic_term_matrix = self.build_single_topic_model().transpose()
             matrices.append(topic_term_matrix)
 
-        M = numpy.hstack(matrices)
-        M = normalize(M, axis=0)
-        M = M.transpose()
+        stack_matrix = numpy.hstack(matrices)
+        stack_matrix = normalize(stack_matrix, axis=0)
+        stack_matrix = stack_matrix.transpose()
 
-        print "Stack matrix M of size %s" % str(M.shape)
+        print "Stack matrix M of size %s" % str(stack_matrix.shape)
 
         self.topic_model = decomposition.NMF(
             init="nndsvd", n_components=self.num_topics,
-            max_iter=Constants.TOPIC_MODEL_ITERATIONS
+            max_iter=Constants.TOPIC_MODEL_ITERATIONS,
+            alpha=Constants.NMF_REGULARIZATION,
+            l1_ratio=Constants.NMF_REGULARIZATION_RATIO
         )
 
-        self.document_topic_matrix = self.topic_model.fit_transform(M)
+        self.document_topic_matrix = \
+            self.topic_model.fit_transform(stack_matrix)
         self.topic_term_matrix = self.topic_model.components_
 
         row_sums = self.topic_term_matrix.sum(axis=1)

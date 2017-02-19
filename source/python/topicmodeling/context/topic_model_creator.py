@@ -39,7 +39,7 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
     return topic_model
 
 
-def train_context_extractor(records):
+def train_context_extractor(records, stable=True):
     print('%s: train context topics model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
     if Constants.TOPIC_MODEL_TYPE == 'lda':
         context_extractor = LdaBasedContext(records)
@@ -52,7 +52,10 @@ def train_context_extractor(records):
         context_extractor = NmfContextExtractor(records)
         context_extractor.generate_review_bows()
         context_extractor.build_document_term_matrix()
-        context_extractor.build_stable_topic_model()
+        if stable:
+            context_extractor.build_stable_topic_model()
+        else:
+            context_extractor.build_topic_model()
         context_extractor.update_reviews_with_topics()
         context_extractor.get_context_rich_topics()
         context_extractor.clear_reviews()

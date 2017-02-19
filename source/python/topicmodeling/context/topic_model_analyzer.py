@@ -194,7 +194,7 @@ def calculate_topic_stability(records, sample_ratio=None):
         else:
             sampled_records = sample_list(records, sample_ratio)
         context_extractor = \
-            topic_model_creator.train_context_extractor(sampled_records)
+            topic_model_creator.train_context_extractor(sampled_records, False)
         terms_matrix = get_topic_model_terms(
             context_extractor, Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)
         all_term_rankings.append(terms_matrix)
@@ -340,8 +340,9 @@ def main():
     csv_file_name = Constants.generate_file_name(
         'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
         False)
-    json_file_name = Constants.DATASET_FOLDER + 'topic_model_analysis_' + \
-                     Constants.ITEM_TYPE + '.json'
+    json_file_name = Constants.generate_file_name(
+        'topic_model_analysis', 'json', Constants.DATASET_FOLDER, None, None,
+        False)
     print(csv_file_name)
 
     # export_lda_topics(0, 0)
@@ -352,7 +353,7 @@ def main():
     #     [5, 10, 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700, 800]
     # num_topics_list = [10, 20, 30, 50, 75, 100, 150, 300]
     # num_topics_list = [150, 300]
-    num_topics_list = range(1, 101)
+    num_topics_list = range(1, 51)
     bow_type_list = ['NN']
     # document_level_list = ['review', 'sentence', 1]
     document_level_list = [1]
@@ -398,7 +399,39 @@ def main():
 
         Constants.update_properties(new_dict)
         results = Constants.get_properties_copy()
-        results.update(analyze_topics(include_stability=False))
+        results.update(analyze_topics(include_stability=True))
+
+        write_results_to_csv(csv_file_name, results)
+        write_results_to_json(json_file_name, results)
+
+        cycle_index += 1
+
+
+def manual_main():
+
+    csv_file_name = Constants.generate_file_name(
+        'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
+        False)
+    json_file_name = Constants.generate_file_name(
+        'topic_model_analysis', 'json', Constants.DATASET_FOLDER, None, None,
+        False)
+    print(json_file_name)
+    print(csv_file_name)
+
+    num_topics_list = range(2, 51)
+    num_cycles = len(num_topics_list)
+    cycle_index = 1
+    for num_topics in num_topics_list:
+        print('\ncycle_index: %d/%d' % (cycle_index, num_cycles))
+        new_dict = {
+            Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics,
+        }
+
+        print(new_dict)
+
+        Constants.update_properties(new_dict)
+        results = Constants.get_properties_copy()
+        results.update(analyze_topics(include_stability=True))
 
         write_results_to_csv(csv_file_name, results)
         write_results_to_json(json_file_name, results)
@@ -456,15 +489,15 @@ def write_results_to_json(file_name, results):
             f.write('\n')
 
 # start = time.time()
-# main()
+# manual_main()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
 
 
-if __name__ == '__main__':
-    start = time.time()
-    cli_main()
-    end = time.time()
-    total_time = end - start
-    print("Total time = %f seconds" % total_time)
+# if __name__ == '__main__':
+#     start = time.time()
+#     cli_main()
+#     end = time.time()
+#     total_time = end - start
+#     print("Total time = %f seconds" % total_time)

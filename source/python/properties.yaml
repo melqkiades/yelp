@@ -30,7 +30,7 @@ min_dictionary_word_count: 5
 max_dictionary_word_count: 0.2
 # Possible values: review, sentence or integer numer indicating the number of
 # sentences to use (1 is 1st sentence, 2 is 1st and 2nd, etc.)
-document_level: 1
+document_level: review
 solver: libfm
 fm_method: mcmc
 evaluation_metric: topn_recall
@@ -60,7 +60,7 @@ nested_cross_validation_cycle: 0
 cross_validation_strategy: nested_test
 topic_model_type: nmf
 topic_model_stability_iterations: 50
-topic_model_stability_num_terms: 5
+topic_model_stability_num_terms: 10
 topic_model_stability_sample_ratio: 0.8
 separate_topic_model_recsys_reviews: False
 min_reviews_per_user:
@@ -69,3 +69,5 @@ language: en
 langdetect_seed: 0
 topic_model_target_type: context
 topic_model_target_reviews: specific
+nmf_regularization: 0.0
+nmf_regularization_ratio: 0.0

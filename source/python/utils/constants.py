@@ -169,6 +169,8 @@ class Constants(object):
     LANGDETECT_SEED = _properties['langdetect_seed']
     TOPIC_MODEL_TARGET_TYPE = _properties['topic_model_target_type']
     TOPIC_MODEL_TARGET_REVIEWS = _properties['topic_model_target_reviews']
+    NMF_REGULARIZATION = _properties['nmf_regularization']
+    NMF_REGULARIZATION_RATIO = _properties['nmf_regularization_ratio']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -306,6 +308,10 @@ class Constants(object):
             Constants._properties['topic_model_target_type']
         Constants.TOPIC_MODEL_TARGET_REVIEWS = \
             Constants._properties['topic_model_target_reviews']
+        Constants.NMF_REGULARIZATION = \
+            Constants._properties['nmf_regularization']
+        Constants.NMF_REGULARIZATION_RATIO = \
+            Constants._properties['nmf_regularization_ratio']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
