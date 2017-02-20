@@ -99,8 +99,10 @@ class Constants(object):
     # Folders
     DATASET_FOLDER = '/home/fpena/data/'
     LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
+    TOPIC_ENSEMBLE_FOLDER = '/home/fpena/topic-ensemble/'
     # DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
     # LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
+    # TOPIC_ENSEMBLE_FOLDER = '/Users/fpena/tmp/topic-ensemble/'
     GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 
     _properties = load_properties()
@@ -174,6 +176,9 @@ class Constants(object):
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
+    TEXT_FILES_FOLDER = CACHE_FOLDER + 'text_files/'
+    TOPIC_MODEL_FOLDER = CACHE_FOLDER + 'topic_models/'
+    GENERATED_TEXT_FILES_FOLDER = None
     # RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
     #                ITEM_TYPE + 's_shuffled_tagged.json'
     RECORDS_FILE = DATASET_FOLDER + ITEM_TYPE + '_reviews.json'
@@ -315,6 +320,11 @@ class Constants(object):
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
+        Constants.TEXT_FILES_FOLDER = Constants.CACHE_FOLDER + 'text_files/'
+        Constants.TOPIC_MODEL_FOLDER = Constants.CACHE_FOLDER + 'topic_model/'
+        Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
+            'bow_files', '', Constants.TEXT_FILES_FOLDER, None, None, False,
+            True)[:-1] + '/'
         Constants.RECORDS_FILE =\
             Constants.DATASET_FOLDER + Constants.ITEM_TYPE + '_reviews.json'
         Constants.LANGUAGE_RECORDS_FILE =\
@@ -435,3 +445,6 @@ Constants.DICTIONARY_FILE = Constants.generate_file_name(
     'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False, True)
 Constants.RATINGS_FILE = Constants.generate_file_name(
     'ratings', 'txt', Constants.CACHE_FOLDER, None, None, False, True)
+Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
+    'bow_files', '', Constants.TEXT_FILES_FOLDER, None, None, False,
+    True)[:-1] + '/'

@@ -1,3 +1,4 @@
+import codecs
 import os
 import random
 
@@ -7,6 +8,7 @@ import operator
 
 import arff
 import langdetect
+import shutil
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
 import numpy
@@ -532,6 +534,31 @@ class ReviewsPreprocessor:
         with open('/Users/fpena/tmp/arff_test.arff', 'w') as arff_file:
             arff.dump(arff_data, arff_file)
 
+    def export_to_text(self):
+        print('%s: Exporting bag-of-words to text files' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        if not os.path.isdir(Constants.TEXT_FILES_FOLDER):
+            os.mkdir(Constants.TEXT_FILES_FOLDER)
+
+        folder = Constants.GENERATED_TEXT_FILES_FOLDER
+        if os.path.isdir(folder):
+            shutil.rmtree(folder)
+        os.mkdir(folder)
+
+        topic_model_target = Constants.TOPIC_MODEL_TARGET_REVIEWS
+
+        for record in self.records:
+
+            if record[Constants.TOPIC_MODEL_TARGET_FIELD] != \
+                    topic_model_target and topic_model_target is not None:
+                continue
+            file_name = \
+                folder + 'bow_' + record[Constants.REVIEW_ID_FIELD] + '.txt'
+
+            with codecs.open(file_name, 'w', encoding="utf-8-sig") as text_file:
+                text_file.write(" ".join(record[Constants.BOW_FIELD]))
+
     def full_cycle(self):
         Constants.print_properties()
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -572,6 +599,7 @@ class ReviewsPreprocessor:
         self.count_specific_generic_ratio()
         self.export_to_triplet()
         self.export_to_arff()
+        self.export_to_text()
 
         rda = ReviewsDatasetAnalyzer(self.records)
         print('density: %f' % rda.calculate_density_approx())
