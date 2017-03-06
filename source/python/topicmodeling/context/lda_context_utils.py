@@ -236,18 +236,54 @@ def get_topic_distribution(record, lda_model, dictionary, minimum_probability,
 
 
 def sample_bag_of_words(review_bow, sampling_method, max_words=None):
+    """
+    Samples a list of strings containing a bag of words using the given
+    sampling method. The sampling is always done without replacement.
 
-    if sampling_method is None or len(review_bow[0]) == 0:
+    :type review_bow: list[str]
+    :param review_bow: the bag of words to sample
+    :param sampling_method: a float in the range [0,1] that
+    indicates the proportion of text that should be sampled from the review.
+    It can also take the string value of 'max', indicating that only the
+    word with the highest probability from the topic will be sampled
+     text. If None then the origianl review_bow list is returned
+    :param max_words: is the set of words with maximum probability for each
+    contextual topic
+    """
+
+    if sampling_method is None or len(review_bow) == 0:
         return review_bow
 
     if sampling_method == 'max':
-        bow_set = set(review_bow[0])
+        bow_set = set(review_bow)
         words_set = set(max_words)
-        review_bow = [list(bow_set.intersection(words_set))]
+        review_bow = list(bow_set.intersection(words_set))
         return review_bow
     elif 0.0 <= sampling_method <= 1.0:
-        num_words = int(sampling_method * len(review_bow[0]))
-        review_bow = [
-            numpy.random.choice(review_bow[0], num_words, replace=False)
-        ]
+        num_words = int(sampling_method * len(review_bow))
+        review_bow = numpy.random.choice(review_bow, num_words, replace=False)
+
         return review_bow
+
+
+def main():
+
+    review = 'The quick brown fox jumps over the lazy dog'
+    review_bow = review.split(' ')
+    print('original number of words: %d' % len(review_bow))
+
+    sampled_bows = sample_bag_of_words(review_bow, 1.0)
+    print('number of words when sample = 1.0: %d' % len(sampled_bows))
+    print(sampled_bows)
+
+    sampled_bows = sample_bag_of_words(review_bow, 0.5)
+    print('number of words when sample = 0.5: %d' % len(sampled_bows))
+    print(sampled_bows)
+
+    max_words = ['quick', 'lazy']
+    sampled_bows = sample_bag_of_words(review_bow, 'max', max_words)
+    print('number of words when sample = max_words: %d' % len(sampled_bows))
+    print(sampled_bows)
+
+
+# main()
