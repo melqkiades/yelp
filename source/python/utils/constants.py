@@ -173,11 +173,13 @@ class Constants(object):
     TOPIC_MODEL_TARGET_REVIEWS = _properties['topic_model_target_reviews']
     NMF_REGULARIZATION = _properties['nmf_regularization']
     NMF_REGULARIZATION_RATIO = _properties['nmf_regularization_ratio']
+    TOPIC_MODEL_FOLDS = _properties['topic_model_folds']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
     TEXT_FILES_FOLDER = CACHE_FOLDER + 'text_files/'
     TOPIC_MODEL_FOLDER = CACHE_FOLDER + 'topic_models/'
+    ENSEMBLE_FOLDER = TOPIC_MODEL_FOLDER + 'ensemble/'
     GENERATED_TEXT_FILES_FOLDER = None
     # RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
     #                ITEM_TYPE + 's_shuffled_tagged.json'
@@ -196,6 +198,7 @@ class Constants(object):
     TOPIC_MODEL_PROCESSED_RECORDS_FILE = None
     RECSYS_PROCESSED_RECORDS_FILE = None
     RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = None
+    RECSYS_TOPICS_PROCESSED_RECORDS_FILE = None
     DICTIONARY_FILE = None
     RATINGS_FILE = None
     REVIEWS_FILE = DATASET_FOLDER + 'reviews_' + ITEM_TYPE + '_shuffled.pkl'
@@ -211,6 +214,7 @@ class Constants(object):
     # Cache files
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
         ITEM_TYPE + '.pkl'
+    ENSEMBLED_RESULTS_FOLDER = None
 
     @classmethod
     def get_properties_copy(cls):
@@ -317,11 +321,13 @@ class Constants(object):
             Constants._properties['nmf_regularization']
         Constants.NMF_REGULARIZATION_RATIO = \
             Constants._properties['nmf_regularization_ratio']
+        Constants.TOPIC_MODEL_FOLDS = Constants._properties['topic_model_folds']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
         Constants.TEXT_FILES_FOLDER = Constants.CACHE_FOLDER + 'text_files/'
         Constants.TOPIC_MODEL_FOLDER = Constants.CACHE_FOLDER + 'topic_model/'
+        Constants.ENSEMBLE_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'ensemble/'
         Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
             'bow_files', '', Constants.TEXT_FILES_FOLDER, None, None, False,
             True)[:-1] + '/'
@@ -355,6 +361,10 @@ class Constants(object):
             Constants.generate_file_name(
                 'recsys_contextual_records', 'json', Constants.CACHE_FOLDER,
                 None, None, True, True)
+        Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE = \
+            Constants.generate_file_name(
+                'recsys_topic_records', 'json', Constants.CACHE_FOLDER,
+                None, None, True, True)
         Constants.DICTIONARY_FILE = Constants.generate_file_name(
             'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False,
             True)
@@ -374,6 +384,9 @@ class Constants(object):
         # Cache files
         Constants.TOPIC_MODEL_FILE = Constants.CACHE_FOLDER + 'topic_model_' +\
             Constants.ITEM_TYPE + '.pkl'
+        Constants.ENSEMBLED_RESULTS_FOLDER = Constants.generate_file_name(
+            'topic_model', '', Constants.ENSEMBLE_FOLDER, None, None,
+            True, True)[:-1] + '/'
 
     @staticmethod
     def print_properties():
@@ -448,3 +461,14 @@ Constants.RATINGS_FILE = Constants.generate_file_name(
 Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
     'bow_files', '', Constants.TEXT_FILES_FOLDER, None, None, False,
     True)[:-1] + '/'
+Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = \
+    Constants.generate_file_name(
+        'recsys_contextual_records', 'json', Constants.CACHE_FOLDER,
+        None, None, True, True)
+Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE = \
+    Constants.generate_file_name(
+        'recsys_topic_records', 'json', Constants.CACHE_FOLDER,
+        None, None, True, True)
+Constants.ENSEMBLED_RESULTS_FOLDER = Constants.generate_file_name(
+    'topic_model', '', Constants.ENSEMBLE_FOLDER, None, None,
+    True, True)[:-1] + '/'

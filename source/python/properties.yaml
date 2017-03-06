@@ -11,8 +11,8 @@ context_extractor_alpha: 0.0
 context_extractor_beta: 1.0
 context_extractor_epsilon: 0.05
 topic_model_num_topics: 30
-topic_model_passes: 100
-topic_model_iterations: 200
+topic_model_passes: 10
+topic_model_iterations: 100
 lda_multicore: False
 libfm_seed: 0
 cross_validation_num_folds: 10
@@ -58,11 +58,11 @@ nested_cross_validation_cycle: 0
 # nested_test means that the train+validate sets are use to train data and test
 # set to test
 cross_validation_strategy: nested_test
-topic_model_type: nmf
+topic_model_type: ensemble
 topic_model_stability_iterations: 50
 topic_model_stability_num_terms: 10
 topic_model_stability_sample_ratio: 0.8
-separate_topic_model_recsys_reviews: False
+separate_topic_model_recsys_reviews: True
 min_reviews_per_user:
 min_reviews_per_item: 10
 language: en
@@ -71,3 +71,4 @@ topic_model_target_type: context
 topic_model_target_reviews: specific
 nmf_regularization: 0.0
 nmf_regularization_ratio: 0.0
+topic_model_folds: 10
