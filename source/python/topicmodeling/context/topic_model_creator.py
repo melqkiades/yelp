@@ -9,8 +9,6 @@ import cPickle as pickle
 from os.path import expanduser
 
 from etl import ETLUtils
-from topicmodeling.context.ensemble_context_extractor import \
-    EnsembleContextExtractor
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from utils import constants
@@ -61,15 +59,6 @@ def train_context_extractor(records, stable=True):
         context_extractor.update_reviews_with_topics()
         context_extractor.get_context_rich_topics()
         context_extractor.clear_reviews()
-    elif Constants.TOPIC_MODEL_TYPE == 'ensemble':
-        context_extractor = EnsembleContextExtractor(records)
-        context_extractor.load_trained_data()
-        context_extractor.generate_review_bows()
-        # context_extractor.build_document_term_matrix()
-        # context_extractor.build_topic_model()
-        context_extractor.update_reviews_with_topics()
-        context_extractor.get_context_rich_topics()
-        context_extractor.clear_reviews()
     else:
         raise ValueError('Unrecognized topic model type')
 
@@ -86,9 +75,6 @@ def load_topic_model(cycle_index, fold_index):
     print(file_path)
     with open(file_path, 'rb') as read_file:
         topic_model = pickle.load(read_file)
-
-        if Constants.TOPIC_MODEL_TYPE == 'ensemble':
-            topic_model.load_trained_data()
     return topic_model
 
 
