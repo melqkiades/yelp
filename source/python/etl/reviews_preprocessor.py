@@ -29,8 +29,10 @@ from unbalanced_dataset.over_sampling import SMOTE
 from etl import ETLUtils
 from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
 from nlp import nlp_utils
+from topicmodeling import topic_ensemble_caller
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
+from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
 from tripadvisor.fourcity import extractor
 from utils import utilities
 from utils.constants import Constants
@@ -394,6 +396,50 @@ class ReviewsPreprocessor:
                     ('neutral' if rating >= 3.0 else 'negative')
                 record[Constants.TOPIC_MODEL_TARGET_FIELD] = sentiment
 
+    def create_topic_model(self, records):
+
+        if Constants.TOPIC_MODEL_TYPE == 'ensemble':
+            file_path = Constants.ENSEMBLED_RESULTS_FOLDER + \
+                "factors_final_k%02d.pkl" % Constants.TOPIC_MODEL_NUM_TOPICS
+
+            if os.path.exists(file_path):
+                print('Ensemble topic model already exists')
+                return
+
+            self.export_to_text(records)
+            topic_ensemble_caller.run_local_parse_directory()
+            topic_ensemble_caller.run_generate_kfold()
+            topic_ensemble_caller.run_combine_nmf()
+
+    @staticmethod
+    def find_topic_distribution(records):
+        print('%s: finding topic distributions'
+              % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        if Constants.TOPIC_MODEL_TYPE == 'ensemble':
+            topic_extractor = NmfTopicExtractor(records)
+            topic_extractor.load_trained_data()
+            topic_extractor.assign_topic_distribution()
+
+    def separate_recsys_topic_model_records2(self):
+
+        print('%s: separate_recsys_topic_model_records' %
+              time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        num_records = len(self.records)
+        topic_model_records = self.records[:num_records/2]
+        recsys_records = self.records[num_records/2:]
+
+        self.create_topic_model(topic_model_records)
+
+        if os.path.exists(Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE):
+            print('Recsys topic records have already been generated')
+            return
+
+        self.find_topic_distribution(recsys_records)
+        ETLUtils.save_json_file(
+            Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE, recsys_records)
+
     def separate_recsys_topic_model_records(self):
 
         print('%s: separate_recsys_topic_model_records' %
@@ -534,7 +580,8 @@ class ReviewsPreprocessor:
         with open('/Users/fpena/tmp/arff_test.arff', 'w') as arff_file:
             arff.dump(arff_data, arff_file)
 
-    def export_to_text(self):
+    @staticmethod
+    def export_to_text(records):
         print('%s: Exporting bag-of-words to text files' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -548,7 +595,7 @@ class ReviewsPreprocessor:
 
         topic_model_target = Constants.TOPIC_MODEL_TARGET_REVIEWS
 
-        for record in self.records:
+        for record in records:
 
             if record[Constants.TOPIC_MODEL_TARGET_FIELD] != \
                     topic_model_target and topic_model_target is not None:
@@ -597,9 +644,9 @@ class ReviewsPreprocessor:
             self.export_records()
 
         self.count_specific_generic_ratio()
-        self.export_to_triplet()
-        self.export_to_arff()
-        self.export_to_text()
+        # self.export_to_triplet()
+        # self.export_to_arff()
+        # self.export_to_text()
 
         rda = ReviewsDatasetAnalyzer(self.records)
         print('density: %f' % rda.calculate_density_approx())
@@ -613,7 +660,8 @@ class ReviewsPreprocessor:
         print('total items', len(item_ids))
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-            self.separate_recsys_topic_model_records()
+            self.separate_recsys_topic_model_records2()
+            # self.separate_recsys_topic_model_records()
 
 
 def main():
