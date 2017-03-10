@@ -7,6 +7,8 @@ import subprocess
 import time
 import uuid
 
+import shutil
+
 from utils.constants import Constants, CODE_FOLDER
 
 PYTHON_COMMAND = 'python'
@@ -198,6 +200,8 @@ def run_combine_nmf():
     p = subprocess.Popen(
         command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
+
+    shutil.rmtree(BASE_FOLDER + get_topic_model_prefix())
 
 
 def main():
