@@ -100,9 +100,11 @@ class Constants(object):
     DATASET_FOLDER = '/home/fpena/data/'
     LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
     TOPIC_ENSEMBLE_FOLDER = '/home/fpena/topic-ensemble/'
+    CARSKIT_FOLDER = '/home/fpena/CARSKit/'
     # DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
     # LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
     # TOPIC_ENSEMBLE_FOLDER = '/Users/fpena/tmp/topic-ensemble/'
+    # CARSKIT_FOLDER = '/Users/fpena/tmp/CARSKit/'
     GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
 
     _properties = load_properties()
@@ -174,6 +176,9 @@ class Constants(object):
     NMF_REGULARIZATION = _properties['nmf_regularization']
     NMF_REGULARIZATION_RATIO = _properties['nmf_regularization_ratio']
     TOPIC_MODEL_FOLDS = _properties['topic_model_folds']
+    CARSKIT_RECOMMENDERS = _properties['carskit_recommenders']
+    CARSKIT_NOMINAL_FORMAT = _properties['carskit_nominal_format']
+    CARSKIT_ITEM_RANKING = _properties['carskit_item_ranking']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -215,6 +220,7 @@ class Constants(object):
     TOPIC_MODEL_FILE = CACHE_FOLDER + 'topic_model_' +\
         ITEM_TYPE + '.pkl'
     ENSEMBLED_RESULTS_FOLDER = None
+    CARSKIT_RATINGS_FOLDER = None
 
     @classmethod
     def get_properties_copy(cls):
@@ -322,6 +328,12 @@ class Constants(object):
         Constants.NMF_REGULARIZATION_RATIO = \
             Constants._properties['nmf_regularization_ratio']
         Constants.TOPIC_MODEL_FOLDS = Constants._properties['topic_model_folds']
+        Constants.CARSKIT_RECOMMENDERS = \
+            Constants._properties['carskit_recommenders']
+        Constants.CARSKIT_NOMINAL_FORMAT = \
+            Constants._properties['carskit_nominal_format']
+        Constants.CARSKIT_ITEM_RANKING = \
+            Constants._properties['carskit_item_ranking']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
@@ -387,6 +399,9 @@ class Constants(object):
         Constants.ENSEMBLED_RESULTS_FOLDER = Constants.generate_file_name(
             'topic_model', '', Constants.ENSEMBLE_FOLDER, None, None,
             True, True)[:-1] + '/'
+        Constants.CARSKIT_RATINGS_FOLDER = Constants.generate_file_name(
+            'carskit_ratings', '', Constants.CACHE_FOLDER + 'carskit/', None,
+            None, True, True, True)[:-1] + '/'
 
     @staticmethod
     def print_properties():
@@ -395,7 +410,7 @@ class Constants(object):
     @staticmethod
     def generate_file_name(
             name, extension, folder, cycle_index, fold_index, uses_context,
-            is_etl=False):
+            is_etl=False, uses_carskit=False):
 
         prefix = Constants.ITEM_TYPE + '_' + name
         context_suffix = ''
@@ -406,6 +421,8 @@ class Constants(object):
                 '_iterations-' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
                 '_passes-' + str(Constants.TOPIC_MODEL_PASSES) + \
                 '_targetreview-' + str(Constants.TOPIC_MODEL_TARGET_REVIEWS)
+        if uses_carskit:
+            context_suffix += '_ck-' + Constants.CARSKIT_NOMINAL_FORMAT
         suffix = context_suffix + \
             ('' if Constants.LANGUAGE is None
              else '_lang-' + Constants.LANGUAGE) + \
@@ -472,3 +489,6 @@ Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE = \
 Constants.ENSEMBLED_RESULTS_FOLDER = Constants.generate_file_name(
     'topic_model', '', Constants.ENSEMBLE_FOLDER, None, None,
     True, True)[:-1] + '/'
+Constants.CARSKIT_RATINGS_FOLDER = Constants.generate_file_name(
+    'carskit_ratings', '', Constants.CACHE_FOLDER + 'carskit/', None,
+    None, True, True, True)[:-1] + '/'

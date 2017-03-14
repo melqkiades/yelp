@@ -10,7 +10,7 @@ num_cycles: 1
 context_extractor_alpha: 0.0
 context_extractor_beta: 1.0
 context_extractor_epsilon: 0.05
-topic_model_num_topics: 30
+topic_model_num_topics: 10
 topic_model_passes: 10
 topic_model_iterations: 100
 lda_multicore: False
@@ -72,3 +72,6 @@ topic_model_target_reviews: specific
 nmf_regularization: 0.0
 nmf_regularization_ratio: 0.0
 topic_model_folds: 10
+carskit_recommenders: slim
+carskit_nominal_format: top_words
+carskit_item_ranking: True
