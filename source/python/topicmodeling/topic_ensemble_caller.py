@@ -13,12 +13,15 @@ from utils.constants import Constants, CODE_FOLDER
 
 PYTHON_COMMAND = 'python'
 BASE_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'base/'
+CORPUS_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'corpus/'
 
 
 # TODO: Consider moving this to the Constants class
-def get_dataset_file_name():
-    return Constants.CACHE_FOLDER + Constants.ITEM_TYPE + '_' + \
-        Constants.TOPIC_MODEL_TARGET_REVIEWS + '_document_term_matrix'
+DATASET_FILE_NAME = Constants.generate_file_name(
+    'topic_ensemble_corpus', '', CORPUS_FOLDER, None, None, False)[:-1]
+# def get_dataset_file_name():
+#     return Constants.CACHE_FOLDER + Constants.ITEM_TYPE + '_' + \
+#         Constants.TOPIC_MODEL_TARGET_REVIEWS + '_document_term_matrix'
 
 
 # TODO: Consider moving this to the Constants class
@@ -37,7 +40,7 @@ def run_parse_directory():
         parse_directory_command,
         Constants.GENERATED_TEXT_FILES_FOLDER,
         '-o',
-        get_dataset_file_name(),
+        DATASET_FILE_NAME,
         '--tfidf',
         '--norm',
     ]
@@ -65,7 +68,7 @@ def run_local_parse_directory():
         parse_directory_command,
         Constants.GENERATED_TEXT_FILES_FOLDER,
         '-o',
-        get_dataset_file_name(),
+        DATASET_FILE_NAME,
         '--tfidf',
         '--norm',
     ]
@@ -101,7 +104,7 @@ def run_generate_nmf():
     command = [
         PYTHON_COMMAND,
         generate_nmf_command,
-        get_dataset_file_name() + '.pkl',
+        DATASET_FILE_NAME + '.pkl',
         '-k',
         str(Constants.TOPIC_MODEL_NUM_TOPICS),
         '-r',
@@ -140,7 +143,7 @@ def run_generate_kfold():
     command = [
         PYTHON_COMMAND,
         generate_nmf_command,
-        get_dataset_file_name() + '.pkl',
+        DATASET_FILE_NAME + '.pkl',
         '-k',
         str(Constants.TOPIC_MODEL_NUM_TOPICS),
         '-r',
@@ -180,7 +183,7 @@ def run_combine_nmf():
     command = [
         PYTHON_COMMAND,
         generate_nmf_command,
-        get_dataset_file_name() + '.pkl',
+        DATASET_FILE_NAME + '.pkl',
         ]
     command.extend(base_files)
     command.extend([

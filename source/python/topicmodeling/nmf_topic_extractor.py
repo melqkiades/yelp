@@ -42,9 +42,11 @@ class NmfTopicExtractor:
         self.document_topic_matrix = W
         self.terms = terms
 
-        tfidf_file_path = Constants.CACHE_FOLDER + Constants.ITEM_TYPE + '_' + \
-            Constants.TOPIC_MODEL_TARGET_REVIEWS + \
-            '_document_term_matrix_tfidf.pkl'
+        topic_model_corpus_folder = \
+            Constants.CACHE_FOLDER + 'topic_models/corpus/'
+        tfidf_file_path = Constants.generate_file_name(
+            'topic_ensemble_corpus', '', topic_model_corpus_folder,
+            None, None, False)[:-1] + '_tfidf.pkl'
 
         self.tfidf_vectorizer = load_tfidf(tfidf_file_path)
 

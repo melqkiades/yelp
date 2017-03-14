@@ -49,8 +49,7 @@ def build_topic_model_from_corpus(corpus, dictionary):
     return topic_model
 
 
-def update_reviews_with_topics(topic_model, corpus_list, reviews,
-                               minimum_probability):
+def update_reviews_with_topics(topic_model, corpus_list, reviews):
     """
 
     :type minimum_probability: float
@@ -64,7 +63,7 @@ def update_reviews_with_topics(topic_model, corpus_list, reviews,
 
     for review, corpus in zip(reviews, corpus_list):
         review[Constants.TOPICS_FIELD] =\
-            topic_model.get_document_topics(corpus, minimum_probability)
+            topic_model.get_document_topics(corpus)
 
 
 def calculate_topic_weighted_frequency(topic, reviews):

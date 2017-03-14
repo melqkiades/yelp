@@ -30,6 +30,7 @@ from etl import ETLUtils
 from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
 from nlp import nlp_utils
 from topicmodeling import topic_ensemble_caller
+from topicmodeling.context import lda_context_utils
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
 from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
@@ -396,49 +397,20 @@ class ReviewsPreprocessor:
                     ('neutral' if rating >= 3.0 else 'negative')
                 record[Constants.TOPIC_MODEL_TARGET_FIELD] = sentiment
 
-    def create_topic_model(self, records):
-
-        if Constants.TOPIC_MODEL_TYPE == 'ensemble':
-            file_path = Constants.ENSEMBLED_RESULTS_FOLDER + \
-                "factors_final_k%02d.pkl" % Constants.TOPIC_MODEL_NUM_TOPICS
-
-            if os.path.exists(file_path):
-                print('Ensemble topic model already exists')
-                return
-
-            self.export_to_text(records)
-            topic_ensemble_caller.run_local_parse_directory()
-            topic_ensemble_caller.run_generate_kfold()
-            topic_ensemble_caller.run_combine_nmf()
-
     @staticmethod
     def find_topic_distribution(records):
         print('%s: finding topic distributions'
               % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-        if Constants.TOPIC_MODEL_TYPE == 'ensemble':
+        if Constants.TOPIC_MODEL_TYPE == 'lda':
+            topic_model = topic_model_creator.load_topic_model(None, None)
+            corpus = [record[Constants.CORPUS_FIELD] for record in records]
+            lda_context_utils.update_reviews_with_topics(
+                topic_model, corpus, records)
+        elif Constants.TOPIC_MODEL_TYPE == 'ensemble':
             topic_extractor = NmfTopicExtractor(records)
             topic_extractor.load_trained_data()
             topic_extractor.assign_topic_distribution()
-
-    def separate_recsys_topic_model_records2(self):
-
-        print('%s: separate_recsys_topic_model_records' %
-              time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-        num_records = len(self.records)
-        topic_model_records = self.records[:num_records/2]
-        recsys_records = self.records[num_records/2:]
-
-        self.create_topic_model(topic_model_records)
-
-        if os.path.exists(Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE):
-            print('Recsys topic records have already been generated')
-            return
-
-        self.find_topic_distribution(recsys_records)
-        ETLUtils.save_json_file(
-            Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE, recsys_records)
 
     def separate_recsys_topic_model_records(self):
 
@@ -448,22 +420,16 @@ class ReviewsPreprocessor:
         num_records = len(self.records)
         topic_model_records = self.records[:num_records/2]
         recsys_records = self.records[num_records/2:]
-        topic_model = topic_model_creator.create_topic_model(
-            topic_model_records, None, None)
 
-        if self.use_cache and os.path.exists(
-                Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE):
-            print('Recsys contextual records have already been generated')
+        topic_model_creator.train_topic_model(topic_model_records)
+
+        if os.path.exists(Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE):
+            print('Recsys topic records have already been generated')
             return
 
-        topic_model.find_contextual_topics(recsys_records)
+        self.find_topic_distribution(recsys_records)
         ETLUtils.save_json_file(
-            Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE, recsys_records)
-
-        topics_file_path = Constants.generate_file_name(
-            'context_topics', 'json', Constants.CACHE_FOLDER, None, None, True)
-        ETLUtils.save_json_file(
-            topics_file_path, [dict(topic_model.context_rich_topics)])
+            Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE, recsys_records)
 
     def drop_unnecessary_fields(self):
         print(
@@ -533,79 +499,6 @@ class ReviewsPreprocessor:
         with open(Constants.RATINGS_FILE, 'w') as f:
             numpy.savetxt(f, matrix, fmt='%d')
 
-    def export_to_arff(self):
-        print('%s: export to ARFF' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-        attributes = [
-            ('user', 'NUMERIC'),
-            ('item', 'NUMERIC'),
-            ('rating', 'NUMERIC'),
-            # ('time', 'NUMERIC'),
-            ('location', 'STRING'),
-        ]
-
-        data = []
-        user_id_map = {}
-        item_id_map = {}
-        user_index = 0
-        item_index = 0
-
-        for record in self.records:
-            user_id = record[Constants.USER_ID_FIELD]
-            if user_id not in user_id_map:
-                user_id_map[user_id] = user_index
-                user_index += 1
-            item_id = record[Constants.ITEM_ID_FIELD]
-            if item_id not in item_id_map:
-                item_id_map[item_id] = item_index
-                item_index += 1
-
-        for record in self.records:
-            row = [
-                user_id_map[record[Constants.USER_ID_FIELD]],
-                item_id_map[record[Constants.ITEM_ID_FIELD]],
-                record[Constants.RATING_FIELD],
-                # numpy.random.randint(1, 11),
-                'sdg'
-            ]
-            data.append(row)
-
-        arff_data = {
-            'attributes': attributes,
-            'data': data,
-            'description': Constants.ITEM_TYPE + '_dataset',
-            'relation': 'user-item'
-        }
-
-        with open('/Users/fpena/tmp/arff_test.arff', 'w') as arff_file:
-            arff.dump(arff_data, arff_file)
-
-    @staticmethod
-    def export_to_text(records):
-        print('%s: Exporting bag-of-words to text files' %
-              time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-        if not os.path.isdir(Constants.TEXT_FILES_FOLDER):
-            os.mkdir(Constants.TEXT_FILES_FOLDER)
-
-        folder = Constants.GENERATED_TEXT_FILES_FOLDER
-        if os.path.isdir(folder):
-            shutil.rmtree(folder)
-        os.mkdir(folder)
-
-        topic_model_target = Constants.TOPIC_MODEL_TARGET_REVIEWS
-
-        for record in records:
-
-            if record[Constants.TOPIC_MODEL_TARGET_FIELD] != \
-                    topic_model_target and topic_model_target is not None:
-                continue
-            file_name = \
-                folder + 'bow_' + record[Constants.REVIEW_ID_FIELD] + '.txt'
-
-            with codecs.open(file_name, 'w', encoding="utf-8-sig") as text_file:
-                text_file.write(" ".join(record[Constants.BOW_FIELD]))
-
     def full_cycle(self):
         Constants.print_properties()
         print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -645,8 +538,6 @@ class ReviewsPreprocessor:
 
         self.count_specific_generic_ratio()
         # self.export_to_triplet()
-        # self.export_to_arff()
-        # self.export_to_text()
 
         rda = ReviewsDatasetAnalyzer(self.records)
         print('density: %f' % rda.calculate_density_approx())
@@ -660,8 +551,7 @@ class ReviewsPreprocessor:
         print('total items', len(item_ids))
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-            self.separate_recsys_topic_model_records2()
-            # self.separate_recsys_topic_model_records()
+            self.separate_recsys_topic_model_records()
 
 
 def main():

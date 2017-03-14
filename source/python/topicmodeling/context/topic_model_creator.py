@@ -1,14 +1,18 @@
 import argparse
+import codecs
 import os
 import random
 import time
-import traceback
-from multiprocessing import Pool
 import cPickle as pickle
 
 from os.path import expanduser
 
+import shutil
+from gensim import corpora
+from gensim.models import ldamodel
+
 from etl import ETLUtils
+from topicmodeling import topic_ensemble_caller
 from topicmodeling.context.lda_based_context import LdaBasedContext
 from topicmodeling.context.nmf_context_extractor import NmfContextExtractor
 from utils import constants
@@ -37,6 +41,43 @@ def create_topic_model(records, cycle_index, fold_index, check_exists=True):
         pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
 
     return topic_model
+
+
+def train_topic_model(records):
+    print('%s: train topic model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    if Constants.TOPIC_MODEL_TYPE == 'lda':
+
+        topic_model_file_path = \
+            Constants.generate_file_name(
+                'topic_model', 'pkl', Constants.CACHE_FOLDER, None, None, True)
+        if os.path.exists(topic_model_file_path):
+            print('WARNING: Topic model already exists')
+
+        corpus = \
+            [record[Constants.CORPUS_FIELD] for record in records]
+        dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
+        topic_model = ldamodel.LdaModel(
+            corpus, id2word=dictionary,
+            num_topics=Constants.TOPIC_MODEL_NUM_TOPICS,
+            passes=Constants.TOPIC_MODEL_PASSES,
+            iterations=Constants.TOPIC_MODEL_ITERATIONS)
+
+        with open(topic_model_file_path, 'wb') as write_file:
+            pickle.dump(topic_model, write_file, pickle.HIGHEST_PROTOCOL)
+
+    elif Constants.TOPIC_MODEL_TYPE == 'ensemble':
+        file_path = Constants.ENSEMBLED_RESULTS_FOLDER + \
+                    "factors_final_k%02d.pkl" % Constants.TOPIC_MODEL_NUM_TOPICS
+
+        if os.path.exists(file_path):
+            print('Ensemble topic model already exists')
+            return
+
+        export_to_text(records)
+        topic_ensemble_caller.run_local_parse_directory()
+        topic_ensemble_caller.run_generate_kfold()
+        topic_ensemble_caller.run_combine_nmf()
 
 
 def train_context_extractor(records, stable=True):
@@ -117,88 +158,6 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
     return create_topic_model(train_records, cycle_index, fold_index, check_exists)
 
 
-def create_topic_models():
-
-    Constants.print_properties()
-    print('%s: Start' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-
-    records = ETLUtils.load_json_file(Constants.RECORDS_FILE)
-
-    utilities.plant_seeds()
-    num_cycles = Constants.NUM_CYCLES
-    num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
-    split = 1 - (1/float(num_folds))
-
-    for i in range(num_cycles):
-
-        print('\n\nCycle: %d/%d' % ((i+1), num_cycles))
-
-        if Constants.SHUFFLE_DATA:
-            random.shuffle(records)
-
-        train_records_list = []
-
-        for j in range(num_folds):
-
-            cv_start = float(j) / num_folds
-
-            train_records, test_records =\
-                ETLUtils.split_train_test(records, split=split, start=cv_start)
-            train_records_list.append(train_records)
-
-        args = zip(
-            train_records_list,
-            [i] * Constants.CROSS_VALIDATION_NUM_FOLDS,
-            range(Constants.CROSS_VALIDATION_NUM_FOLDS)
-        )
-
-        parallel_context_top_n(args)
-
-        # lda_based_context = train_context_extractor(train_records)
-        # create_topic_model(i+1, j+1)
-
-
-def create_topic_model_wrapper(args):
-    try:
-        return create_topic_model(*args)
-    except Exception as e:
-        print('Caught exception in worker thread')
-
-        # This prints the type, value, and stack trace of the
-        # current exception being handled.
-        traceback.print_exc()
-
-        print()
-        raise e
-
-
-def parallel_context_top_n(args):
-
-    pool_start_time = time.time()
-    pool = Pool(2)
-    print('Total CPUs: %d' % pool._processes)
-
-    num_iterations = len(args)
-    # results_list = pool.map(full_cycle_wrapper, range(num_iterations))
-    results_list = []
-    for i, result in enumerate(
-            pool.imap_unordered(create_topic_model_wrapper, args),
-            1):
-        results_list.append(result)
-        # sys.stderr.write('\rdone {0:%}'.format(float(i)/num_iterations))
-        print('%s: Progress: %2.1f%% (%d/%d)' %
-              (time.strftime("%Y/%m/%d-%H:%M:%S"),
-               float(i)/num_iterations*100, i, num_iterations))
-    pool.close()
-    pool.join()
-
-    pool_end_time = time.time()
-    total_pool_time = pool_end_time - pool_start_time
-
-    average_cycle_time = total_pool_time / num_iterations
-    print('average cycle time: %d seconds' % average_cycle_time)
-
-
 def generate_file_with_commands():
     print('%s: Generating file with commands' %
           time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -222,6 +181,32 @@ def generate_file_with_commands():
     with open(commands_file, "w") as write_file:
         for command in command_list:
             write_file.write("%s\n" % command)
+
+
+def export_to_text(records):
+    print('%s: Exporting bag-of-words to text files' %
+          time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    if not os.path.isdir(Constants.TEXT_FILES_FOLDER):
+        os.mkdir(Constants.TEXT_FILES_FOLDER)
+
+    folder = Constants.GENERATED_TEXT_FILES_FOLDER
+    if os.path.isdir(folder):
+        shutil.rmtree(folder)
+    os.mkdir(folder)
+
+    topic_model_target = Constants.TOPIC_MODEL_TARGET_REVIEWS
+
+    for record in records:
+
+        if record[Constants.TOPIC_MODEL_TARGET_FIELD] != \
+                topic_model_target and topic_model_target is not None:
+            continue
+        file_name = \
+            folder + 'bow_' + record[Constants.REVIEW_ID_FIELD] + '.txt'
+
+        with codecs.open(file_name, 'w', encoding="utf-8-sig") as text_file:
+            text_file.write(" ".join(record[Constants.BOW_FIELD]))
 
 
 def main():
