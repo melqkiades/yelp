@@ -58,7 +58,7 @@ class CarsKitExporter:
         """
         self.records = ETLUtils.load_json_file(
             Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE)
-        self.topic_extractor = NmfTopicExtractor(None)
+        self.topic_extractor = NmfTopicExtractor()
         self.topic_extractor.load_trained_data()
 
     def print_topics(self):
