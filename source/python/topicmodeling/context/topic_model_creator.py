@@ -53,6 +53,7 @@ def train_topic_model(records):
                 'topic_model', 'pkl', Constants.CACHE_FOLDER, None, None, True)
         if os.path.exists(topic_model_file_path):
             print('WARNING: Topic model already exists')
+            return
 
         corpus = \
             [record[Constants.CORPUS_FIELD] for record in records]
