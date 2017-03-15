@@ -13,9 +13,11 @@ from pandas import DataFrame
 
 from etl import ETLUtils
 from topicmodeling.context import topic_model_creator
+from topicmodeling.context.context_extractor import ContextExtractor
 from topicmodeling.hungarian import HungarianError
 from topicmodeling.jaccard_similarity import AverageJaccard
 from topicmodeling.jaccard_similarity import RankingSetAgreement
+from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
 from utils import utilities
 from utils.constants import Constants
 from utils.utilities import grouped_hotel_context_words, \
@@ -82,23 +84,32 @@ def analyze_topics(include_stability=True):
     start_time = time.time()
 
     utilities.plant_seeds()
-    records = ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
-
-    if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
-        num_records = len(records)
-        records = records[:num_records / 2]
+    records = \
+        ETLUtils.load_json_file(Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE)
     print('num_reviews', len(records))
+    num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
+    num_terms = Constants.TOPIC_MODEL_STABILITY_NUM_TERMS
 
-    context_extractor =\
-        topic_model_creator.create_topic_model(records, None, None)
+    if Constants.TOPIC_MODEL_TYPE == 'ensemble':
+        topic_model = NmfTopicExtractor()
+        topic_model.load_trained_data()
+        topic_model_string = topic_model.print_topic_model(num_terms)
+    elif Constants.TOPIC_MODEL_TYPE == 'lda':
+        topic_model = topic_model_creator.load_topic_model(None, None)
+        topic_model_string = [
+            topic_model.print_topic(topic_id, num_terms)
+            for topic_id in range(num_topics)
+        ]
+    context_extractor = ContextExtractor(records)
+    context_extractor.separate_reviews()
+    context_extractor.get_context_rich_topics()
 
     topic_data = []
 
-    for topic in range(Constants.TOPIC_MODEL_NUM_TOPICS):
+    for topic in range(num_topics):
         result = {}
         result['topic_id'] = topic
-        result.update(split_topic(context_extractor.print_topic_model(
-            num_terms=Constants.TOPIC_MODEL_STABILITY_NUM_TERMS)[topic]))
+        result.update(split_topic(topic_model_string[topic]))
         result['ratio'] = context_extractor.topic_ratio_map[topic]
         result['weighted_frequency'] = \
             context_extractor.topic_weighted_frequency_map[topic]
@@ -418,7 +429,7 @@ def manual_main():
     print(json_file_name)
     print(csv_file_name)
 
-    num_topics_list = range(2, 51)
+    num_topics_list = [30]
     num_cycles = len(num_topics_list)
     cycle_index = 1
     for num_topics in num_topics_list:
@@ -431,7 +442,7 @@ def manual_main():
 
         Constants.update_properties(new_dict)
         results = Constants.get_properties_copy()
-        results.update(analyze_topics(include_stability=True))
+        results.update(analyze_topics(include_stability=False))
 
         write_results_to_csv(csv_file_name, results)
         write_results_to_json(json_file_name, results)
@@ -488,11 +499,11 @@ def write_results_to_json(file_name, results):
             json.dump(results, f)
             f.write('\n')
 
-# start = time.time()
-# manual_main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+start = time.time()
+manual_main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
 
 
 # if __name__ == '__main__':
