@@ -24,9 +24,8 @@ def load_tfidf(in_path):
 
 class NmfTopicExtractor:
 
-    def __init__(self, records):
+    def __init__(self):
 
-        self.records = records
         self.num_topics = Constants.TOPIC_MODEL_NUM_TOPICS
         self.tfidf_vectorizer = None
         self.document_topic_matrix = None
@@ -57,10 +56,10 @@ class NmfTopicExtractor:
             str(self.topic_term_matrix.shape)
         )
 
-    def assign_topic_distribution(self):
+    def update_reviews_with_topics(self, records):
 
         corpora = \
-            [' '.join(record[Constants.BOW_FIELD]) for record in self.records]
+            [' '.join(record[Constants.BOW_FIELD]) for record in records]
         document_term_matrix = \
             self.tfidf_vectorizer.transform(corpora)
         document_topic_matrix, _, _ = nmf.non_negative_factorization(
@@ -68,8 +67,8 @@ class NmfTopicExtractor:
             n_components=self.num_topics, regularization='both',
             max_iter=Constants.TOPIC_MODEL_ITERATIONS, update_H=False)
 
-        for record_index in range(len(self.records)):
-            record = self.records[record_index]
+        for record_index in range(len(records)):
+            record = records[record_index]
             record[Constants.TOPICS_FIELD] = \
                 [(i, document_topic_matrix[record_index][i])
                  for i in range(self.num_topics)]

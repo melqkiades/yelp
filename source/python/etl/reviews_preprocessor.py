@@ -6,9 +6,7 @@ import time
 
 import operator
 
-import arff
 import langdetect
-import shutil
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
 import numpy
@@ -29,7 +27,6 @@ from unbalanced_dataset.over_sampling import SMOTE
 from etl import ETLUtils
 from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
 from nlp import nlp_utils
-from topicmodeling import topic_ensemble_caller
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
@@ -408,9 +405,9 @@ class ReviewsPreprocessor:
             lda_context_utils.update_reviews_with_topics(
                 topic_model, corpus, records)
         elif Constants.TOPIC_MODEL_TYPE == 'ensemble':
-            topic_extractor = NmfTopicExtractor(records)
+            topic_extractor = NmfTopicExtractor()
             topic_extractor.load_trained_data()
-            topic_extractor.assign_topic_distribution()
+            topic_extractor.update_reviews_with_topics(records)
 
     def separate_recsys_topic_model_records(self):
 
