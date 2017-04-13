@@ -74,10 +74,12 @@ class NmfTopicExtractor:
                  for i in range(self.num_topics)]
 
     def print_topic(self, topic_index, num_terms=10):
-        top_indices = numpy.argsort(
-            self.topic_term_matrix[topic_index, :])[::-1][0:num_terms]
+        normalized_topic = self.topic_term_matrix[topic_index, :] / numpy.sum(
+            self.topic_term_matrix[topic_index, :])
+        # not_normalized_topic = self.topic_term_matrix[topic_index, :]
+        top_indices = numpy.argsort(normalized_topic)[::-1][0:num_terms]
         term_ranking = [
-            '%.3f*%s' % (self.topic_term_matrix[topic_index][i], self.terms[i])
+            '%.3f*%s' % (normalized_topic[i], self.terms[i])
             for i in top_indices
         ]
 
