@@ -204,7 +204,7 @@ def export_to_text(records):
                 topic_model_target and topic_model_target is not None:
             continue
         file_name = \
-            folder + 'bow_' + record[Constants.REVIEW_ID_FIELD] + '.txt'
+            folder + 'bow_' + str(record[Constants.REVIEW_ID_FIELD]) + '.txt'
 
         with codecs.open(file_name, 'w', encoding="utf-8-sig") as text_file:
             text_file.write(" ".join(record[Constants.BOW_FIELD]))
