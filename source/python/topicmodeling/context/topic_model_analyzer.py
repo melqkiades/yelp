@@ -139,14 +139,17 @@ def analyze_topics(include_stability=True):
         stability = calculate_topic_stability(records, sample_ratio).mean()
     scores['stability'] = stability
 
-    separation_score =\
-        (high_ratio_mean_score / low_ratio_mean_score)\
-        if low_ratio_mean_score != 0\
-        else 'N/A'
-    rank_separation_score =\
-        (high_rank_ratio_mean_score / low_rank_ratio_mean_score)\
-        if low_ratio_mean_score != 0\
-        else 'N/A'
+    # separation_score =\
+    #     (high_ratio_mean_score / low_ratio_mean_score)\
+    #     if low_ratio_mean_score != 0\
+    #     else 'N/A'
+    # rank_separation_score =\
+    #     (high_rank_ratio_mean_score / low_rank_ratio_mean_score)\
+    #     if low_rank_ratio_mean_score != 0\
+    #     else 'N/A'
+    gamma = 0.5
+    separation_score = gamma*high_ratio_mean_score + (1 - gamma)*(1-low_ratio_mean_score)
+    rank_separation_score = gamma*high_rank_ratio_mean_score + (1 - gamma)*(1-low_rank_ratio_mean_score)
     joint_separation_score =\
         (high_ratio_mean_score + (1 - low_ratio_mean_score)) / 2
     joint_rank_separation_score =\
@@ -429,7 +432,7 @@ def manual_main():
     print(json_file_name)
     print(csv_file_name)
 
-    num_topics_list = [30]
+    num_topics_list = [Constants.TOPIC_MODEL_NUM_TOPICS]
     num_cycles = len(num_topics_list)
     cycle_index = 1
     for num_topics in num_topics_list:
