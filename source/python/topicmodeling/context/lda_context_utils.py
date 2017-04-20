@@ -65,6 +65,13 @@ def update_reviews_with_topics(topic_model, corpus_list, reviews):
         review[Constants.TOPICS_FIELD] =\
             topic_model.get_document_topics(corpus)
 
+        non_zero_topics = [topic[0] for topic in review[Constants.TOPICS_FIELD]]
+
+        for topic_index in range(Constants.TOPIC_MODEL_NUM_TOPICS):
+            if topic_index not in non_zero_topics:
+                review[Constants.TOPICS_FIELD].insert(
+                    topic_index, [topic_index, 0.0])
+
 
 def calculate_topic_weighted_frequency(topic, reviews):
     """
