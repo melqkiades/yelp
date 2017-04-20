@@ -1,4 +1,3 @@
-import codecs
 import os
 import random
 
@@ -29,6 +28,7 @@ from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
 from nlp import nlp_utils
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import topic_model_creator
+from topicmodeling.context.context_extractor import ContextExtractor
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
 from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
 from tripadvisor.fourcity import extractor
@@ -92,14 +92,18 @@ class ReviewsPreprocessor:
         new_records = []
 
         for record in self.records:
+
+            user_id = record['user_id']
+            item_id = record['business_id']
+
             new_records.append(
                 {
                     Constants.REVIEW_ID_FIELD: record['review_id'],
-                    Constants.USER_ID_FIELD: record['user_id'],
-                    Constants.ITEM_ID_FIELD: record['business_id'],
+                    Constants.USER_ID_FIELD: user_id,
+                    Constants.ITEM_ID_FIELD: item_id,
                     Constants.RATING_FIELD: record['stars'],
                     Constants.TEXT_FIELD: record['text'],
-
+                    Constants.USER_ITEM_KEY_FIELD: '%s|%s' % (str(user_id), str(item_id)),
                 }
             )
 
@@ -109,18 +113,45 @@ class ReviewsPreprocessor:
         new_records = []
 
         for record in self.records:
+
+            user_id = record['author']['id']
+            item_id = record['offering_id']
+
             new_records.append(
                 {
                     Constants.REVIEW_ID_FIELD: record['id'],
-                    Constants.USER_ID_FIELD: record['author']['id'],
-                    Constants.ITEM_ID_FIELD: record['offering_id'],
+                    Constants.USER_ID_FIELD: user_id,
+                    Constants.ITEM_ID_FIELD: item_id,
                     Constants.RATING_FIELD: record['ratings']['overall'],
                     Constants.TEXT_FIELD: record['text'],
-
+                    Constants.USER_ITEM_KEY_FIELD: '%s|%s' % (user_id, item_id),
                 }
             )
 
         self.records = new_records
+
+    def add_integer_ids(self):
+        users_map = {}
+        items_map = {}
+        user_index = 0
+        item_index = 0
+
+        for record in self.records:
+            user_id = record[Constants.USER_ID_FIELD]
+            item_id = record[Constants.ITEM_ID_FIELD]
+
+            if user_id not in users_map:
+                users_map[user_id] = user_index
+                user_index += 1
+
+            if item_id not in items_map:
+                items_map[item_id] = item_index
+                item_index += 1
+
+            record[Constants.USER_INTEGER_ID_FIELD] = users_map[user_id]
+            record[Constants.ITEM_INTEGER_ID_FIELD] = items_map[item_id]
+            record[Constants.USER_ITEM_INTEGER_KEY_FIELD] = \
+                '%d|%d' % (users_map[user_id], items_map[item_id])
 
     def tag_reviews_language(self):
 
@@ -409,24 +440,90 @@ class ReviewsPreprocessor:
             topic_extractor.load_trained_data()
             topic_extractor.update_reviews_with_topics(records)
 
+        if Constants.TOPIC_MODEL_NORMALIZE:
+            ReviewsPreprocessor.normalize_topics(records)
+
+    @staticmethod
+    def normalize_topics(records):
+        print('%s: normalizing topics' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        num_topics = len(records[0][Constants.TOPICS_FIELD])
+
+        for record in records:
+            topics = record[Constants.TOPICS_FIELD]
+            normalized_topics = []
+
+            total_topics_weight = 0.0
+            for topic in topics:
+                topic_weight = topic[1]
+                total_topics_weight += topic_weight
+
+            if total_topics_weight > 0:
+                for topic in topics:
+                    normalized_topics.append(
+                        (topic[0], topic[1] / total_topics_weight))
+            else:
+                for topic in topics:
+                    normalized_topics.append(
+                        (topic[0], 1.0 / num_topics))
+
+            record[Constants.TOPICS_FIELD] = normalized_topics
+
+    @staticmethod
+    def update_context_topics(records):
+        print('%s: updating records with contextual information'
+              % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        context_extractor = ContextExtractor(records)
+        context_extractor.separate_reviews()
+        context_extractor.get_context_rich_topics()
+        context_extractor.find_contextual_topics(records)
+
     def separate_recsys_topic_model_records(self):
 
         print('%s: separate_recsys_topic_model_records' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
 
         num_records = len(self.records)
-        topic_model_records = self.records[:num_records/2]
-        recsys_records = self.records[num_records/2:]
+        topic_model_records = self.records[:num_records / 2]
+
+        if not Constants.USE_CONTEXT:
+            recsys_records = self.records[num_records / 2:]
+
+            file_name = \
+                Constants.generate_file_name(
+                    'recsys_contextual_records', 'json', Constants.CACHE_FOLDER,
+                    None, None, False, True)
+
+            print('Records without context file: %s' % file_name)
+
+            for record in recsys_records:
+                record[Constants.CONTEXT_TOPICS_FIELD] = {'na': 1.0}
+
+            ETLUtils.save_json_file(file_name, recsys_records)
+            return
 
         topic_model_creator.train_topic_model(topic_model_records)
 
         if os.path.exists(Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE):
             print('Recsys topic records have already been generated')
-            return
+            recsys_records = ETLUtils.load_json_file(
+                Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE)
+        else:
+            recsys_records = self.records[num_records / 2:]
+            self.find_topic_distribution(recsys_records)
+            ETLUtils.save_json_file(
+                Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE, recsys_records)
 
-        self.find_topic_distribution(recsys_records)
-        ETLUtils.save_json_file(
-            Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE, recsys_records)
+        if os.path.exists(Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE):
+            print('Recsys topic records have already been generated')
+            print(Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE)
+        else:
+            self.update_context_topics(recsys_records)
+            ETLUtils.save_json_file(
+                Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE,
+                recsys_records
+            )
 
     def drop_unnecessary_fields(self):
         print(
@@ -517,6 +614,7 @@ class ReviewsPreprocessor:
             elif 'fourcity' in Constants.ITEM_TYPE:
                 self.transform_fourcity_records()
 
+            self.add_integer_ids()
             self.tag_reviews_language()
             self.shuffle_records()
             self.remove_foreign_reviews()
