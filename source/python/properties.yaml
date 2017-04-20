@@ -1,5 +1,5 @@
 # Properties for the recommender system
-business_type: yelp_hotel
+business_type: yelp_restaurant
 fm_review_type:
 topic_model_review_type: specific
 topn_n: 10
@@ -15,7 +15,7 @@ topic_model_passes: 10
 topic_model_iterations: 100
 lda_multicore: False
 libfm_seed: 0
-cross_validation_num_folds: 10
+cross_validation_num_folds: 5
 use_context: True
 shuffle_data: True
 num_cores:
@@ -72,6 +72,7 @@ topic_model_target_reviews: specific
 nmf_regularization: 0.0
 nmf_regularization_ratio: 0.0
 topic_model_folds: 10
-carskit_recommenders: slim
-carskit_nominal_format: top_words
-carskit_item_ranking: True
+carskit_recommenders: globalavg
+carskit_nominal_format: no_context
+carskit_item_ranking: False
+topic_model_normalize: True

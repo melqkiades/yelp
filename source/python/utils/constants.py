@@ -50,6 +50,7 @@ class Constants(object):
     HAS_CONTEXT_FIELD = 'has_context'
     HAS_NO_CONTEXT = 'has_no_context'
     ITEM_ID_FIELD = 'business_id'
+    ITEM_INTEGER_ID_FIELD = 'item_integer_id'
     LANGUAGE_FIELD = 'language'
     LDA_BETA_COMPARISON_OPERATOR_FIELD = 'lda_beta_comparison_operator'
     LDA_MULTICORE_FIELD = 'lda_multicore'
@@ -87,6 +88,9 @@ class Constants(object):
     USE_CONTEXT_FIELD = 'use_context'
     USE_NO_CONTEXT_TOPICS_SUM_FIELD = 'use_no_context_topics_sum'
     USER_ID_FIELD = 'user_id'
+    USER_INTEGER_ID_FIELD = 'user_integer_id'
+    USER_ITEM_KEY_FIELD = 'user_item_key'
+    USER_ITEM_INTEGER_KEY_FIELD = 'user_item_integer_key'
     VOTES_FIELD = 'votes'
 
     SPECIFIC = 'specific'
@@ -179,6 +183,7 @@ class Constants(object):
     CARSKIT_RECOMMENDERS = _properties['carskit_recommenders']
     CARSKIT_NOMINAL_FORMAT = _properties['carskit_nominal_format']
     CARSKIT_ITEM_RANKING = _properties['carskit_item_ranking']
+    TOPIC_MODEL_NORMALIZE = _properties['topic_model_normalize']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -334,11 +339,13 @@ class Constants(object):
             Constants._properties['carskit_nominal_format']
         Constants.CARSKIT_ITEM_RANKING = \
             Constants._properties['carskit_item_ranking']
+        Constants.TOPIC_MODEL_NORMALIZE = \
+            Constants._properties['topic_model_normalize']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
         Constants.TEXT_FILES_FOLDER = Constants.CACHE_FOLDER + 'text_files/'
-        Constants.TOPIC_MODEL_FOLDER = Constants.CACHE_FOLDER + 'topic_model/'
+        Constants.TOPIC_MODEL_FOLDER = Constants.CACHE_FOLDER + 'topic_models/'
         Constants.ENSEMBLE_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'ensemble/'
         Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
             'bow_files', '', Constants.TEXT_FILES_FOLDER, None, None, False,
@@ -372,11 +379,11 @@ class Constants(object):
         Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = \
             Constants.generate_file_name(
                 'recsys_contextual_records', 'json', Constants.CACHE_FOLDER,
-                None, None, True, True)
+                None, None, True, True, normalize_topics=True)
         Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE = \
             Constants.generate_file_name(
                 'recsys_topic_records', 'json', Constants.CACHE_FOLDER,
-                None, None, True, True)
+                None, None, True, True, normalize_topics=True)
         Constants.DICTIONARY_FILE = Constants.generate_file_name(
             'dictionary', 'pkl', Constants.CACHE_FOLDER, None, None, False,
             True)
@@ -400,8 +407,8 @@ class Constants(object):
             'topic_model', '', Constants.ENSEMBLE_FOLDER, None, None,
             True, True)[:-1] + '/'
         Constants.CARSKIT_RATINGS_FOLDER = Constants.generate_file_name(
-            'carskit_ratings', '', Constants.CACHE_FOLDER + 'carskit/', None,
-            None, True, True, True)[:-1] + '/'
+            'carskit_ratings', '', Constants.CACHE_FOLDER + 'rival/', None,
+            None, True, True, True, True)[:-1] + '/'
 
     @staticmethod
     def print_properties():
@@ -410,7 +417,7 @@ class Constants(object):
     @staticmethod
     def generate_file_name(
             name, extension, folder, cycle_index, fold_index, uses_context,
-            is_etl=False, uses_carskit=False):
+            is_etl=False, uses_carskit=False, normalize_topics=False):
 
         prefix = Constants.ITEM_TYPE + '_' + name
         context_suffix = ''
@@ -421,6 +428,11 @@ class Constants(object):
                 '_iterations-' + str(Constants.TOPIC_MODEL_ITERATIONS) + \
                 '_passes-' + str(Constants.TOPIC_MODEL_PASSES) + \
                 '_targetreview-' + str(Constants.TOPIC_MODEL_TARGET_REVIEWS)
+            if normalize_topics:
+                context_suffix += \
+                    '_normalized' \
+                    if Constants.TOPIC_MODEL_NORMALIZE else '_not-normalized'
+
         if uses_carskit:
             context_suffix += '_ck-' + Constants.CARSKIT_NOMINAL_FORMAT
         suffix = context_suffix + \
@@ -481,14 +493,14 @@ Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
 Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE = \
     Constants.generate_file_name(
         'recsys_contextual_records', 'json', Constants.CACHE_FOLDER,
-        None, None, True, True)
+        None, None, True, True, normalize_topics=True)
 Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE = \
     Constants.generate_file_name(
         'recsys_topic_records', 'json', Constants.CACHE_FOLDER,
-        None, None, True, True)
+        None, None, True, True, normalize_topics=True)
 Constants.ENSEMBLED_RESULTS_FOLDER = Constants.generate_file_name(
     'topic_model', '', Constants.ENSEMBLE_FOLDER, None, None,
     True, True)[:-1] + '/'
 Constants.CARSKIT_RATINGS_FOLDER = Constants.generate_file_name(
-    'carskit_ratings', '', Constants.CACHE_FOLDER + 'carskit/', None,
-    None, True, True, True)[:-1] + '/'
+    'carskit_ratings', '', Constants.CACHE_FOLDER + 'rival/', None,
+    None, True, True, True, True)[:-1] + '/'
