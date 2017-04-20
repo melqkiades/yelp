@@ -11,16 +11,20 @@ import jprops
 import pandas
 
 from etl import ETLUtils
+from tripadvisor.fourcity import extractor
 from utils.constants import Constants
 
 JAVA_COMMAND = 'java'
 CARSKIT_JAR = 'CARSKit-v0.3.0.jar'
 CARSKIT_ORIGINAL_CONF_FILE = Constants.CARSKIT_FOLDER + 'setting.conf'
-CARSKIT_MODIFIED_CONF_FILE = Constants.CARSKIT_RATINGS_FOLDER + '%s.conf'
+CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
+        'recsys_contextual_records', '', Constants.CACHE_FOLDER + 'rival/',
+        None, None, True, True, normalize_topics=True)[:-1] + '/fold_%d/'
+CARSKIT_MODIFIED_CONF_FILE = CARSKIT_RATINGS_FOLD_FOLDER + '%s.conf'
 OUTPUT_FOLDER = Constants.DATASET_FOLDER + 'carskit_results/'
 
 
-def run_carskit():
+def run_carskit(fold):
 
     jar_file = Constants.CARSKIT_FOLDER + 'jar/' + CARSKIT_JAR
 
@@ -29,7 +33,7 @@ def run_carskit():
         '-jar',
         jar_file,
         '-c',
-        CARSKIT_MODIFIED_CONF_FILE % Constants.CARSKIT_RECOMMENDERS,
+        CARSKIT_MODIFIED_CONF_FILE % (fold, Constants.CARSKIT_RECOMMENDERS),
     ]
 
     print(command)
@@ -105,12 +109,12 @@ def save_results(results):
         write_results_to_json(json_file, result)
 
 
-def full_cycle():
+def full_cycle(fold):
     file_name = 'results_all_2016.txt'
     carskit_results_file = OUTPUT_FOLDER + file_name
 
-    modify_properties_file()
-    run_carskit()
+    # modify_properties_file(fold)
+    run_carskit(fold)
 
     with open(carskit_results_file) as results_file:
         results = results_file.readlines()
@@ -123,18 +127,32 @@ def full_cycle():
     os.remove(carskit_results_file)
 
 
-def modify_properties_file():
+def modify_properties_file(fold):
     with open(CARSKIT_ORIGINAL_CONF_FILE) as read_file:
         properties = jprops.load_properties(read_file, collections.OrderedDict)
 
     recommender = Constants.CARSKIT_RECOMMENDERS
-    modified_file = CARSKIT_MODIFIED_CONF_FILE % recommender
+    ratings_fold_folder = CARSKIT_RATINGS_FOLD_FOLDER % fold
+
+    if not os.path.exists(ratings_fold_folder):
+        os.makedirs(ratings_fold_folder)
+
+    modified_file = CARSKIT_MODIFIED_CONF_FILE % (fold, recommender)
     properties['recommender'] = recommender
     properties['dataset.ratings.lins'] = \
-        Constants.CARSKIT_RATINGS_FOLDER + 'ratings.csv'
+        ratings_fold_folder + 'carskit_train.csv'
+    test_file = ratings_fold_folder + 'carskit_test.csv'
+    properties['evaluation.setup'] = \
+        'test-set -f %s --rand-seed 1 --test-view all' % test_file
 
+    records = ETLUtils.load_json_file(
+        Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE)
+    num_items = \
+        len(extractor.get_groupby_list(records, Constants.ITEM_ID_FIELD))
+    extra_items = num_items
+    # extra_items = 10
     if Constants.CARSKIT_ITEM_RANKING:
-        properties['item.ranking'] = 'on -topN 10'
+        properties['item.ranking'] = 'on -topN %d' % extra_items
     else:
         properties['item.ranking'] = 'off'
 
@@ -160,9 +178,14 @@ def analyze_results():
 
     data_frame = pandas.DataFrame(records)
     print(sorted(list(data_frame.columns.values)))
-    data_frame = data_frame[['ck_rec10', 'ck_pre10', 'ck_algorithm', 'carskit_nominal_format']]
+    cols = [
+        'ck_rec10', 'ck_pre10', 'ck_algorithm', 'carskit_nominal_format',
+        'topic_model_num_topics', 'topic_model_normalize']
+    data_frame = data_frame[cols]
     data_frame = data_frame.sort_values(['ck_rec10'])
     print(data_frame)
+
+    data_frame.to_csv('/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_carskit.csv')
 
 
 def main():
@@ -170,18 +193,28 @@ def main():
     # modify_properties_file()
     # run_carskit()
 
-    all_recommenders = [
-        'globalavg', 'useravg', 'itemavg', 'useritemavg',
-        'slopeone', 'pmf', 'bpmf', 'biasedmf', 'nmf',
-        'slim', 'bpr',  # 'rankals', 'ranksgd',
-        'lrmf',
-        'camf_ci', 'camf_cu', # 'camf_c',
-        'camf_cuci', 'cslim_c', 'cslim_ci',
-        'cslim_cu',  # 'cslim_cuci',
-        ## 'camf_ics',
-        ##'camf_lcs', 'camf_mcs', 'cslim_ics', 'cslim_lcs',
-        ##'cslim_mcs', 'gcslim_ics'
-    ]
+    if Constants.CARSKIT_ITEM_RANKING:
+        all_recommenders = [
+            'globalavg', 'useravg', 'itemavg', 'useritemavg',
+            'slopeone', 'pmf', 'bpmf', 'biasedmf', 'nmf',
+            'slim',  # 'bpr',  # 'rankals', 'ranksgd',
+            # 'bpr',
+            'lrmf',
+            'camf_ci', 'camf_cu',  # 'camf_c',
+            'camf_cuci', 'cslim_c', 'cslim_ci',
+            'cslim_cu',  # 'cslim_cuci',
+            # 'camf_ics',
+            ##'camf_lcs', 'camf_mcs', 'cslim_ics', 'cslim_lcs',
+            ##'cslim_mcs', 'gcslim_ics'
+        ]
+    else:
+        all_recommenders = [
+            # 'globalavg', 'useravg', 'itemavg', 'useritemavg',
+            # 'slopeone', 'pmf', 'bpmf', 'biasedmf', 'nmf',
+            # 'camf_ci', 'camf_cu',  # 'camf_c',
+            # 'camf_cuci',
+            'bpmf',
+        ]
 
     slow_recommenders = [
         # 'contextavg', 'itemcontextavg', 'usercontextavg',  # broken without context
@@ -242,11 +275,14 @@ def main():
         index += 1
 
         cycle_start = time.time()
-        full_cycle()
+        num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+        for fold in range(num_folds):
+            modify_properties_file(fold)
+            full_cycle(fold)
         cycle_end = time.time()
         cycle_time = cycle_end - cycle_start
         print("Cycle time = %f seconds" % cycle_time)
-    analyze_results()
+    # analyze_results()
 
 
 start = time.time()
