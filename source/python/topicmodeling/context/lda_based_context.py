@@ -77,11 +77,9 @@ class LdaBasedContext:
 
     def update_reviews_with_topics(self):
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, self.target_corpus, self.target_reviews,
-            Constants.CONTEXT_EXTRACTOR_EPSILON)
+            self.topic_model, self.target_corpus, self.target_reviews)
         lda_context_utils.update_reviews_with_topics(
-            self.topic_model, self.non_target_corpus, self.non_target_reviews,
-            Constants.CONTEXT_EXTRACTOR_EPSILON)
+            self.topic_model, self.non_target_corpus, self.non_target_reviews)
 
         print('%s: updated reviews with topics' %
               time.strftime("%Y/%m/%d-%H:%M:%S"))
