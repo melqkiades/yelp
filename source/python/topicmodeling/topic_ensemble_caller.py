@@ -71,13 +71,17 @@ def run_local_parse_directory():
         DATASET_FILE_NAME,
         '--tfidf',
         '--norm',
+        '--df',
+        str(Constants.MIN_DICTIONARY_WORD_COUNT),
+        '--minlen',
+        10
     ]
 
     print(command)
 
     unique_id = uuid.uuid4().hex
     log_file_name = Constants.GENERATED_FOLDER + Constants.ITEM_TYPE + '_' + \
-        Constants.TOPIC_MODEL_TARGET_REVIEWS + '_parse_directory_' +\
+        str(Constants.TOPIC_MODEL_TARGET_REVIEWS) + '_parse_directory_' +\
         unique_id + '.log'
 
     log_file = open(log_file_name, "w")
