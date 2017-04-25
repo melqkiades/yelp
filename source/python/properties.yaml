@@ -76,3 +76,4 @@ carskit_recommenders: globalavg
 carskit_nominal_format: no_context
 carskit_item_ranking: False
 topic_model_normalize: True
+context_format: no_context

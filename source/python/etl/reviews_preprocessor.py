@@ -29,6 +29,7 @@ from nlp import nlp_utils
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import topic_model_creator
 from topicmodeling.context.context_extractor import ContextExtractor
+from topicmodeling.context.context_transformer import ContextTransformer
 from topicmodeling.context.reviews_classifier import ReviewsClassifier
 from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
 from tripadvisor.fourcity import extractor
@@ -516,14 +517,21 @@ class ReviewsPreprocessor:
                 Constants.RECSYS_TOPICS_PROCESSED_RECORDS_FILE, recsys_records)
 
         if os.path.exists(Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE):
-            print('Recsys topic records have already been generated')
+            print('Recsys contextual records have already been generated')
             print(Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE)
+            recsys_records = ETLUtils.load_json_file(
+                Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE)
         else:
             self.update_context_topics(recsys_records)
             ETLUtils.save_json_file(
                 Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE,
                 recsys_records
             )
+
+        context_transformer = ContextTransformer(recsys_records)
+        context_transformer.load_data()
+        context_transformer.transform_records()
+        context_transformer.export_records()
 
     def drop_unnecessary_fields(self):
         print(

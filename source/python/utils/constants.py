@@ -30,6 +30,7 @@ class Constants(object):
     CONTEXT_EXTRACTOR_ALPHA_FIELD = 'context_extractor_alpha'
     CONTEXT_EXTRACTOR_BETA_FIELD = 'context_extractor_beta'
     CONTEXT_EXTRACTOR_EPSILON_FIELD = 'context_extractor_epsilon'
+    CONTEXT_FIELD = 'context'
     CONTEXT_TOPICS_FIELD = 'context_topics'
     CONTEXT_WORDS_FIELD = 'context_words'
     CORPUS_FIELD = 'corpus'
@@ -93,6 +94,7 @@ class Constants(object):
     USER_ITEM_INTEGER_KEY_FIELD = 'user_item_integer_key'
     VOTES_FIELD = 'votes'
 
+    EMPTY_CONTEXT = 'na'
     SPECIFIC = 'specific'
     GENERIC = 'generic'
     ALL_TOPICS = 'all_topics'
@@ -184,6 +186,7 @@ class Constants(object):
     CARSKIT_NOMINAL_FORMAT = _properties['carskit_nominal_format']
     CARSKIT_ITEM_RANKING = _properties['carskit_item_ranking']
     TOPIC_MODEL_NORMALIZE = _properties['topic_model_normalize']
+    CONTEXT_FORMAT = _properties['context_format']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -341,6 +344,8 @@ class Constants(object):
             Constants._properties['carskit_item_ranking']
         Constants.TOPIC_MODEL_NORMALIZE = \
             Constants._properties['topic_model_normalize']
+        Constants.CONTEXT_FORMAT = \
+            Constants._properties['context_format']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
@@ -417,7 +422,8 @@ class Constants(object):
     @staticmethod
     def generate_file_name(
             name, extension, folder, cycle_index, fold_index, uses_context,
-            is_etl=False, uses_carskit=False, normalize_topics=False):
+            is_etl=False, uses_carskit=False, normalize_topics=False,
+            format_context=False):
 
         prefix = Constants.ITEM_TYPE + '_' + name
         context_suffix = ''
@@ -435,6 +441,8 @@ class Constants(object):
 
         if uses_carskit:
             context_suffix += '_ck-' + Constants.CARSKIT_NOMINAL_FORMAT
+        if format_context:
+            context_suffix += '_contextformat-' + Constants.CONTEXT_FORMAT
         suffix = context_suffix + \
             ('' if Constants.LANGUAGE is None
              else '_lang-' + Constants.LANGUAGE) + \
