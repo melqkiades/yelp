@@ -17,9 +17,13 @@ from utils.constants import Constants
 JAVA_COMMAND = 'java'
 CARSKIT_JAR = 'CARSKit-v0.3.0.jar'
 CARSKIT_ORIGINAL_CONF_FILE = Constants.CARSKIT_FOLDER + 'setting.conf'
+# CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
+#         'recsys_contextual_records', '', Constants.CACHE_FOLDER + 'rival/',
+#         None, None, True, True, normalize_topics=True)[:-1] + '/fold_%d/'
 CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
-        'recsys_contextual_records', '', Constants.CACHE_FOLDER + 'rival/',
-        None, None, True, True, normalize_topics=True)[:-1] + '/fold_%d/'
+        'recsys_formatted_context_records', '', Constants.CACHE_FOLDER + 'rival/',
+        None, None, True, True, uses_carskit=False, normalize_topics=True,
+        format_context=True)[:-1] + '/fold_%d/'
 CARSKIT_MODIFIED_CONF_FILE = CARSKIT_RATINGS_FOLD_FOLDER + '%s.conf'
 OUTPUT_FOLDER = Constants.DATASET_FOLDER + 'carskit_results/'
 
@@ -209,10 +213,10 @@ def main():
         ]
     else:
         all_recommenders = [
-            # 'globalavg', 'useravg', 'itemavg', 'useritemavg',
-            # 'slopeone', 'pmf', 'bpmf', 'biasedmf', 'nmf',
-            # 'camf_ci', 'camf_cu',  # 'camf_c',
-            # 'camf_cuci',
+            'globalavg', 'useravg', 'itemavg', 'useritemavg',
+            'slopeone', 'pmf', 'biasedmf', 'nmf',
+            'camf_ci', 'camf_cu',  # 'camf_c',
+            'camf_cuci',
             'bpmf',
         ]
 
