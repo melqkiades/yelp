@@ -101,13 +101,13 @@ public class ContextParser {
             long user_id = Long.parseLong(lineTokens[USER_TOK]);
             long item_id = Long.parseLong(lineTokens[ITEM_TOK]);
             double predictedRating = Double.parseDouble(lineTokens[RATING_TOK]);
-            Map<String, Double> contextMap = new HashMap<>();
+//            Map<String, Double> contextMap = new HashMap<>();
 
-            for (int i = 3; i < lineTokens.length; i++) {
-                contextMap.put(headers[i], Double.parseDouble(lineTokens[i]));
-            }
+//            for (int i = 3; i < lineTokens.length; i++) {
+//                contextMap.put(headers[i], Double.parseDouble(lineTokens[i]));
+//            }
 
-            dataset.addPreference(user_id, item_id, contextMap, predictedRating);
+            dataset.addPreference(user_id, item_id, null, predictedRating);
         }
 
         return dataset;

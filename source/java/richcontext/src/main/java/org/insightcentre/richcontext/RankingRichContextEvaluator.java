@@ -10,6 +10,11 @@ import net.recommenders.rival.evaluation.metric.ranking.Recall;
 import net.recommenders.rival.evaluation.strategy.EvaluationStrategy;
 import net.recommenders.rival.evaluation.strategy.RelPlusN;
 import net.recommenders.rival.split.splitter.CrossValidationSplitter;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -22,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +49,10 @@ public class RankingRichContextEvaluator {
      */
     public static final int AT = 10;
     /**
+     * Default cutoff for evaluation metrics.
+     */
+    public static final int ADDITIONAL_ITEMS = 1000;
+    /**
      * Default relevance threshold.
      */
     public static final double RELEVANCE_THRESHOLD = 5.0;
@@ -53,11 +63,25 @@ public class RankingRichContextEvaluator {
 
     public static final Strategy STRATEGY = Strategy.REL_PLUS_N;
 
+    public static final ContextFormat CONTEXT_FORMAT = ContextFormat.CONTEXT_TOPIC_WEIGHTS;
+
+    public static final Dataset DATASET = Dataset.YELP_RESTAURANT;
+
+
+    private final int numFolds;
+    private final int at;
+    private final int additionaItems;
+    private final double relevanceThreshold;
+    private final long seed;
+    private final Strategy strategy;
+    private final ContextFormat contextFormat;
+    private final Dataset dataset;
+//    private final String outputFolder;
+
 
     private Map<String, Review> reviewsMap;
     private String ratingsFolderPath;
     private String jsonRatingsFile;
-    private int topN;
     private int numUsers;
     private int numItems;
 
@@ -70,15 +94,56 @@ public class RankingRichContextEvaluator {
         USER_TEST
     }
 
+    private enum ContextFormat {
+        NO_CONTEXT,
+        CONTEXT_TOPIC_WEIGHTS,
+        TOP_WORDS,
+        PREDEFINED_CONTEXT,
+        TOPIC_PREDEFINED_CONTEXT
+    }
+
+    private enum Dataset {
+        YELP_HOTEL,
+        YELP_RESTAURANT,
+        FOURCITY_HOTEL,
+    }
 
 
-    public RankingRichContextEvaluator(String jsonRatingsFile) {
+
+    public RankingRichContextEvaluator(String jsonRatingsFile) throws IOException {
         this.jsonRatingsFile = jsonRatingsFile;
+
+        Properties properties = Properties.loadProperties();
+        numFolds = properties.getCrossValidationNumFolds();
+        at = properties.getTopN();
+        relevanceThreshold = properties.getRelevanceThreshold();
+        seed = properties.getSeed();
+        strategy = Strategy.valueOf((properties.getStrategy().toUpperCase(Locale.ENGLISH)));
+        additionaItems = properties.getTopnNumItems();
+        contextFormat = ContextFormat.valueOf(properties.getContextFormat().toUpperCase(Locale.ENGLISH));
+        dataset = RankingRichContextEvaluator.Dataset.valueOf(properties.getDataset().toUpperCase(Locale.ENGLISH));
+
+        
+        
 
         init();
     }
 
-    public static void main(final String[] args) throws IOException, InterruptedException {
+    public static void main(final String[] args) throws IOException, InterruptedException, ParseException {
+
+        // create Options object
+        Options options = new Options();
+
+        // add t option
+        options.addOption("d", false, "The folder containing the data file");
+        options.addOption("o", true, "The folder containing the output file");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse( options, args);
+//        String cacheFolder = cmd.getOptionValue("d") == null
+//                ? cmd.getOptionValue("d")
+//                : "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
+//        String outputFolder = cmd.getOptionValue("o");
 
         long startTime = System.currentTimeMillis();
 
@@ -118,10 +183,11 @@ public class RankingRichContextEvaluator {
 //                "normalized_lang-en_bow-NN_document_level-review_" +
 //                "targettype-context_min_item_reviews-10.json";
 
-        jsonFile = cacheFolder + "yelp_restaurant_recsys_formatted_context_records_ensemble_" +
+        jsonFile = cacheFolder + DATASET.toString().toLowerCase() +
+                "_recsys_formatted_context_records_ensemble_" +
                 "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
-                "normalized_contextformat-context_topic_weights_lang-en_bow-NN_" +
-                "document_level-review_targettype-context_" +
+                "normalized_contextformat-" + CONTEXT_FORMAT.toString().toLowerCase()
+                + "_lang-en_bow-NN_document_level-review_targettype-context_" +
                 "min_item_reviews-10.json";
 
         // Non-contextual files
@@ -134,25 +200,29 @@ public class RankingRichContextEvaluator {
 //        workingPath = "/Users/fpena/tmp/CARSKit/context-aware_data_sets/yelp_hotel/";
 
         RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(jsonFile);
-//        evaluator.prepareSplits(nFolds);
+        evaluator.prepareSplits(nFolds);
 //        evaluator.transformSplitsToCarskit(NUM_FOLDS);
 //        evaluator.transformSplitsToLibfm(NUM_FOLDS);
         evaluator.parseRecommendationResultsLibfm(NUM_FOLDS);
         evaluator.prepareStrategy(NUM_FOLDS, "libfm");
-        evaluator.evaluate(NUM_FOLDS, "libfm");
-//
+        Map<String, String> results = evaluator.evaluate(NUM_FOLDS, "libfm");
+
+        List<Map<String, String>> resultsList = new ArrayList<>();
+        resultsList.add(results);
+        writeResultsToFile(resultsList);
+
         String[] algorithms = {
-                "GlobalAvg",
-                "UserAvg",
-                "ItemAvg",
-                "UserItemAvg",
-                "SlopeOne",
-                "PMF",
-                "BPMF",
-                "BiasedMF",
-                "NMF",
-                "CAMF_CI", "CAMF_CU",
-                "CAMF_CUCI",
+//                "GlobalAvg",
+//                "UserAvg",
+//                "ItemAvg",
+//                "UserItemAvg",
+//                "SlopeOne",
+//                "PMF",
+//                "BPMF",
+//                "BiasedMF",
+//                "NMF",
+//                "CAMF_CI", "CAMF_CU",
+//                "CAMF_CUCI",
 //                "SLIM",
 //                "BPR",
 //                "LRMF",
@@ -160,9 +230,14 @@ public class RankingRichContextEvaluator {
 //                "CSLIM_CU",
         };
 
-//        for (String algorithm : algorithms) {
-//            evaluator.postProcess(NUM_FOLDS, algorithm);
-//        }
+        int progress = 1;
+        for (String algorithm : algorithms) {
+
+            System.out.println(
+                    "\n\nProgress: " + progress + "/" + algorithms.length);
+            evaluator.postProcess(NUM_FOLDS, algorithm);
+            progress++;
+        }
 
 
 //        RatingContextEvaluator evaluator = new RatingContextEvaluator("GlobalAvg", workingPath);
@@ -442,10 +517,10 @@ public class RankingRichContextEvaluator {
             String rivalRecommendationsFile =
                     ratingsFolderPath + "fold_" + fold + "/recs_libfm" + ".csv";
             System.out.println("Recommendations file name: " + rivalRecommendationsFile);
-            CarskitExporter.exportContextRecommendationsToCsv(
-                    recommendations, rivalRecommendationsFile);
-//            CarskitExporter.exportRecommendationsToCsv(
+//            CarskitExporter.exportContextRecommendationsToCsv(
 //                    recommendations, rivalRecommendationsFile);
+            CarskitExporter.exportRecommendationsToCsv(
+                    recommendations, rivalRecommendationsFile);
         }
     }
 
@@ -483,7 +558,7 @@ public class RankingRichContextEvaluator {
 
             Double threshold = RELEVANCE_THRESHOLD;
             EvaluationStrategy<Long, Long> evaluationStrategy =
-                    new RelPlusN(trainingModel, testModel, 1000, threshold, SEED);
+                    new RelPlusN(trainingModel, testModel, ADDITIONAL_ITEMS, threshold, SEED);
 
             // TODO: Change the type of modelToEval to ContextDataModel, so that it is possible to have dupliceates of same user-item pairs with different context
             NewContextDataModel<Long, Long> modelToEval = new NewContextDataModel<>();
@@ -494,10 +569,12 @@ public class RankingRichContextEvaluator {
                         recModel.getUserContextItemPreferences().get(user);
                 Map<String, Double> context = userContextPreferences.keySet().iterator().next();
                 Map<Long, Double> itemPreferences = userContextPreferences.get(context);
-
+//
                 if (userContextPreferences.size() != 1) {
                     System.out.println("User context Preferences size: " + userContextPreferences.size());
                 }
+
+//                Map<Long, Double> itemPreferences = recModel.getUserItemPreferences().get(user);
 
                 for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
 
@@ -552,32 +629,41 @@ public class RankingRichContextEvaluator {
             NDCG<Long, Long> ndcg = new NDCG<>(recModel, testModel, new int[]{AT});
             ndcg.compute();
             ndcgRes += ndcg.getValueAt(AT);
+            results.put("fold_" + i + "_ndcg", String.valueOf(ndcg.getValueAt(AT)));
 
             Recall<Long, Long> recall = new Recall<>(recModel, testModel, RELEVANCE_THRESHOLD, new int[]{AT});
             recall.compute();
             recallRes += recall.getValueAt(AT);
+            results.put("fold_" + i + "_recall", String.valueOf(ndcg.getValueAt(AT)));
 
             RMSE<Long, Long> rmse = new RMSE<>(recModel, testModel);
             rmse.compute();
             rmseRes += rmse.getValue();
+            results.put("fold_" + i + "_rmse", String.valueOf(ndcg.getValue()));
 
             MAE<Long, Long> mae = new MAE<>(recModel, testModel);
             mae.compute();
             maeRes += mae.getValue();
+            results.put("fold_" + i + "_mae", String.valueOf(ndcg.getValue()));
 
             Precision<Long, Long> precision = new Precision<>(recModel, testModel, RELEVANCE_THRESHOLD, new int[]{AT});
             precision.compute();
             precisionRes += precision.getValueAt(AT);
+            results.put("fold_" + i + "_precision", String.valueOf(ndcg.getValueAt(AT)));
         }
 
         results.put("Algorithm", algorithm);
         results.put("Strategy", STRATEGY.toString());
+        results.put("Context_Format", CONTEXT_FORMAT.toString());
         results.put("NDCG@" + AT, String.valueOf(ndcgRes / nFolds));
         results.put("Precision@" + AT, String.valueOf(precisionRes / nFolds));
         results.put("Recall@" + AT, String.valueOf(recallRes / nFolds));
         results.put("RMSE", String.valueOf(rmseRes / nFolds));
         results.put("MAE", String.valueOf(maeRes / nFolds));
 
+        System.out.println("Algorithm: " + algorithm);
+        System.out.println("Strategy: " + STRATEGY.toString());
+        System.out.println("Context_Format: " + CONTEXT_FORMAT);
         System.out.println("NDCG@" + AT + ": " + ndcgRes / nFolds);
         System.out.println("Precision@" + AT + ": " + precisionRes / nFolds);
         System.out.println("Recall@" + AT + ": " + recallRes / nFolds);
@@ -598,18 +684,54 @@ public class RankingRichContextEvaluator {
         parseRecommendationResults(numFolds, algorithm);
         prepareStrategy(numFolds, algorithm);
         resultsList.add(evaluate(numFolds, algorithm));
+        writeResultsToFile(resultsList);
+
+    }
+
+
+    private static void writeResultsToFile(
+            List<Map<String, String>> resultsList) throws IOException {
 
         String[] headers = {
                 "Algorithm",
                 "Strategy",
+                "Context_Format",
                 "NDCG@" + AT,
                 "Precision@" + AT,
                 "Recall@" + AT,
                 "RMSE",
-                "MAE"
+                "MAE",
+                "fold_0_ndcg",
+                "fold_1_ndcg",
+                "fold_2_ndcg",
+                "fold_3_ndcg",
+                "fold_4_ndcg",
+                "fold_0_precision",
+                "fold_1_precision",
+                "fold_2_precision",
+                "fold_3_precision",
+                "fold_4_precision",
+                "fold_0_recall",
+                "fold_1_recall",
+                "fold_2_recall",
+                "fold_3_recall",
+                "fold_4_recall",
+                "fold_0_rmse",
+                "fold_1_rmse",
+                "fold_2_rmse",
+                "fold_3_rmse",
+                "fold_4_rmse",
+                "fold_0_mae",
+                "fold_1_mae",
+                "fold_2_mae",
+                "fold_3_mae",
+                "fold_4_mae",
         };
 
-        File resultsFile = new File("/Users/fpena/tmp/rival_yelp_restaurant_predefined_context_results.csv");
+        String dataset = DATASET.toString().toLowerCase();
+        String fileName = "/Users/fpena/tmp/rival_" + dataset + "_results-folds.csv";
+
+        File resultsFile = new File(fileName);
         boolean fileExists = resultsFile.exists();
         CSVWriter writer = new CSVWriter(
                 new FileWriter(resultsFile, true),
@@ -628,6 +750,7 @@ public class RankingRichContextEvaluator {
             writer.writeNext(row);
         }
         writer.close();
+
     }
 
 
