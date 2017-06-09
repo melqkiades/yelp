@@ -76,7 +76,7 @@ public class RankingRichContextEvaluator {
     private final Strategy strategy;
     private final ContextFormat contextFormat;
     private final Dataset dataset;
-//    private final String outputFolder;
+    private final String outputFile;
 
 
     private Map<String, Review> reviewsMap;
@@ -110,19 +110,25 @@ public class RankingRichContextEvaluator {
 
 
 
-    public RankingRichContextEvaluator(String jsonRatingsFile) throws IOException {
+    public RankingRichContextEvaluator(
+            String jsonRatingsFile, String outputFolder, String propertiesFile)
+            throws IOException {
         this.jsonRatingsFile = jsonRatingsFile;
 
-        Properties properties = Properties.loadProperties();
+        Properties properties = Properties.loadProperties(propertiesFile);
         numFolds = properties.getCrossValidationNumFolds();
         at = properties.getTopN();
         relevanceThreshold = properties.getRelevanceThreshold();
         seed = properties.getSeed();
-        strategy = Strategy.valueOf((properties.getStrategy().toUpperCase(Locale.ENGLISH)));
+        strategy = Strategy.valueOf(
+                (properties.getStrategy().toUpperCase(Locale.ENGLISH)));
         additionaItems = properties.getTopnNumItems();
-        contextFormat = ContextFormat.valueOf(properties.getContextFormat().toUpperCase(Locale.ENGLISH));
-        dataset = RankingRichContextEvaluator.Dataset.valueOf(properties.getDataset().toUpperCase(Locale.ENGLISH));
-
+        contextFormat = ContextFormat.valueOf(
+                properties.getContextFormat().toUpperCase(Locale.ENGLISH));
+        dataset = RankingRichContextEvaluator.Dataset.valueOf(
+                properties.getDataset().toUpperCase(Locale.ENGLISH));
+        outputFile = outputFolder +
+                "rival" + properties.getDataset() + "_results-folds-2.csv";
         
         
 
@@ -137,13 +143,21 @@ public class RankingRichContextEvaluator {
         // add t option
         options.addOption("d", false, "The folder containing the data file");
         options.addOption("o", true, "The folder containing the output file");
+        options.addOption("p", true, "The properties file path");
 
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse( options, args);
-//        String cacheFolder = cmd.getOptionValue("d") == null
-//                ? cmd.getOptionValue("d")
-//                : "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
-//        String outputFolder = cmd.getOptionValue("o");
+        CommandLine cmd = parser.parse(options, args);
+
+        String defaultOutputFolder = "/Users/fpena/tmp/";
+        String defaultPropertiesFile =
+                "/Users/fpena/UCC/Thesis/projects/yelp/source/python/" +
+                        "properties.yaml";
+        String defaultCacheFolder =
+                "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
+
+        String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
+        String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
+        String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
 
         long startTime = System.currentTimeMillis();
 
@@ -166,8 +180,8 @@ public class RankingRichContextEvaluator {
 //                "document_level-review_targettype-context_" +
 //                "min_item_reviews-10/";
 
-        String cacheFolder =
-                "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
+//        String cacheFolder =
+//                "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
         String jsonFile;
 //        jsonFile = cacheFolder + "yelp_hotel_recsys_contextual_records_ensemble_" +
 //                "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
@@ -199,7 +213,8 @@ public class RankingRichContextEvaluator {
 
 //        workingPath = "/Users/fpena/tmp/CARSKit/context-aware_data_sets/yelp_hotel/";
 
-        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(jsonFile);
+        RankingRichContextEvaluator evaluator =
+                new RankingRichContextEvaluator(jsonFile, outputFolder, propertiesFile);
         evaluator.prepareSplits(nFolds);
 //        evaluator.transformSplitsToCarskit(NUM_FOLDS);
 //        evaluator.transformSplitsToLibfm(NUM_FOLDS);
@@ -209,7 +224,7 @@ public class RankingRichContextEvaluator {
 
         List<Map<String, String>> resultsList = new ArrayList<>();
         resultsList.add(results);
-        writeResultsToFile(resultsList);
+        evaluator.writeResultsToFile(resultsList);
 
         String[] algorithms = {
 //                "GlobalAvg",
@@ -689,7 +704,7 @@ public class RankingRichContextEvaluator {
     }
 
 
-    private static void writeResultsToFile(
+    private void writeResultsToFile(
             List<Map<String, String>> resultsList) throws IOException {
 
         String[] headers = {
@@ -729,9 +744,9 @@ public class RankingRichContextEvaluator {
         };
 
         String dataset = DATASET.toString().toLowerCase();
-        String fileName = "/Users/fpena/tmp/rival_" + dataset + "_results-folds.csv";
+//        String fileName = "/Users/fpena/tmp/rival_" + dataset + "_results-folds.csv";
 
-        File resultsFile = new File(fileName);
+        File resultsFile = new File(outputFile);
         boolean fileExists = resultsFile.exists();
         CSVWriter writer = new CSVWriter(
                 new FileWriter(resultsFile, true),

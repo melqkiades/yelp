@@ -36,11 +36,9 @@ public class Properties {
     private String dataset;
 
 
-    public static Properties loadProperties() throws IOException {
+    public static Properties loadProperties(String fileName) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        String fileName =
-                "/Users/fpena/UCC/Thesis/projects/yelp/source/python/properties.yaml";
 
         Properties properties =
                     mapper.readValue(new File(fileName), Properties.class);
@@ -132,6 +130,9 @@ public class Properties {
 
     public static void main(String[] args) throws IOException {
 
-        loadProperties();
+        String fileName =
+                "/Users/fpena/UCC/Thesis/projects/yelp/source/python/" +
+                        "properties.yaml";
+        loadProperties(fileName);
     }
 }

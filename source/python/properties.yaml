@@ -3,7 +3,7 @@ business_type: yelp_restaurant
 fm_review_type:
 topic_model_review_type: specific
 topn_n: 10
-topn_num_items: 90
+topn_num_items: 1000
 random_seed: 0
 numpy_random_seed: 0
 num_cycles: 1
@@ -74,6 +74,9 @@ nmf_regularization_ratio: 0.0
 topic_model_folds: 10
 carskit_recommenders: globalavg
 carskit_nominal_format: no_context
-carskit_item_ranking: False
+carskit_item_ranking: True
 topic_model_normalize: True
 context_format: no_context
+rival_relevance_threshold: 5.0
+rival_seed: 2048
+rival_strategy: rel_plus_n
