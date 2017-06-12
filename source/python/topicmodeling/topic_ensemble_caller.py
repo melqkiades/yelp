@@ -74,7 +74,7 @@ def run_local_parse_directory():
         '--df',
         str(Constants.MIN_DICTIONARY_WORD_COUNT),
         '--minlen',
-        10
+        '10'
     ]
 
     print(command)
