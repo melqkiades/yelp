@@ -230,6 +230,29 @@ class ReviewsPreprocessor:
                   "were dirty" % (removed_records_count, percentage)
             print(msg)
 
+    def remove_duplicate_reviews(self):
+        print('%s: remove duplicate records' % time.strftime(
+            "%Y/%m/%d-%H:%M:%S"))
+
+        ids_set = set()
+        non_duplicated_records = []
+        initial_length = len(self.records)
+
+        for record in self.records:
+            if record[Constants.USER_ITEM_INTEGER_KEY_FIELD] not in ids_set:
+                ids_set.add(record[Constants.USER_ITEM_INTEGER_KEY_FIELD])
+                non_duplicated_records.append(record)
+
+        self.records = non_duplicated_records
+
+        final_length = len(self.records)
+        removed_records_count = initial_length - final_length
+        percentage = removed_records_count / float(initial_length) * 100
+
+        msg = "A total of %d (%f%%) records were removed because they " \
+              "were duplicated" % (removed_records_count, percentage)
+        print(msg)
+
     @staticmethod
     def pos_tag_reviews(records):
         print('%s: tag reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -640,6 +663,7 @@ class ReviewsPreprocessor:
 
             self.add_integer_ids()
             self.clean_reviews()
+            self.remove_duplicate_reviews()
             self.tag_reviews_language()
             self.shuffle_records()
             self.remove_foreign_reviews()
