@@ -214,6 +214,22 @@ class ReviewsPreprocessor:
         self.records = extractor.remove_items_with_low_reviews(
             self.records, min_reviews_per_item)
 
+    def clean_reviews(self):
+        print('%s: clean reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        initial_length = len(self.records)
+
+        if Constants.ITEM_TYPE == 'fourcity_hotel':
+            self.records = ETLUtils.filter_out_records(
+                self.records, Constants.USER_ID_FIELD, ['', 'CATID_'])
+            final_length = len(self.records)
+            removed_records_count = initial_length - final_length
+            percentage = removed_records_count / float(initial_length) * 100
+
+            msg = "A total of %d (%f%%) records were removed because they " \
+                  "were dirty" % (removed_records_count, percentage)
+            print(msg)
+
     @staticmethod
     def pos_tag_reviews(records):
         print('%s: tag reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -623,6 +639,7 @@ class ReviewsPreprocessor:
                 self.transform_fourcity_records()
 
             self.add_integer_ids()
+            self.clean_reviews()
             self.tag_reviews_language()
             self.shuffle_records()
             self.remove_foreign_reviews()

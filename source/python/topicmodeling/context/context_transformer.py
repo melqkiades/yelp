@@ -226,8 +226,8 @@ def main():
         #     continue
         # print(record[Constants.CONTEXT_FIELD], record[Constants.CONTEXT_TOPICS_FIELD])
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)

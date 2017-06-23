@@ -202,7 +202,7 @@ def main():
             'globalavg', 'useravg', 'itemavg', 'useritemavg',
             'slopeone', 'pmf', 'bpmf', 'biasedmf', 'nmf',
             'slim',  # 'bpr',  # 'rankals', 'ranksgd',
-            # 'bpr',
+            'bpr',
             'lrmf',
             'camf_ci', 'camf_cu',  # 'camf_c',
             'camf_cuci', 'cslim_c', 'cslim_ci',
