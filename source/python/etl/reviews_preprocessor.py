@@ -253,6 +253,32 @@ class ReviewsPreprocessor:
               "were duplicated" % (removed_records_count, percentage)
         print(msg)
 
+    def count_frequencies(self):
+        """
+        Counts the number of reviews each user and item have and stores the
+        results in two separate files, one for the users and another one for the
+        items. Note that the integer IDs are used and not the original user and
+        item IDs
+        """
+        print('%s: count frequencies' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+        user_frequency_map = ETLUtils.count_frequency(
+            self.records, Constants.USER_INTEGER_ID_FIELD)
+        item_frequency_map = ETLUtils.count_frequency(
+            self.records, Constants.ITEM_INTEGER_ID_FIELD)
+
+        user_frequency_file = Constants.generate_file_name(
+            'user_frequency_map', 'json', Constants.CACHE_FOLDER, None, None,
+            False
+        )
+        item_frequency_file = Constants.generate_file_name(
+            'item_frequency_map', 'json', Constants.CACHE_FOLDER, None, None,
+            False
+        )
+
+        ETLUtils.save_json_file(user_frequency_file, [user_frequency_map])
+        ETLUtils.save_json_file(item_frequency_file, [item_frequency_map])
+
     @staticmethod
     def pos_tag_reviews(records):
         print('%s: tag reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -665,11 +691,12 @@ class ReviewsPreprocessor:
             self.clean_reviews()
             self.remove_duplicate_reviews()
             self.tag_reviews_language()
-            self.shuffle_records()
             self.remove_foreign_reviews()
             self.lemmatize_records()
             self.remove_users_with_low_reviews()
             self.remove_items_with_low_reviews()
+            self.count_frequencies()
+            self.shuffle_records()
             print('total_records: %d' % len(self.records))
             self.classify_reviews()
             self.build_bag_of_words()

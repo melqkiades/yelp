@@ -301,6 +301,33 @@ class ETLUtils:
 
         return new_records
 
+    @staticmethod
+    def count_frequency(records, field):
+        """
+        Counts the times that every value of field appears in the list of
+        records. It's the equivalent of a COUNT DISTINCT clause in SQL
+
+        :type records: list[dict]
+        :param records: a list of dictionaries
+        :type field: str
+        :param field: the field which contains the values to count
+
+        :rtype: dict
+        :return a dictionary where the keys are the distinct values that appear
+         in the given field, and the values is the number of times they appear
+         throughout all the list of records
+        """
+
+        frequency_map = {}
+
+        for record in records:
+            key = record[field]
+            if key not in frequency_map:
+                frequency_map[key] = 0
+            frequency_map[key] += 1
+
+        return frequency_map
+
 
 # headers = ['Algorithm',
 #            # 'Multi-cluster',
