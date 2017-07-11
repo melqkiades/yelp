@@ -1,7 +1,9 @@
 package org.insightcentre.richcontext;
 
 import com.opencsv.CSVWriter;
-import net.recommenders.rival.core.*;
+import net.recommenders.rival.core.DataModelIF;
+import net.recommenders.rival.core.DataModelUtils;
+import net.recommenders.rival.core.SimpleParser;
 import net.recommenders.rival.evaluation.metric.error.MAE;
 import net.recommenders.rival.evaluation.metric.error.RMSE;
 import net.recommenders.rival.evaluation.metric.ranking.NDCG;
@@ -39,33 +41,33 @@ public class RankingRichContextEvaluator {
     /**
      * Default number of folds.
      */
-    public static final int NUM_FOLDS = 5;
+//    public static final int NUM_FOLDS = 5;
     /**
      * Default neighbohood size.
      */
-    public static final int NEIGHBOURHOOD_SIZE = 50;
+//    public static final int NEIGHBOURHOOD_SIZE = 50;
     /**
      * Default cutoff for evaluation metrics.
      */
-    public static final int AT = 10;
+//    public static final int AT = 10;
     /**
      * Default cutoff for evaluation metrics.
      */
-    public static final int ADDITIONAL_ITEMS = 1000;
+//    public static final int ADDITIONAL_ITEMS = 100;
     /**
      * Default relevance threshold.
      */
-    public static final double RELEVANCE_THRESHOLD = 5.0;
+//    public static final double RELEVANCE_THRESHOLD = 5.0;
     /**
      * Default seed.
      */
-    public static final long SEED = 2048L;
+//    public static final long SEED = 2048L;
 
-    public static final Strategy STRATEGY = Strategy.REL_PLUS_N;
+//    public static final Strategy STRATEGY = Strategy.REL_PLUS_N;
 
-    public static final ContextFormat CONTEXT_FORMAT = ContextFormat.CONTEXT_TOPIC_WEIGHTS;
+//    public static final ContextFormat CONTEXT_FORMAT = ContextFormat.CONTEXT_TOPIC_WEIGHTS;
 
-    public static final Dataset DATASET = Dataset.YELP_RESTAURANT;
+//    public static final Dataset DATASET = Dataset.YELP_HOTEL;
 
 
     private final int numFolds;
@@ -108,12 +110,18 @@ public class RankingRichContextEvaluator {
         FOURCITY_HOTEL,
     }
 
+    private enum ProcessingTask {
+        PREPARE_LIBFM,
+        PREPARE_CARSKIT,
+        PROCESS_LIBFM_RESULTS,
+        PROCESS_CARSKIT_RESULTS
+    }
+
 
 
     public RankingRichContextEvaluator(
-            String jsonRatingsFile, String outputFolder, String propertiesFile)
+            String cacheFolder, String outputFolder, String propertiesFile)
             throws IOException {
-        this.jsonRatingsFile = jsonRatingsFile;
 
         Properties properties = Properties.loadProperties(propertiesFile);
         numFolds = properties.getCrossValidationNumFolds();
@@ -128,8 +136,14 @@ public class RankingRichContextEvaluator {
         dataset = RankingRichContextEvaluator.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
         outputFile = outputFolder +
-                "rival" + properties.getDataset() + "_results-folds-2.csv";
-        
+                "rival_" + properties.getDataset() + "_results_folds_3.csv";
+
+        jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
+                "_recsys_formatted_context_records_ensemble_" +
+                "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
+                "normalized_contextformat-" + contextFormat.toString().toLowerCase()
+                + "_lang-en_bow-NN_document_level-review_targettype-context_" +
+                "min_item_reviews-10.json";
         
 
         init();
@@ -141,7 +155,8 @@ public class RankingRichContextEvaluator {
         Options options = new Options();
 
         // add t option
-        options.addOption("d", false, "The folder containing the data file");
+        options.addOption("t", true, "The processing task");
+        options.addOption("d", true, "The folder containing the data file");
         options.addOption("o", true, "The folder containing the output file");
         options.addOption("p", true, "The properties file path");
 
@@ -155,110 +170,36 @@ public class RankingRichContextEvaluator {
         String defaultCacheFolder =
                 "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
 
+        ProcessingTask processingTask =
+                ProcessingTask.valueOf(cmd.getOptionValue("t").toUpperCase());
         String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
 
         long startTime = System.currentTimeMillis();
 
-//        String folder = "data/rich-context/";
-//        String modelPath = folder + "model/";
-//        String recPath = folder + "recommendations/";
-        int nFolds = NUM_FOLDS;
-//        String dataFile = folder + "yelp_hotel.json";
-//        String algorithm = "GlobalAvg";
-//        String algorithm = "UserAvg";
-//        String algorithm = "ItemAvg";
-//        String algorithm = "UserItemAvg";
-
-//        String workingPath;
-
-//        workingPath = "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/" +
-//                "carskit/yelp_hotel_carskit_ratings_ensemble_numtopics-30" +
-//                "_iterations-100_passes-10_targetreview-specific_" +
-//                "normalized_ck-no_context_lang-en_bow-NN_" +
-//                "document_level-review_targettype-context_" +
-//                "min_item_reviews-10/";
-
-//        String cacheFolder =
-//                "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
-        String jsonFile;
-//        jsonFile = cacheFolder + "yelp_hotel_recsys_contextual_records_ensemble_" +
-//                "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
-//                "normalized_lang-en_bow-NN_document_level-review_" +
-//                "targettype-context_min_item_reviews-10.json";
-//        jsonFile = cacheFolder + "yelp_restaurant_recsys_contextual_records_ensemble_" +
-//                "numtopics-50_iterations-100_passes-10_targetreview-specific_" +
-//                "normalized_lang-en_bow-NN_document_level-review_" +
-//                "targettype-context_min_item_reviews-10.json";
-
-//        jsonFile = cacheFolder + "fourcity_hotel_recsys_contextual_records_ensemble_" +
-//                "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
-//                "normalized_lang-en_bow-NN_document_level-review_" +
-//                "targettype-context_min_item_reviews-10.json";
-
-        jsonFile = cacheFolder + DATASET.toString().toLowerCase() +
-                "_recsys_formatted_context_records_ensemble_" +
-                "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
-                "normalized_contextformat-" + CONTEXT_FORMAT.toString().toLowerCase()
-                + "_lang-en_bow-NN_document_level-review_targettype-context_" +
-                "min_item_reviews-10.json";
-
-        // Non-contextual files
-//        jsonFile = cacheFolder + "yelp_hotel_recsys_contextual_records_" +
-//                "lang-en_bow-NN_document_level-review_targettype-context_" +
-//                "min_item_reviews-10.json";
-
-
-
-//        workingPath = "/Users/fpena/tmp/CARSKit/context-aware_data_sets/yelp_hotel/";
-
-        RankingRichContextEvaluator evaluator =
-                new RankingRichContextEvaluator(jsonFile, outputFolder, propertiesFile);
-        evaluator.prepareSplits(nFolds);
-//        evaluator.transformSplitsToCarskit(NUM_FOLDS);
-//        evaluator.transformSplitsToLibfm(NUM_FOLDS);
-        evaluator.parseRecommendationResultsLibfm(NUM_FOLDS);
-        evaluator.prepareStrategy(NUM_FOLDS, "libfm");
-        Map<String, String> results = evaluator.evaluate(NUM_FOLDS, "libfm");
-
-        List<Map<String, String>> resultsList = new ArrayList<>();
-        resultsList.add(results);
-        evaluator.writeResultsToFile(resultsList);
-
-        String[] algorithms = {
-//                "GlobalAvg",
-//                "UserAvg",
-//                "ItemAvg",
-//                "UserItemAvg",
-//                "SlopeOne",
-//                "PMF",
-//                "BPMF",
-//                "BiasedMF",
-//                "NMF",
-//                "CAMF_CI", "CAMF_CU",
-//                "CAMF_CUCI",
-//                "SLIM",
-//                "BPR",
-//                "LRMF",
-//                "CSLIM_C", "CSLIM_CI",
-//                "CSLIM_CU",
-        };
-
-        int progress = 1;
-        for (String algorithm : algorithms) {
-
-            System.out.println(
-                    "\n\nProgress: " + progress + "/" + algorithms.length);
-            evaluator.postProcess(NUM_FOLDS, algorithm);
-            progress++;
+        switch (processingTask) {
+            case PREPARE_LIBFM:
+                prepareLibfm(cacheFolder, outputFolder, propertiesFile);
+                break;
+            case PREPARE_CARSKIT:
+                prepareCarskit(cacheFolder, outputFolder, propertiesFile);
+                break;
+            case PROCESS_LIBFM_RESULTS:
+                processLibfmResults(cacheFolder, outputFolder, propertiesFile);
+                break;
+            case PROCESS_CARSKIT_RESULTS:
+                processCarskitResults(cacheFolder, outputFolder, propertiesFile);
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                        "Unknown processing task");
         }
 
-
-//        RatingContextEvaluator evaluator = new RatingContextEvaluator("GlobalAvg", workingPath);
-
-//        String fileName = getRecommendationsFileName(workingPath, "GlobalAvg", 1, -10);
-//        System.out.println(fileName);
+//        prepareLibfm(jsonFile, outputFolder, propertiesFile);
+//        processLibfmResults(jsonFile, outputFolder, propertiesFile);
+//        prepareCarskit(jsonFile, outputFolder, propertiesFile);
+//        processCarskitResults(jsonFile, outputFolder, propertiesFile);
 
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
@@ -304,14 +245,11 @@ public class RankingRichContextEvaluator {
 
     /**
      * Downloads a dataset and stores the splits generated from it.
-     *
-     * @param nFolds number of folds
      */
-    public void prepareSplits(final int nFolds) {
+    public void prepareSplits() {
 
         String dataFile = jsonRatingsFile;
         boolean perUser = false;
-        long seed = SEED;
         JsonParser parser = new JsonParser();
 
         DataModelIF<Long, Long> data = null;
@@ -338,7 +276,7 @@ public class RankingRichContextEvaluator {
 
         DataModelIF<Long, Long>[] splits =
                 new CrossValidationSplitter<Long, Long>(
-                        nFolds, perUser, seed).split(data);
+                        numFolds, perUser, seed).split(data);
         File dir = new File(ratingsFolderPath);
         if (!dir.exists()) {
             if (!dir.mkdir()) {
@@ -422,7 +360,7 @@ public class RankingRichContextEvaluator {
     }
 
 
-    public void transformSplitsToCarskit(int numFolds) throws IOException {
+    public void transformSplitsToCarskit() throws IOException {
 
         for (int fold = 0; fold < numFolds; fold++) {
             transformSplitToCarskit(fold);
@@ -474,7 +412,7 @@ public class RankingRichContextEvaluator {
     }
 
 
-    public void transformSplitsToLibfm(int numFolds) throws IOException {
+    public void transformSplitsToLibfm() throws IOException {
 
         for (int fold = 0; fold < numFolds; fold++) {
             transformSplitToLibfm(fold);
@@ -482,24 +420,17 @@ public class RankingRichContextEvaluator {
     }
 
 
-    public void parseRecommendationResults(int numFolds, String algorithm) throws IOException, InterruptedException {
+    public void parseRecommendationResults(String algorithm) throws IOException, InterruptedException {
 
         System.out.println("Parse Recommendation Results");
 
         for (int fold = 0; fold < numFolds; fold++) {
 
-
-            // Execute the recommender
-
-//            String configFile = ratingsFolderPath + algorithm + "_" + fold + ".conf";
-//            CarskitCaller.run(configFile);
-
-
             // Collect the results from the recommender
             String recommendationsFile = getRecommendationsFileName(
-                    ratingsFolderPath, algorithm, fold, AT);
+                    ratingsFolderPath, algorithm, fold, at);
 
-            List<Review> recommendations = (AT < 1) ?
+            List<Review> recommendations = (at < 1) ?
                     CarskitResultsParser.parseRatingResults(recommendationsFile) :
                     CarskitResultsParser.parseRankingResults(recommendationsFile);
 
@@ -512,7 +443,7 @@ public class RankingRichContextEvaluator {
     }
 
 
-    public void parseRecommendationResultsLibfm(int numFolds) throws IOException, InterruptedException {
+    public void parseRecommendationResultsLibfm() throws IOException, InterruptedException {
 
         System.out.println("Parse Recommendation Results");
 
@@ -540,11 +471,11 @@ public class RankingRichContextEvaluator {
     }
 
 
-    public void prepareStrategy(final int nFolds, String algorithm) {
+    public void prepareStrategy(String algorithm) {
 
         System.out.println("Prepare Strategy");
 
-        for (int i = 0; i < nFolds; i++) {
+        for (int i = 0; i < numFolds; i++) {
 
             String foldPath = ratingsFolderPath + "fold_" + i + "/";
             File trainingFile = new File(foldPath + "train.csv");
@@ -571,9 +502,9 @@ public class RankingRichContextEvaluator {
             System.out.println("Recommendation model num predictions: " + recModel.getUserContextItemPreferences().size());
 //            System.out.println("Recommendation model num predictions: " + recModel.getUserItemPreferences().size());
 
-            Double threshold = RELEVANCE_THRESHOLD;
+//            Double threshold = relevanceThreshold;
             EvaluationStrategy<Long, Long> evaluationStrategy =
-                    new RelPlusN(trainingModel, testModel, ADDITIONAL_ITEMS, threshold, SEED);
+                    new RelPlusN(trainingModel, testModel, additionaItems, relevanceThreshold, seed);
 
             // TODO: Change the type of modelToEval to ContextDataModel, so that it is possible to have dupliceates of same user-item pairs with different context
             NewContextDataModel<Long, Long> modelToEval = new NewContextDataModel<>();
@@ -605,7 +536,7 @@ public class RankingRichContextEvaluator {
 //                }
             }
             try {
-                modelToEval.saveDataModel(foldPath + "strategymodel_" + algorithm + "_" + STRATEGY.toString() + ".csv", true, "\t");
+                modelToEval.saveDataModel(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
 //                DataModelUtils.saveDataModel(modelToEval, foldPath + "strategymodel_" + algorithm + "_" + STRATEGY.toString() + ".csv", true, "\t");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
@@ -617,9 +548,8 @@ public class RankingRichContextEvaluator {
     /**
      * Evaluates the recommendations generated in previous steps.
      *
-     * @param nFolds number of folds
      */
-    public Map<String, String> evaluate(final int nFolds, String algorithm) {
+    public Map<String, String> evaluate(String algorithm) {
 
         System.out.println("Evaluate");
 
@@ -629,10 +559,10 @@ public class RankingRichContextEvaluator {
         double rmseRes = 0.0;
         double maeRes = 0.0;
         Map<String, String> results =  new HashMap<>();
-        for (int i = 0; i < nFolds; i++) {
+        for (int i = 0; i < numFolds; i++) {
             String foldPath = ratingsFolderPath + "fold_" + i + "/";
             File testFile = new File(foldPath + "test.csv");
-            File strategyFile = new File(foldPath + "strategymodel_" + algorithm + "_" + STRATEGY.toString() + ".csv");
+            File strategyFile = new File(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv");
             DataModelIF<Long, Long> testModel = null;
             DataModelIF<Long, Long> recModel = null;
             try {
@@ -641,15 +571,15 @@ public class RankingRichContextEvaluator {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            NDCG<Long, Long> ndcg = new NDCG<>(recModel, testModel, new int[]{AT});
+            NDCG<Long, Long> ndcg = new NDCG<>(recModel, testModel, new int[]{at});
             ndcg.compute();
-            ndcgRes += ndcg.getValueAt(AT);
-            results.put("fold_" + i + "_ndcg", String.valueOf(ndcg.getValueAt(AT)));
+            ndcgRes += ndcg.getValueAt(at);
+            results.put("fold_" + i + "_ndcg", String.valueOf(ndcg.getValueAt(at)));
 
-            Recall<Long, Long> recall = new Recall<>(recModel, testModel, RELEVANCE_THRESHOLD, new int[]{AT});
+            Recall<Long, Long> recall = new Recall<>(recModel, testModel, relevanceThreshold, new int[]{at});
             recall.compute();
-            recallRes += recall.getValueAt(AT);
-            results.put("fold_" + i + "_recall", String.valueOf(ndcg.getValueAt(AT)));
+            recallRes += recall.getValueAt(at);
+            results.put("fold_" + i + "_recall", String.valueOf(ndcg.getValueAt(at)));
 
             RMSE<Long, Long> rmse = new RMSE<>(recModel, testModel);
             rmse.compute();
@@ -661,46 +591,44 @@ public class RankingRichContextEvaluator {
             maeRes += mae.getValue();
             results.put("fold_" + i + "_mae", String.valueOf(ndcg.getValue()));
 
-            Precision<Long, Long> precision = new Precision<>(recModel, testModel, RELEVANCE_THRESHOLD, new int[]{AT});
+            Precision<Long, Long> precision = new Precision<>(recModel, testModel, relevanceThreshold, new int[]{at});
             precision.compute();
-            precisionRes += precision.getValueAt(AT);
-            results.put("fold_" + i + "_precision", String.valueOf(ndcg.getValueAt(AT)));
+            precisionRes += precision.getValueAt(at);
+            results.put("fold_" + i + "_precision", String.valueOf(ndcg.getValueAt(at)));
         }
 
         results.put("Algorithm", algorithm);
-        results.put("Strategy", STRATEGY.toString());
-        results.put("Context_Format", CONTEXT_FORMAT.toString());
-        results.put("NDCG@" + AT, String.valueOf(ndcgRes / nFolds));
-        results.put("Precision@" + AT, String.valueOf(precisionRes / nFolds));
-        results.put("Recall@" + AT, String.valueOf(recallRes / nFolds));
-        results.put("RMSE", String.valueOf(rmseRes / nFolds));
-        results.put("MAE", String.valueOf(maeRes / nFolds));
+        results.put("Strategy", strategy.toString());
+        results.put("Context_Format", contextFormat.toString());
+        results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
+        results.put("Precision@" + at, String.valueOf(precisionRes / numFolds));
+        results.put("Recall@" + at, String.valueOf(recallRes / numFolds));
+        results.put("RMSE", String.valueOf(rmseRes / numFolds));
+        results.put("MAE", String.valueOf(maeRes / numFolds));
 
         System.out.println("Algorithm: " + algorithm);
-        System.out.println("Strategy: " + STRATEGY.toString());
-        System.out.println("Context_Format: " + CONTEXT_FORMAT);
-        System.out.println("NDCG@" + AT + ": " + ndcgRes / nFolds);
-        System.out.println("Precision@" + AT + ": " + precisionRes / nFolds);
-        System.out.println("Recall@" + AT + ": " + recallRes / nFolds);
-        System.out.println("RMSE: " + rmseRes / nFolds);
-        System.out.println("MAE: " + maeRes / nFolds);
+        System.out.println("Strategy: " + strategy.toString());
+        System.out.println("Context_Format: " + contextFormat.toString());
+        System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
+        System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
+        System.out.println("Recall@" + at + ": " + recallRes / numFolds);
+        System.out.println("RMSE: " + rmseRes / numFolds);
+        System.out.println("MAE: " + maeRes / numFolds);
 //        System.out.println("P@" + AT + ": " + precisionRes / nFolds);
 
         return results;
     }
 
 
-    public void postProcess(int numFolds, String algorithm)
+    public void postProcess(String algorithm)
             throws IOException, InterruptedException {
 
         List<Map<String, String>> resultsList = new ArrayList<>();
 
-//        RatingContextEvaluator evaluator = new RatingContextEvaluator(jsonFile);
-        parseRecommendationResults(numFolds, algorithm);
-        prepareStrategy(numFolds, algorithm);
-        resultsList.add(evaluate(numFolds, algorithm));
+        parseRecommendationResults(algorithm);
+        prepareStrategy(algorithm);
+        resultsList.add(evaluate(algorithm));
         writeResultsToFile(resultsList);
-
     }
 
 
@@ -711,9 +639,9 @@ public class RankingRichContextEvaluator {
                 "Algorithm",
                 "Strategy",
                 "Context_Format",
-                "NDCG@" + AT,
-                "Precision@" + AT,
-                "Recall@" + AT,
+                "NDCG@" + at,
+                "Precision@" + at,
+                "Recall@" + at,
                 "RMSE",
                 "MAE",
                 "fold_0_ndcg",
@@ -743,9 +671,6 @@ public class RankingRichContextEvaluator {
                 "fold_4_mae",
         };
 
-        String dataset = DATASET.toString().toLowerCase();
-//        String fileName = "/Users/fpena/tmp/rival_" + dataset + "_results-folds.csv";
-
         File resultsFile = new File(outputFile);
         boolean fileExists = resultsFile.exists();
         CSVWriter writer = new CSVWriter(
@@ -773,30 +698,9 @@ public class RankingRichContextEvaluator {
     public String getRecommendationsFileName(
             String workingPath, String algorithm, int foldIndex, int topN) {
 
-//        String dataFile = jsonRatingsFile;
-//        JsonParser parser = new JsonParser();
-//        try {
-//            parser.parseData(new File(dataFile));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        Set<Long> itemsSet = new HashSet<>();
-//        Set<Long> usersSet = new HashSet<>();
-//        for (Review review : parser.getReviews()) {
-//            itemsSet.add(review.getItemId());
-//            usersSet.add(review.getUserId());
-//        }
-//        this.numItems = itemsSet.size();
-//        this.numUsers = usersSet.size();
-//        System.out.println("Num items: " + this.numItems);
-//        System.out.println("Num users: " + this.numUsers);
-
-
         String filePath;
         String carskitWorkingPath =
                 workingPath + "fold_" + foldIndex + "/CARSKit.Workspace/";
-//        String foldInfo = foldIndex > 0 ? " fold [" + foldIndex + "]" : "";
 
         // This means that we are going to generate a rating prediction file name
         if (topN < 1) {
@@ -809,5 +713,83 @@ public class RankingRichContextEvaluator {
         }
 
         return filePath;
+    }
+
+
+    public static void prepareLibfm(
+            String cacheFolder, String outputFolder, String propertiesFile)
+            throws IOException {
+
+        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+                cacheFolder, outputFolder, propertiesFile);
+        evaluator.prepareSplits();
+        evaluator.transformSplitsToLibfm();
+    }
+
+
+    public static void prepareCarskit(
+            String jsonFile, String outputFolder, String propertiesFile)
+            throws IOException {
+
+
+        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+                jsonFile, outputFolder, propertiesFile);
+        evaluator.prepareSplits();
+        evaluator.transformSplitsToCarskit();
+    }
+
+
+    public static void processLibfmResults(
+            String jsonFile, String outputFolder, String propertiesFile)
+            throws IOException, InterruptedException {
+
+        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+                jsonFile, outputFolder, propertiesFile);
+        evaluator.prepareSplits();
+        evaluator.parseRecommendationResultsLibfm();
+        evaluator.prepareStrategy("libfm");
+        Map<String, String> results = evaluator.evaluate("libfm");
+
+        List<Map<String, String>> resultsList = new ArrayList<>();
+        resultsList.add(results);
+        evaluator.writeResultsToFile(resultsList);
+    }
+
+
+    public static void processCarskitResults(
+            String jsonFile, String outputFolder, String propertiesFile)
+            throws IOException, InterruptedException {
+
+        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+                jsonFile, outputFolder, propertiesFile);
+        evaluator.prepareSplits();
+
+        String[] algorithms = {
+                "GlobalAvg",
+                "UserAvg",
+                "ItemAvg",
+                "UserItemAvg",
+                "SlopeOne",
+                "PMF",
+                "BPMF",
+                "BiasedMF",
+                "NMF",
+                "CAMF_CI", "CAMF_CU",
+                "CAMF_CUCI",
+                "SLIM",
+                "BPR",
+                "LRMF",
+                "CSLIM_C", "CSLIM_CI",
+                "CSLIM_CU",
+        };
+
+        int progress = 1;
+        for (String algorithm : algorithms) {
+
+            System.out.println(
+                    "\n\nProgress: " + progress + "/" + algorithms.length);
+            evaluator.postProcess(algorithm);
+            progress++;
+        }
     }
 }

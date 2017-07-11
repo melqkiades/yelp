@@ -18,7 +18,7 @@ public class Properties {
 
     @JsonProperty("cross_validation_num_folds")
     private int crossValidationNumFolds;
-    @JsonProperty("top_n")
+    @JsonProperty("topn_n")
     private int topN;
     @JsonProperty("topn_num_items")
     private int topnNumItems;
