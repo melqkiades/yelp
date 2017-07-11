@@ -58,7 +58,6 @@ def split_topic(topic_string):
     index = 0
     topic_words = topic_string.split(' + ')
     probability_score = 0.0
-    rank_score = 0.0
     num_terms = Constants.TOPIC_MODEL_STABILITY_NUM_TERMS
     for topic_word in topic_words:
         word = topic_word.split('*')[1]
@@ -66,15 +65,9 @@ def split_topic(topic_string):
         words_dict['word' + str(index)] = topic_word.encode('utf-8')
         if word in my_context_words:
             probability_score += word_probability_score
-            word_rank_score = num_terms - index if index < num_terms else 0
-            rank_score += word_rank_score
         index += 1
 
-    max_rank_score = float(num_terms * (num_terms + 1) / 2)
-    rank_score /= max_rank_score
-
     words_dict['probability_score'] = probability_score
-    words_dict['rank_score'] = rank_score
 
     return words_dict
 
@@ -115,23 +108,17 @@ def analyze_topics(include_stability=True):
             context_extractor.topic_weighted_frequency_map[topic]
         topic_data.append(result)
 
-    generate_excel_file(topic_data)
+    # generate_excel_file(topic_data)
     data_frame = DataFrame.from_dict(topic_data)
 
     scores = {}
     scores['num_topics'] = Constants.TOPIC_MODEL_NUM_TOPICS
     probability_score = data_frame['probability_score'].mean()
-    rank_score = data_frame['rank_score'].mean()
     scores['probability_score'] = probability_score
-    scores['rank_score'] = rank_score
     high_ratio_mean_score = data_frame[
         (data_frame.ratio > Constants.CONTEXT_EXTRACTOR_BETA)]['probability_score'].mean()
     low_ratio_mean_score = data_frame[
         (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['probability_score'].mean()
-    high_rank_ratio_mean_score = data_frame[
-        (data_frame.ratio > Constants.CONTEXT_EXTRACTOR_BETA)]['rank_score'].mean()
-    low_rank_ratio_mean_score = data_frame[
-        (data_frame.ratio < Constants.CONTEXT_EXTRACTOR_BETA)]['rank_score'].mean()
 
     stability = None
     sample_ratio = Constants.TOPIC_MODEL_STABILITY_SAMPLE_RATIO
@@ -143,31 +130,19 @@ def analyze_topics(include_stability=True):
     #     (high_ratio_mean_score / low_ratio_mean_score)\
     #     if low_ratio_mean_score != 0\
     #     else 'N/A'
-    # rank_separation_score =\
-    #     (high_rank_ratio_mean_score / low_rank_ratio_mean_score)\
-    #     if low_rank_ratio_mean_score != 0\
-    #     else 'N/A'
     gamma = 0.5
     separation_score = gamma*high_ratio_mean_score + (1 - gamma)*(1-low_ratio_mean_score)
-    rank_separation_score = gamma*high_rank_ratio_mean_score + (1 - gamma)*(1-low_rank_ratio_mean_score)
     joint_separation_score =\
         (high_ratio_mean_score + (1 - low_ratio_mean_score)) / 2
-    joint_rank_separation_score =\
-        (high_rank_ratio_mean_score +
-         (1 - low_rank_ratio_mean_score)) / 2
     scores['separation_score'] = separation_score
-    scores['rank_separation_score'] = rank_separation_score
     scores['joint_separation_score'] = joint_separation_score
-    scores['joint_rank_separation_score'] = joint_rank_separation_score
     scores['combined_score'] =\
         (probability_score * separation_score)\
         if probability_score != 'N/A' and separation_score != 'N/A'\
         else 'N/A'
 
     print('probability score: %f' % scores['probability_score'])
-    print('rank score: %f' % scores['rank_score'])
     print('separation score:', scores['separation_score'])
-    print('rank separation score:', scores['rank_separation_score'])
     print('combined score:', scores['combined_score'])
 
     end_time = time.time()
@@ -303,7 +278,6 @@ def generate_excel_file(records, file_name=None):
         'topic_id',
         'ratio',
         'probability_score',
-        'rank_score',
         'weighted_frequency'
     ]
     num_headers = len(headers)
@@ -502,11 +476,11 @@ def write_results_to_json(file_name, results):
             json.dump(results, f)
             f.write('\n')
 
-start = time.time()
-manual_main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# manual_main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
 
 
 # if __name__ == '__main__':
