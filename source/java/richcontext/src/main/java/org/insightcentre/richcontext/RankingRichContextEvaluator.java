@@ -1,9 +1,10 @@
 package org.insightcentre.richcontext;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.opencsv.CSVWriter;
 import net.recommenders.rival.core.DataModelIF;
 import net.recommenders.rival.core.DataModelUtils;
-import net.recommenders.rival.core.SimpleParser;
 import net.recommenders.rival.evaluation.metric.error.MAE;
 import net.recommenders.rival.evaluation.metric.error.RMSE;
 import net.recommenders.rival.evaluation.metric.ranking.NDCG;
@@ -20,9 +21,11 @@ import org.apache.commons.cli.ParseException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -144,7 +147,7 @@ public class RankingRichContextEvaluator {
                 "normalized_contextformat-" + contextFormat.toString().toLowerCase()
                 + "_lang-en_bow-NN_document_level-review_targettype-context_" +
                 "min_item_reviews-10.json";
-        
+
 
         init();
     }
@@ -486,8 +489,10 @@ public class RankingRichContextEvaluator {
             NewContextDataModel<Long, Long> recModel;
 //            DataModelIF<Long, Long> recModel;
             try {
-                trainingModel = new SimpleParser().parseData(trainingFile);
-                testModel = new SimpleParser().parseData(testFile);
+                trainingModel = new CsvParser().parseData(trainingFile);
+                testModel = new CsvParser().parseData(testFile);
+
+
 
                 // TODO: Create a parser for context files
                 recModel = new ContextParser().parseData2(recFile, "\t");
@@ -561,13 +566,26 @@ public class RankingRichContextEvaluator {
         Map<String, String> results =  new HashMap<>();
         for (int i = 0; i < numFolds; i++) {
             String foldPath = ratingsFolderPath + "fold_" + i + "/";
+            File trainingFile = new File(foldPath + "train.csv");
             File testFile = new File(foldPath + "test.csv");
             File strategyFile = new File(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv");
+            DataModelIF<Long, Long> trainModel = null;
             DataModelIF<Long, Long> testModel = null;
             DataModelIF<Long, Long> recModel = null;
+
             try {
-                testModel = new SimpleParser().parseData(testFile);
-                recModel = new SimpleParser().parseData(strategyFile);
+                trainModel = new CsvParser().parseData(trainingFile);
+                testModel = new CsvParser().parseData(testFile);
+//                Map<Long, Integer> myMap = loadFrequencyMap(null);
+                Map<Long, Integer> myMap = countUserReviewFrequency(trainModel);
+                Set<Long> users = getElementsByFrequency(myMap, 0, 10000000);
+                System.out.println("Num users in training set range: " + users.size());
+                recModel = new CsvParser().parseData(strategyFile, users);
+//                recModel = new SimpleParser().parseData(strategyFile);
+                System.out.println("Num users = " + recModel.getNumUsers());
+                System.out.println("Num items = " + recModel.getNumItems());
+                System.out.println("Users: " + recModel.getUsers());
+                System.out.println("Items: " + recModel.getItems());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -748,6 +766,7 @@ public class RankingRichContextEvaluator {
         evaluator.prepareSplits();
         evaluator.parseRecommendationResultsLibfm();
         evaluator.prepareStrategy("libfm");
+        evaluator.stuff();
         Map<String, String> results = evaluator.evaluate("libfm");
 
         List<Map<String, String>> resultsList = new ArrayList<>();
@@ -790,6 +809,67 @@ public class RankingRichContextEvaluator {
                     "\n\nProgress: " + progress + "/" + algorithms.length);
             evaluator.postProcess(algorithm);
             progress++;
+        }
+    }
+
+    private Map<Long, Integer> loadFrequencyMap(String fileName) throws FileNotFoundException {
+
+        String dir = "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
+        String file = dir + dataset.toString().toLowerCase() +
+                "_user_frequency_map_separated_lang-en_bow-NN_document_level-review_targettype-context_min_item_reviews-10.json";
+
+        FileReader fileReader = new FileReader(file);
+
+        Gson gson = new Gson();
+        Type type = new TypeToken<Map<Long, Integer>>(){}.getType();
+        Map<Long, Integer> frequencyMap = gson.fromJson(fileReader, type);
+        System.out.println(frequencyMap);
+
+        return frequencyMap;
+    }
+
+
+    private static Set<Long> getElementsByFrequency(
+            Map<Long, Integer> frequencyMap, int min, int max) {
+
+        Set<Long> elementsSet = new HashSet<>();
+
+        for (Map.Entry<Long, Integer> entry : frequencyMap.entrySet()) {
+            if (max >= entry.getValue() && min <= entry.getValue()) {
+                elementsSet.add(entry.getKey());
+            }
+        }
+
+        System.out.println(elementsSet);
+
+        return elementsSet;
+    }
+
+
+    private static Map<Long, Integer> countUserReviewFrequency(
+            DataModelIF<Long, Long> dataModel) {
+
+        Map<Long, Integer> frequencyMap = new HashMap<>();
+        Map<Long, Map<Long, Double>> userItemPreferences =
+                dataModel.getUserItemPreferences();
+        for (Map.Entry<Long, Map<Long, Double>> entry : userItemPreferences.entrySet()) {
+            frequencyMap.put(entry.getKey(), entry.getValue().size());
+        }
+
+        System.out.println("User review frequency: " + frequencyMap);
+
+        return frequencyMap;
+    }
+
+
+    private void stuff() throws IOException {
+
+        for (int i = 0; i < numFolds; i++) {
+            String foldPath = ratingsFolderPath + "fold_" + i + "/";
+            File trainingFile = new File(foldPath + "train.csv");
+            DataModelIF<Long, Long> trainingModel;
+            trainingModel = new CsvParser().parseData(trainingFile);
+            countUserReviewFrequency(trainingModel);
         }
     }
 }
