@@ -26,7 +26,7 @@ public class Properties {
     private double relevanceThreshold;
     @JsonProperty("rival_seed")
     private long seed;
-    @JsonProperty("rival_strategy")
+    @JsonProperty("rival_evaluation_strategy")
     private String strategy;
 
     @JsonProperty("context_format")

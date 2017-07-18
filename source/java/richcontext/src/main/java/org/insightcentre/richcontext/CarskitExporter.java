@@ -113,7 +113,7 @@ public class CarskitExporter {
 
         for (Review review : reviews) {
 
-            System.out.print("Progress: " + progress + "/" + totalReviews + "\r");
+//            System.out.print("Progress: " + progress + "/" + totalReviews + "\r");
             progress++;
 
             String[] row = {

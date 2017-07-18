@@ -1,6 +1,8 @@
 import os
 from subprocess import call
 
+import time
+
 from utils.constants import Constants
 
 
@@ -17,6 +19,7 @@ LIBFM_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
 
 
 def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
+    print('%s: Run LibFM' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     libfm_command = Constants.LIBFM_FOLDER + 'libFM'
 
@@ -65,14 +68,20 @@ def main():
 
         ratings_fold_folder = LIBFM_RATINGS_FOLD_FOLDER % fold
         train_file = ratings_fold_folder + 'libfm_train.libfm'
-        test_file = ratings_fold_folder + 'libfm_test.libfm'
-        predictions_file = ratings_fold_folder + 'libfm_predictions.txt'
+        predictions_file = ratings_fold_folder + 'libfm_predictions_' + \
+                    Constants.RIVAL_EVALUATION_STRATEGY + '.libfm'
+        results_file = ratings_fold_folder + 'libfm_results_' + \
+                           Constants.RIVAL_EVALUATION_STRATEGY + '.txt'
         log_file = ratings_fold_folder + 'libfm_log.txt'
         save_file = ratings_fold_folder + 'libfm_model.txt'
 
         if not os.path.exists(ratings_fold_folder):
             os.makedirs(ratings_fold_folder)
 
-        run_libfm(train_file, test_file, predictions_file, log_file, save_file)
+        run_libfm(train_file, predictions_file, results_file, log_file, save_file)
 
+start = time.time()
 main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)

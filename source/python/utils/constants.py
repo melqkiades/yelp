@@ -187,6 +187,7 @@ class Constants(object):
     CARSKIT_ITEM_RANKING = _properties['carskit_item_ranking']
     TOPIC_MODEL_NORMALIZE = _properties['topic_model_normalize']
     CONTEXT_FORMAT = _properties['context_format']
+    RIVAL_EVALUATION_STRATEGY = _properties['rival_evaluation_strategy']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -346,6 +347,8 @@ class Constants(object):
             Constants._properties['topic_model_normalize']
         Constants.CONTEXT_FORMAT = \
             Constants._properties['context_format']
+        Constants.RIVAL_EVALUATION_STRATEGY = \
+            Constants._properties['rival_evaluation_strategy']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
