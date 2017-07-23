@@ -28,6 +28,8 @@ public class Properties {
     private long seed;
     @JsonProperty("rival_evaluation_strategy")
     private String strategy;
+    @JsonProperty("topic_model_num_topics")
+    private int numTopics;
 
     @JsonProperty("context_format")
     private String contextFormat;
@@ -97,6 +99,14 @@ public class Properties {
         this.strategy = strategy;
     }
 
+    public int getNumTopics() {
+        return numTopics;
+    }
+
+    public void setNumTopics(int numTopics) {
+        this.numTopics = numTopics;
+    }
+
     public String getContextFormat() {
         return contextFormat;
     }
@@ -122,6 +132,7 @@ public class Properties {
                 ", relevanceThreshold=" + relevanceThreshold +
                 ", seed=" + seed +
                 ", strategy='" + strategy + '\'' +
+                ", numTopics='" + numTopics + '\'' +
                 ", contextFormat='" + contextFormat + '\'' +
                 ", dataset='" + dataset + '\'' +
                 '}';

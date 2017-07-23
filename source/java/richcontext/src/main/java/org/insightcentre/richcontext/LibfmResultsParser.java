@@ -1,18 +1,14 @@
 package org.insightcentre.richcontext;
 
-import com.opencsv.CSVReader;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +27,12 @@ public class LibfmResultsParser {
     public static List<Review> parseRatingResults(
             String testFilePath, String libfmResultsPath) throws IOException {
 
+        return parseRatingResults(testFilePath, libfmResultsPath, false);
+    }
+
+    public static List<Review> parseRatingResults(
+            String testFilePath, String libfmResultsPath, boolean ignoreHeader) throws IOException {
+
         BufferedReader testFileReader = Files.newBufferedReader(
                 Paths.get(testFilePath), StandardCharsets.UTF_8);
         BufferedReader libfmResultsReader = Files.newBufferedReader(
@@ -41,7 +43,9 @@ public class LibfmResultsParser {
         String libfmLine;
 
         // We ignore the header
-//        reader.readNext();
+        if (ignoreHeader) {
+            testFileReader.readLine();
+        }
 
         while ((testLine = testFileReader.readLine()) != null) {
             libfmLine = libfmResultsReader.readLine();
@@ -63,6 +67,8 @@ public class LibfmResultsParser {
     public static List<Review> parseContextRatingResults(
             String testFilePath, String libfmResultsPath) throws IOException {
 
+        System.out.println("Parse Context Rating Results");
+
         BufferedReader testFileReader = Files.newBufferedReader(
                 Paths.get(testFilePath), StandardCharsets.UTF_8);
         BufferedReader libfmResultsReader = Files.newBufferedReader(
@@ -75,6 +81,11 @@ public class LibfmResultsParser {
         // Parse the header
         testLine = testFileReader.readLine();
         String[] headers = testLine.split("\t");
+
+        long numLines = Files.lines(Paths.get(testFilePath)).count();
+        ProgressBar progressBar =
+                new ProgressBar("Test", numLines, ProgressBarStyle.ASCII);
+        progressBar.start();
 
         while ((testLine = testFileReader.readLine()) != null) {
             libfmLine = libfmResultsReader.readLine();
@@ -92,9 +103,12 @@ public class LibfmResultsParser {
             }
 
             review.setPredictedRating(predictedRating);
-            review.setContext(contextMap);
+//            review.setContext(contextMap);
             reviews.add(review);
+            progressBar.step();
         }
+        progressBar.stop();
+        System.out.println("\n");
 
         return reviews;
     }
@@ -115,7 +129,7 @@ public class LibfmResultsParser {
 
         try {
             List<Review> ratingReviews =
-                    parseRatingResults(testFilePath, libfmResultsFilePath);
+                    parseRatingResults(testFilePath, libfmResultsFilePath, false);
 //            List<Review> rankingReviews = parseRankingResults(rankingsFilePath);
 
             for (Review review : ratingReviews) {

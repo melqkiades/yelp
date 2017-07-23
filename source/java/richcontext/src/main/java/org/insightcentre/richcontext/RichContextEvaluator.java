@@ -106,12 +106,13 @@ public class RichContextEvaluator {
                 properties.getContextFormat().toUpperCase(Locale.ENGLISH));
         dataset = RichContextEvaluator.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
+        int numTopics = properties.getNumTopics();
         outputFile = outputFolder +
                 "rival_" + properties.getDataset() + "_results_folds_3.csv";
 
         jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
-                "numtopics-10_iterations-100_passes-10_targetreview-specific_" +
+                "numtopics-" + numTopics + "_iterations-100_passes-10_targetreview-specific_" +
                 "normalized_contextformat-" + contextFormat.toString().toLowerCase()
                 + "_lang-en_bow-NN_document_level-review_targettype-context_" +
                 "min_item_reviews-10.json";
@@ -373,7 +374,7 @@ public class RichContextEvaluator {
 
     public void parseRecommendationResultsLibfm() throws IOException, InterruptedException {
 
-        System.out.println("Parse Recommendation Results");
+        System.out.println("Parse Recommendation Results LibFM");
 
         for (int fold = 0; fold < numFolds; fold++) {
 
@@ -389,7 +390,7 @@ public class RichContextEvaluator {
                 case TEST_ITEMS:
                     predictionsFile = foldPath + "test.csv";
                     recommendations = LibfmResultsParser.parseRatingResults(
-                            predictionsFile, libfmResultsFile);
+                            predictionsFile, libfmResultsFile, false);
                     break;
                 case REL_PLUS_N:
                     predictionsFile = foldPath + "predictions.csv";
@@ -604,7 +605,7 @@ public class RichContextEvaluator {
             }
         }
 
-        System.out.println(elementsSet);
+//        System.out.println(elementsSet);
 
         return elementsSet;
     }
@@ -620,7 +621,7 @@ public class RichContextEvaluator {
             frequencyMap.put(entry.getKey(), entry.getValue().size());
         }
 
-        System.out.println("User review frequency: " + frequencyMap);
+//        System.out.println("User review frequency: " + frequencyMap);
 
         return frequencyMap;
     }
@@ -630,7 +631,7 @@ public class RichContextEvaluator {
             String cacheFolder, String outputFolder, String propertiesFile)
             throws IOException {
 
-        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+        RichContextEvaluator evaluator = new RichContextEvaluator(
                 cacheFolder, outputFolder, propertiesFile);
         evaluator.prepareSplits();
         evaluator.transformSplitsToLibfm();
@@ -642,7 +643,7 @@ public class RichContextEvaluator {
             throws IOException {
 
 
-        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+        RichContextEvaluator evaluator = new RichContextEvaluator(
                 jsonFile, outputFolder, propertiesFile);
         evaluator.prepareSplits();
         evaluator.transformSplitsToCarskit();
@@ -653,7 +654,7 @@ public class RichContextEvaluator {
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException, InterruptedException {
 
-        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+        RichContextEvaluator evaluator = new RichContextEvaluator(
                 jsonFile, outputFolder, propertiesFile);
         evaluator.prepareSplits();
         evaluator.parseRecommendationResultsLibfm();
@@ -670,7 +671,7 @@ public class RichContextEvaluator {
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException, InterruptedException {
 
-        RankingRichContextEvaluator evaluator = new RankingRichContextEvaluator(
+        RichContextEvaluator evaluator = new RichContextEvaluator(
                 jsonFile, outputFolder, propertiesFile);
         evaluator.prepareSplits();
 

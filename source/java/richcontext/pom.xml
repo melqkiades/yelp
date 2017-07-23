@@ -55,6 +55,11 @@
             <artifactId>commons-cli</artifactId>
             <version>1.4</version>
         </dependency>
+        <dependency>
+            <groupId>me.tongfei</groupId>
+            <artifactId>progressbar</artifactId>
+            <version>0.5.5</version>
+        </dependency>
 
 
     </dependencies>
@@ -75,7 +80,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.insightcentre.richcontext.RankingRichContextEvaluator</mainClass>
+                            <mainClass>org.insightcentre.richcontext.RichContextEvaluator</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
