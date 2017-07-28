@@ -45,6 +45,7 @@ public class RichContextEvaluator {
     protected final int numFolds;
     protected final int at;
     protected final int additionalItems;
+    protected final int numTopics;
     protected final double relevanceThreshold;
     protected final long seed;
     protected final Strategy strategy;
@@ -106,7 +107,7 @@ public class RichContextEvaluator {
                 properties.getContextFormat().toUpperCase(Locale.ENGLISH));
         dataset = RichContextEvaluator.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
-        int numTopics = properties.getNumTopics();
+        numTopics = properties.getNumTopics();
         outputFile = outputFolder +
                 "rival_" + properties.getDataset() + "_results_folds_3.csv";
 
@@ -285,6 +286,8 @@ public class RichContextEvaluator {
 
     public void transformSplitToLibfm(int fold) throws IOException {
 
+        System.out.println("Transform split " + fold + " to LibFM");
+
         String foldPath = ratingsFolderPath + "fold_" + fold + "/";
         String trainFile = foldPath + "train.csv";
         String testFile = foldPath + "test.csv";
@@ -321,14 +324,18 @@ public class RichContextEvaluator {
                         completeTestReviews, libfmPredictionsFile, oneHotIdMap);
                 break;
             case REL_PLUS_N: {
-                List<Review> reviewsForRanking =
-                        LibfmExporter.getReviewsForRanking(
-                                completeTrainReviews, completeTestReviews, oneHotIdMap);
-                CarskitExporter.exportContextRecommendationsToCsv(
-                        reviewsForRanking, predictionsFile);
+//                List<Review> reviewsForRanking =
+//                        LibfmExporter.getReviewsForRanking(
+//                                completeTrainReviews, completeTestReviews);
+//                CarskitExporter.exportContextRecommendationsToCsv(
+//                        reviewsForRanking, predictionsFile);
+//                LibfmExporter.exportRankingPredictionsFile(
+//                        completeTrainReviews, completeTestReviews,
+//                        libfmPredictionsFile, oneHotIdMap
+//                );
                 LibfmExporter.exportRankingPredictionsFile(
                         completeTrainReviews, completeTestReviews,
-                        libfmPredictionsFile, oneHotIdMap
+                        libfmPredictionsFile, oneHotIdMap, predictionsFile
                 );
                 break;
             }
@@ -384,6 +391,9 @@ public class RichContextEvaluator {
             String predictionsFile;
             String libfmResultsFile = foldPath + "libfm_results_" +
                     strategy.toString().toLowerCase() + ".txt";
+            String rivalRecommendationsFile =
+                    ratingsFolderPath + "fold_" + fold + "/recs_libfm_" +
+                            strategy.toString().toLowerCase()  + ".csv";
             List<Review> recommendations;
 
             switch (strategy) {
@@ -404,10 +414,6 @@ public class RichContextEvaluator {
                     throw new UnsupportedOperationException(msg);
             }
 
-
-            String rivalRecommendationsFile =
-                    ratingsFolderPath + "fold_" + fold + "/recs_libfm_" +
-                            strategy.toString().toLowerCase()  + ".csv";
             System.out.println("Recommendations file name: " + rivalRecommendationsFile);
             CarskitExporter.exportRecommendationsToCsv(
                     recommendations, rivalRecommendationsFile);
@@ -571,7 +577,9 @@ public class RichContextEvaluator {
             results.put("fold_" + i + "_precision", String.valueOf(ndcg.getValueAt(at)));
         }
 
+        results.put("Dataset", dataset.toString());
         results.put("Algorithm", algorithm);
+        results.put("Num Topics", String.valueOf(numTopics));
         results.put("Strategy", strategy.toString());
         results.put("Context_Format", contextFormat.toString());
         results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
@@ -580,7 +588,9 @@ public class RichContextEvaluator {
         results.put("RMSE", String.valueOf(rmseRes / numFolds));
         results.put("MAE", String.valueOf(maeRes / numFolds));
 
+        System.out.println("Dataset: " + dataset.toString());
         System.out.println("Algorithm: " + algorithm);
+        System.out.println("Num Topics: " + numTopics);
         System.out.println("Strategy: " + strategy.toString());
         System.out.println("Context_Format: " + contextFormat.toString());
         System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
@@ -718,12 +728,13 @@ public class RichContextEvaluator {
                     strategy.toString().toLowerCase()  + ".csv");
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
-            NewContextDataModel<Long, Long> recModel;
-//            DataModelIF<Long, Long> recModel;
+//            NewContextDataModel<Long, Long> recModel;
+            DataModelIF<Long, Long> recModel;
             try {
                 trainingModel = new CsvParser().parseData(trainingFile);
                 testModel = new CsvParser().parseData(testFile);
-                recModel = new ContextParser().parseData2(recFile, "\t");
+//                recModel = new ContextParser().parseData2(recFile, "\t");
+                recModel = new CsvParser().parseData(recFile);
             } catch (IOException e) {
                 e.printStackTrace();
                 return;
@@ -731,32 +742,32 @@ public class RichContextEvaluator {
 
             System.out.println("Recommendation model num users: " + recModel.getNumUsers());
             System.out.println("Recommendation model num items: " + recModel.getNumItems());
-            System.out.println("Recommendation model num predictions: " + recModel.getUserContextItemPreferences().size());
+//            System.out.println("Recommendation model num predictions: " + recModel.getUserContextItemPreferences().size());
 //            System.out.println("Recommendation model num predictions: " + recModel.getUserItemPreferences().size());
 
             EvaluationStrategy<Long, Long> evaluationStrategy =
                     new RelPlusN(trainingModel, testModel, additionalItems, relevanceThreshold, seed);
 
-            NewContextDataModel<Long, Long> modelToEval = new NewContextDataModel<>();
-//            DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
+//            NewContextDataModel<Long, Long> modelToEval = new NewContextDataModel<>();
+            DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
             for (Long user : recModel.getUsers()) {
 
-                Map<Map<String, Double>, Map<Long, Double>> userContextPreferences =
-                        recModel.getUserContextItemPreferences().get(user);
-                Map<String, Double> context = userContextPreferences.keySet().iterator().next();
-                Map<Long, Double> itemPreferences = userContextPreferences.get(context);
-//
-                if (userContextPreferences.size() != 1) {
-                    System.out.println("User context Preferences size: " + userContextPreferences.size());
-                }
+//                Map<Map<String, Double>, Map<Long, Double>> userContextPreferences =
+//                        recModel.getUserContextItemPreferences().get(user);
+//                Map<String, Double> context = userContextPreferences.keySet().iterator().next();
+//                Map<Long, Double> itemPreferences = userContextPreferences.get(context);
+////
+//                if (userContextPreferences.size() != 1) {
+//                    System.out.println("User context Preferences size: " + userContextPreferences.size());
+//                }
 
-//                Map<Long, Double> itemPreferences = recModel.getUserItemPreferences().get(user);
+                Map<Long, Double> itemPreferences = recModel.getUserItemPreferences().get(user);
 
                 for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
 
                     if (itemPreferences.containsKey(item)) {
-                        modelToEval.addPreference(user, item, context, itemPreferences.get(item));
-//                        modelToEval.addPreference(user, item, itemPreferences.get(item));
+//                        modelToEval.addPreference(user, item, context, itemPreferences.get(item));
+                        modelToEval.addPreference(user, item, itemPreferences.get(item));
                     }
                 }
 //                for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
@@ -766,8 +777,8 @@ public class RichContextEvaluator {
 //                }
             }
             try {
-                modelToEval.saveDataModel(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
-//                DataModelUtils.saveDataModel(modelToEval, foldPath + "strategymodel_" + algorithm + "_" + STRATEGY.toString() + ".csv", true, "\t");
+//                modelToEval.saveDataModel(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
+                DataModelUtils.saveDataModel(modelToEval, foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -835,7 +846,6 @@ public class RichContextEvaluator {
                 throw new UnsupportedOperationException(msg);
         }
     }
-//    protected abstract Map<String, String> evaluate(String algorithm) throws IOException;
 
 
     public static void main(final String[] args) throws IOException, InterruptedException, ParseException {

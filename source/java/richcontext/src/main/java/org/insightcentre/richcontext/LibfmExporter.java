@@ -1,12 +1,12 @@
 package org.insightcentre.richcontext;
 
-import com.opencsv.CSVWriter;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,14 +33,17 @@ public class LibfmExporter {
 
 
         int totalReviews = reviews.size();
-        int progress = 1;
+//        int progress = 1;
+        ProgressBar progressBar =
+                new ProgressBar("Export recommendations", totalReviews, ProgressBarStyle.ASCII);
+        progressBar.start();
 
 //        Map<String, Integer> oneHotIdMap = getOneHot(reviews);
 
         for (Review review : reviews) {
 
-            System.out.print("Progress: " + progress + "/" + totalReviews + "\r");
-            progress++;
+//            System.out.print("Progress: " + progress + "/" + totalReviews + "\r");
+//            progress++;
 
             String userId = "user_" + String.valueOf(review.getUserId());
             String itemId = "item_" + String.valueOf(review.getItemId());
@@ -61,15 +64,17 @@ public class LibfmExporter {
             }
 
             bufferedWriter.write(String.join(delimiter, row) + "\n");
+            progressBar.step();
         }
         bufferedWriter.flush();
         bufferedWriter.close();
+        progressBar.stop();
+        System.out.println("\n");
     }
 
 
     public static List<Review> getReviewsForRanking(
-            List<Review> trainReviews, List<Review> testReviews,
-            Map<String, Integer> oneHotIdMap) {
+            List<Review> trainReviews, List<Review> testReviews) {
 
         Set<Long> testUsersSet = new HashSet<>();
         Set<Long> trainItemsSet = new HashSet<>();
@@ -100,7 +105,13 @@ public class LibfmExporter {
         // obtain its context and for all the items in the training set create
         // reviews that have the same context
 
+//        BufferedWriter writer =
+//                new BufferedWriter(new FileWriter(filePath));
         List<Review> exportReviews = new ArrayList<>();
+
+        ProgressBar progressBar = new ProgressBar(
+                "Export user recommendations", testUsersSet.size(), ProgressBarStyle.ASCII);
+        progressBar.start();
 
         for (Long user : testUsersSet) {
 
@@ -117,13 +128,20 @@ public class LibfmExporter {
             Map<String, Double> context = relevantReview.getContext();
 
             exportReviews.add(relevantReview);
+//            writeReviewToFile(relevantReview, writer);
 
             for (Long item : trainItemsSet) {
                 Review review = new Review(user, item);
                 review.setContext(context);
                 exportReviews.add(review);
+//                writeReviewToFile(review, writer);
             }
+            progressBar.step();
         }
+//        writer.flush();
+//        writer.close();
+        progressBar.stop();
+//        System.out.printf("\n");
 
         return exportReviews;
     }
@@ -133,8 +151,10 @@ public class LibfmExporter {
             List<Review> trainReviews, List<Review> testReviews,
             String predictionsFilePath, Map<String, Integer> oneHotIdMap) throws IOException {
 
+        System.out.println("Export ranking predictions file");
+
         List<Review> exportReviews =
-                getReviewsForRanking(trainReviews, testReviews, oneHotIdMap);
+                getReviewsForRanking(trainReviews, testReviews);
 
 //        for (Review exportReview : exportReviews) {
 //            System.out.println(exportReview);
@@ -213,7 +233,7 @@ public class LibfmExporter {
             }
         }
 
-        System.out.println(idMap);
+//        System.out.println(idMap);
 
         return idMap;
     }
@@ -339,7 +359,180 @@ public class LibfmExporter {
         Map<String, Integer> oneHotIdMap = getOneHot(allReviews);
 
         String filePath = "/Users/fpena/tmp/reviews.libfm";
+        String predictionsFile = "/Users/fpena/tmp/predictions.csv";
         exportRankingPredictionsFile(
-                trainReviews, testReviews, filePath, oneHotIdMap);
+                trainReviews, testReviews, filePath, oneHotIdMap, predictionsFile);
+    }
+
+
+    public static void exportRankingPredictionsFile(
+            List<Review> trainReviews, List<Review> testReviews,
+            String predictionsFilePath, Map<String, Integer> oneHotIdMap, String predictionsFile) throws IOException {
+
+        System.out.println("Export ranking predictions file");
+
+//        List<Review> exportReviews =
+//                getReviewsForRanking(trainReviews, testReviews);
+
+        Set<Long> testUsersSet = new HashSet<>();
+        Set<Long> trainItemsSet = new HashSet<>();
+
+        for (Review review : trainReviews) {
+            trainItemsSet.add(review.getItemId());
+        }
+
+        for (Review review : testReviews) {
+            testUsersSet.add(review.getUserId());
+        }
+
+        // Create a map of relevant reviews
+
+        Map<Long, List<Review>> relevantReviewsPerUser = new HashMap<>();
+        for (Review review : testReviews) {
+            if (review.getRating() >= RELEVANCE_THRESHOLD) {
+                if (!relevantReviewsPerUser.containsKey(review.getUserId())) {
+                    relevantReviewsPerUser.put(review.getUserId(), new ArrayList<Review>());
+                }
+                relevantReviewsPerUser.get(review.getUserId()).add(review);
+            }
+        }
+
+
+
+        // Select one review with high rating randomly (preferred item)
+        // obtain its context and for all the items in the training set create
+        // reviews that have the same context
+
+        BufferedWriter predictionsWriter =
+                new BufferedWriter(new FileWriter(predictionsFile));
+        BufferedWriter libfmWriter =
+                new BufferedWriter(new FileWriter(predictionsFilePath));
+//        List<Review> exportReviews = new ArrayList<>();
+
+        ProgressBar progressBar = new ProgressBar(
+                "Export user recommendations", testUsersSet.size(), ProgressBarStyle.ASCII);
+        progressBar.start();
+
+        List<String> firstRow = new ArrayList<>();
+        firstRow.add("user");
+        firstRow.add("item");
+        firstRow.add("predicted_rating");
+
+        Set<String> contextKeys = trainReviews.get(0).getContext().keySet();
+        for (String context : contextKeys) {
+            firstRow.add(context);
+        }
+        String delimiter = "\t";
+        // Write the header of the CSV file
+        predictionsWriter.write(String.join(delimiter, firstRow) + "\n");
+
+        for (Long user : testUsersSet) {
+
+            List<Review> relevantReviews = relevantReviewsPerUser.get(user);
+//            System.out.println("User: " + user);
+//            System.out.println(relevantReviews);
+
+            if (relevantReviews == null) {
+                progressBar.step();
+                continue;
+            }
+
+            int reviewIndex = (int) (Math.random() * relevantReviews.size());
+            Review relevantReview = relevantReviews.get(reviewIndex);
+            Map<String, Double> context = relevantReview.getContext();
+
+//            exportReviews.add(relevantReview);
+            writeReviewToFile(relevantReview, predictionsWriter);
+            writeLibfmReviewToFile(relevantReview, oneHotIdMap, libfmWriter);
+
+            for (Long item : trainItemsSet) {
+                Review review = new Review(user, item);
+                review.setContext(context);
+//                exportReviews.add(review);
+                writeReviewToFile(review, predictionsWriter);
+                writeLibfmReviewToFile(review, oneHotIdMap, libfmWriter);
+            }
+            progressBar.step();
+        }
+        predictionsWriter.flush();
+        predictionsWriter.close();
+        libfmWriter.flush();
+        libfmWriter.close();
+        progressBar.stop();
+        System.out.println("\n");
+
+
+//        for (Review exportReview : exportReviews) {
+//            System.out.println(exportReview);
+//        }
+
+//        exportRecommendations(exportReviews, predictionsFilePath, oneHotIdMap);
+    }
+
+
+    public static void writeReviewToFile(Review review, BufferedWriter writer)
+            throws IOException {
+
+        String delimiter = "\t";
+        List<String> row = new ArrayList<>();
+        row.add(String.valueOf(review.getUserId()));
+        row.add(String.valueOf(review.getItemId()));
+        row.add(Double.toString(review.getPredictedRating()));
+
+//        for (Double context : review.getContext().values()) {
+//            row.add(Double.toString(context));
+//        }
+
+        writer.write(String.join(delimiter, row) + "\n");
+    }
+
+
+    private static void writeLibfmReviewToFile(
+            Review review, Map<String, Integer> oneHotIdMap,
+            BufferedWriter bufferedWriter) throws IOException {
+
+        String userId = "user_" + String.valueOf(review.getUserId());
+        String itemId = "item_" + String.valueOf(review.getItemId());
+        String delimiter = " ";
+
+        Map<String, Double> contextTopics = review.getContext();
+
+        List<String> row = new ArrayList<>();
+        row.add(String.valueOf(review.getRating()));
+        row.add(String.valueOf(oneHotIdMap.get(userId)) + ":1");
+        row.add(String.valueOf(oneHotIdMap.get(itemId)) + ":1");
+
+        if (contextTopics != null) {
+            for (String contextColumn : contextTopics.keySet()) {
+
+                String contextId = "context_" + contextColumn;
+                row.add(String.valueOf(oneHotIdMap.get(contextId)) + ":" + contextTopics.get(contextColumn));
+            }
+        }
+
+        bufferedWriter.write(String.join(delimiter, row) + "\n");
+    }
+
+    private static Review parseReview(String line, String[] headers)
+            throws IOException {
+
+        final int USER_TOK = 0;
+        final int ITEM_TOK = 1;
+        final int RATING_TOK = 2;
+
+        String[] lineTokens = line.split("\t");
+        long user_id = Long.parseLong(lineTokens[USER_TOK]);
+        long item_id = Long.parseLong(lineTokens[ITEM_TOK]);
+        double rating = Double.parseDouble(lineTokens[RATING_TOK]);
+        Map<String, Double> contextMap = new HashMap<>();
+
+        for (int i = 3; i < lineTokens.length; i++) {
+            contextMap.put(headers[i], Double.parseDouble(lineTokens[i]));
+        }
+
+        Review review = new Review(user_id, item_id, rating);
+        review.setContext(contextMap);
+
+        return review;
     }
 }
