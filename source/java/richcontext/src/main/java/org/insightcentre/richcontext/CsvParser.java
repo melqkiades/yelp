@@ -4,6 +4,8 @@ package org.insightcentre.richcontext;
  * Created by fpena on 11/07/2017.
  */
 
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import net.recommenders.rival.core.DataModelIF;
 import net.recommenders.rival.core.TemporalDataModel;
 
@@ -12,6 +14,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -96,14 +100,21 @@ public class CsvParser {
         DataModelIF<Long, Long> dataset = new TemporalDataModel<>(ignoreDupPreferences);
 
         BufferedReader br = CsvParser.getBufferedReader(f);
+        long numLines = Files.lines(Paths.get(f.getAbsolutePath())).count();
+        ProgressBar progressBar = new ProgressBar(
+                "Parsing CSV data", numLines, ProgressBarStyle.ASCII);
+        progressBar.start();
         String line = br.readLine();
         if ((line != null) && (!line.matches(".*[a-zA-Z].*"))) {
             parseLine(line, dataset, token);
         }
         while ((line = br.readLine()) != null) {
             parseLine(line, dataset, token);
+            progressBar.step();
         }
         br.close();
+        progressBar.stop();
+        System.out.println("\n");
 
         return dataset;
     }

@@ -324,15 +324,6 @@ public class RichContextEvaluator {
                         completeTestReviews, libfmPredictionsFile, oneHotIdMap);
                 break;
             case REL_PLUS_N: {
-//                List<Review> reviewsForRanking =
-//                        LibfmExporter.getReviewsForRanking(
-//                                completeTrainReviews, completeTestReviews);
-//                CarskitExporter.exportContextRecommendationsToCsv(
-//                        reviewsForRanking, predictionsFile);
-//                LibfmExporter.exportRankingPredictionsFile(
-//                        completeTrainReviews, completeTestReviews,
-//                        libfmPredictionsFile, oneHotIdMap
-//                );
                 LibfmExporter.exportRankingPredictionsFile(
                         completeTrainReviews, completeTestReviews,
                         libfmPredictionsFile, oneHotIdMap, predictionsFile
@@ -394,19 +385,17 @@ public class RichContextEvaluator {
             String rivalRecommendationsFile =
                     ratingsFolderPath + "fold_" + fold + "/recs_libfm_" +
                             strategy.toString().toLowerCase()  + ".csv";
-            List<Review> recommendations;
 
             switch (strategy) {
                 case TEST_ITEMS:
                     predictionsFile = foldPath + "test.csv";
-                    recommendations = LibfmResultsParser.parseRatingResults(
-                            predictionsFile, libfmResultsFile, false);
+                    LibfmResultsParser.parseRatingResults(
+                            predictionsFile, libfmResultsFile, false, rivalRecommendationsFile);
                     break;
                 case REL_PLUS_N:
                     predictionsFile = foldPath + "predictions.csv";
-                    recommendations =
-                            LibfmResultsParser.parseContextRatingResults(
-                                    predictionsFile, libfmResultsFile);
+                    LibfmResultsParser.parseRatingResults(
+                            predictionsFile, libfmResultsFile, true, rivalRecommendationsFile);
                     break;
                 default:
                     String msg = strategy.toString() +
@@ -415,8 +404,6 @@ public class RichContextEvaluator {
             }
 
             System.out.println("Recommendations file name: " + rivalRecommendationsFile);
-            CarskitExporter.exportRecommendationsToCsv(
-                    recommendations, rivalRecommendationsFile);
         }
     }
 
@@ -728,12 +715,13 @@ public class RichContextEvaluator {
                     strategy.toString().toLowerCase()  + ".csv");
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
-//            NewContextDataModel<Long, Long> recModel;
             DataModelIF<Long, Long> recModel;
             try {
+                System.out.println("Parsing Training Model");
                 trainingModel = new CsvParser().parseData(trainingFile);
+                System.out.println("Parsing Test Model");
                 testModel = new CsvParser().parseData(testFile);
-//                recModel = new ContextParser().parseData2(recFile, "\t");
+                System.out.println("Parsing Recommendation Model");
                 recModel = new CsvParser().parseData(recFile);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -742,42 +730,24 @@ public class RichContextEvaluator {
 
             System.out.println("Recommendation model num users: " + recModel.getNumUsers());
             System.out.println("Recommendation model num items: " + recModel.getNumItems());
-//            System.out.println("Recommendation model num predictions: " + recModel.getUserContextItemPreferences().size());
-//            System.out.println("Recommendation model num predictions: " + recModel.getUserItemPreferences().size());
+            System.out.println("Recommendation model num predictions: " + recModel.getUserItemPreferences().size());
 
             EvaluationStrategy<Long, Long> evaluationStrategy =
                     new RelPlusN(trainingModel, testModel, additionalItems, relevanceThreshold, seed);
 
-//            NewContextDataModel<Long, Long> modelToEval = new NewContextDataModel<>();
             DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
             for (Long user : recModel.getUsers()) {
-
-//                Map<Map<String, Double>, Map<Long, Double>> userContextPreferences =
-//                        recModel.getUserContextItemPreferences().get(user);
-//                Map<String, Double> context = userContextPreferences.keySet().iterator().next();
-//                Map<Long, Double> itemPreferences = userContextPreferences.get(context);
-////
-//                if (userContextPreferences.size() != 1) {
-//                    System.out.println("User context Preferences size: " + userContextPreferences.size());
-//                }
 
                 Map<Long, Double> itemPreferences = recModel.getUserItemPreferences().get(user);
 
                 for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
 
                     if (itemPreferences.containsKey(item)) {
-//                        modelToEval.addPreference(user, item, context, itemPreferences.get(item));
                         modelToEval.addPreference(user, item, itemPreferences.get(item));
                     }
                 }
-//                for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
-//                    if (recModel.getUserItemPreferences().get(user).containsKey(item)) {
-//                        modelToEval.addPreference(user, item, recModel.getUserItemPreferences().get(user).get(item));
-//                    }
-//                }
             }
             try {
-//                modelToEval.saveDataModel(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
                 DataModelUtils.saveDataModel(modelToEval, foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
