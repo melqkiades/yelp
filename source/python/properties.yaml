@@ -80,3 +80,4 @@ context_format: no_context
 rival_relevance_threshold: 5.0
 rival_seed: 2048
 rival_evaluation_strategy: rel_plus_n
+evaluate_cold_start: True
