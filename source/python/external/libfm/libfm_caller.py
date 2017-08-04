@@ -64,14 +64,25 @@ def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
 
 def main():
 
+
+    prediction_type_map = {
+        'user_test': 'rating',
+        'test_items': 'rating',
+        'rel_plus_n': 'ranking'
+    }
+    prediction_type = prediction_type_map[Constants.RIVAL_EVALUATION_STRATEGY]
+
     for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
 
         ratings_fold_folder = LIBFM_RATINGS_FOLD_FOLDER % fold
+        # ratings_fold_folder = Constants.CACHE_FOLDER + 'rival/contextaa/fold_%d/' % fold
         train_file = ratings_fold_folder + 'libfm_train.libfm'
         predictions_file = ratings_fold_folder + 'libfm_predictions_' + \
-                    Constants.RIVAL_EVALUATION_STRATEGY + '.libfm'
+                    prediction_type + '.libfm'
         results_file = ratings_fold_folder + 'libfm_results_' + \
-                           Constants.RIVAL_EVALUATION_STRATEGY + '.txt'
+                           prediction_type + '.txt'
+        # predictions_file = ratings_fold_folder + 'libfm_test.libfm'
+        # results_file = ratings_fold_folder + 'libfm_predictions.txt'
         log_file = ratings_fold_folder + 'libfm_log.txt'
         save_file = ratings_fold_folder + 'libfm_model.txt'
 

@@ -102,7 +102,8 @@ public class RichContextEvaluator {
         PREPARE_LIBFM,
         PREPARE_CARSKIT,
         PROCESS_LIBFM_RESULTS,
-        PROCESS_CARSKIT_RESULTS
+        PROCESS_CARSKIT_RESULTS,
+        EVALUATE_LIBFM_RESULTS
     }
 
 
@@ -337,7 +338,7 @@ public class RichContextEvaluator {
         String libfmTrainFile = foldPath + "libfm_train.libfm";
 //        String libfmTestFile = foldPath + "libfm_test.libfm";
         String libfmPredictionsFile = foldPath + "libfm_predictions_" +
-                strategy.toString().toLowerCase() + ".libfm";
+                strategy.getPredictionType() + ".libfm";
 
         Map<String, Integer> oneHotIdMap =
                 LibfmExporter.getOneHot(reviewsMap.values());
@@ -390,7 +391,7 @@ public class RichContextEvaluator {
 
             String rivalRecommendationsFile =
                     ratingsFolderPath + "fold_" + fold + "/recs_" + algorithm +
-                            "_" + strategy.toString().toLowerCase()  + ".csv";
+                            "_" + strategy.getPredictionType()  + ".csv";
             System.out.println("Recommendations file name: " + rivalRecommendationsFile);
             CarskitExporter.exportRecommendationsToCsv(
                     recommendations, rivalRecommendationsFile);
@@ -409,10 +410,10 @@ public class RichContextEvaluator {
 //            String testFile = foldPath + "test.csv";
             String predictionsFile;
             String libfmResultsFile = foldPath + "libfm_results_" +
-                    strategy.toString().toLowerCase() + ".txt";
+                    strategy.getPredictionType() + ".txt";
             String rivalRecommendationsFile =
                     ratingsFolderPath + "fold_" + fold + "/recs_libfm_" +
-                            strategy.toString().toLowerCase()  + ".csv";
+                            strategy.getPredictionType()  + ".csv";
 
             switch (strategy) {
                 case TEST_ITEMS:
@@ -698,6 +699,21 @@ public class RichContextEvaluator {
     }
 
 
+    protected static void prepareStrategyAndEvaluate(
+            String jsonFile, String outputFolder, String propertiesFile)
+            throws IOException, InterruptedException {
+
+        RichContextEvaluator evaluator = new RichContextEvaluator(
+                jsonFile, outputFolder, propertiesFile);
+        evaluator.prepareStrategy("libfm");
+        Map<String, String> results = evaluator.evaluate("libfm");
+
+        List<Map<String, String>> resultsList = new ArrayList<>();
+        resultsList.add(results);
+        evaluator.writeResultsToFile(resultsList);
+    }
+
+
     protected static void processCarskitResults(
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException, InterruptedException {
@@ -746,7 +762,7 @@ public class RichContextEvaluator {
             File trainingFile = new File(foldPath + "train.csv");
             File testFile = new File(foldPath + "test.csv");
             File recFile = new File(foldPath + "recs_" + algorithm + "_" +
-                    strategy.toString().toLowerCase()  + ".csv");
+                    strategy.getPredictionType()  + ".csv");
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
@@ -791,7 +807,7 @@ public class RichContextEvaluator {
             File trainingFile = new File(foldPath + "train.csv");
             File testFile = new File(foldPath + "test.csv");
             File recFile = new File(foldPath + "recs_" + algorithm + "_" +
-                    strategy.toString().toLowerCase()  + ".csv");
+                    strategy.getPredictionType()  + ".csv");
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
@@ -881,7 +897,8 @@ public class RichContextEvaluator {
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
 
 //        processingTask = ProcessingTask.PREPARE_LIBFM;
-        processingTask = ProcessingTask.PROCESS_LIBFM_RESULTS;
+//        processingTask = ProcessingTask.PROCESS_LIBFM_RESULTS;
+        processingTask = ProcessingTask.EVALUATE_LIBFM_RESULTS;
 
         long startTime = System.currentTimeMillis();
 
@@ -898,9 +915,12 @@ public class RichContextEvaluator {
             case PROCESS_CARSKIT_RESULTS:
                 processCarskitResults(cacheFolder, outputFolder, propertiesFile);
                 break;
+            case EVALUATE_LIBFM_RESULTS:
+                prepareStrategyAndEvaluate(cacheFolder, outputFolder, propertiesFile);
+                break;
             default:
                 throw new UnsupportedOperationException(
-                        "Unknown processing task");
+                        "Unknown processing task: " + processingTask.toString());
         }
 
 //        prepareLibfm(jsonFile, outputFolder, propertiesFile);
