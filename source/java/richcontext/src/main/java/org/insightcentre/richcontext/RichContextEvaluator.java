@@ -13,6 +13,7 @@ import net.recommenders.rival.evaluation.metric.ranking.Recall;
 import net.recommenders.rival.evaluation.strategy.EvaluationStrategy;
 import net.recommenders.rival.evaluation.strategy.RelPlusN;
 import net.recommenders.rival.evaluation.strategy.TestItems;
+import net.recommenders.rival.evaluation.strategy.UserTest;
 import net.recommenders.rival.split.splitter.CrossValidationSplitter;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -21,21 +22,21 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
-import static org.insightcentre.richcontext.RichContextEvaluator.Strategy.*;
+import static org.insightcentre.richcontext.RichContextEvaluator.Strategy.valueOf;
 
 /**
  * Created by fpena on 18/07/2017.
@@ -52,6 +53,7 @@ public class RichContextEvaluator {
     protected final ContextFormat contextFormat;
     protected final Dataset dataset;
     protected final String outputFile;
+    protected final boolean coldStart;
 
 
     protected Map<String, Review> reviewsMap;
@@ -60,13 +62,26 @@ public class RichContextEvaluator {
     protected int numUsers;
     protected int numItems;
 
+    public static final String RATING = "rating";
+    public static final String RANKING = "ranking";
+
 
     protected enum Strategy {
-        ALL_ITEMS,
-        REL_PLUS_N,
-        TEST_ITEMS,
-        TRAIN_ITEMS,
-        USER_TEST
+        ALL_ITEMS(RATING),
+        REL_PLUS_N(RANKING),
+        TEST_ITEMS(RATING),
+        TRAIN_ITEMS(RATING),
+        USER_TEST(RATING);
+
+        private final String predictionType;
+
+        Strategy(String predictionType) {
+            this.predictionType = predictionType;
+        }
+
+        public String getPredictionType() {
+            return predictionType;
+        }
     }
 
     protected enum ContextFormat {
@@ -108,6 +123,7 @@ public class RichContextEvaluator {
         dataset = RichContextEvaluator.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
         numTopics = properties.getNumTopics();
+        coldStart = properties.getEvaluateColdStart();
         outputFile = outputFolder +
                 "rival_" + properties.getDataset() + "_results_folds_3.csv";
 
@@ -162,18 +178,14 @@ public class RichContextEvaluator {
     /**
      * Downloads a dataset and stores the splits generated from it.
      */
-    public void prepareSplits() {
+    public void prepareSplits() throws IOException {
 
         String dataFile = jsonRatingsFile;
         boolean perUser = false;
         JsonParser parser = new JsonParser();
 
         DataModelIF<Long, Long> data = null;
-        try {
-            data = parser.parseData(new File(dataFile));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        data = parser.parseData(new File(dataFile));
 
         // Build reviews map
         this.reviewsMap = new HashMap<>();
@@ -213,15 +225,30 @@ public class RichContextEvaluator {
 
             DataModelIF<Long, Long> training = splits[2 * i];
             DataModelIF<Long, Long> test = splits[2 * i + 1];
+
+            // If we want to test cold-start scenarios
+            if (coldStart) {
+
+                // Filter the users from the training and testing sets
+                List<Long> allUsers = new ArrayList<>(usersSet);
+                Collections.shuffle(allUsers, new Random(i));
+
+                int cutPoint = allUsers.size() - allUsers.size() / numFolds;
+                List<Long> trainUsers = allUsers.subList(0, cutPoint);
+                List<Long> testUsers = allUsers.subList(cutPoint, allUsers.size());
+                for (Long trainUser : trainUsers) {
+                    test.getUserItemPreferences().remove(trainUser);
+                }
+                for (Long testUser : testUsers) {
+                    training.getUserItemPreferences().remove(testUser);
+                }
+            }
+
             String trainingFile = foldPath + "train.csv";
             String testFile = foldPath + "test.csv";
             boolean overwrite = true;
-            try {
-                DataModelUtils.saveDataModel(training, trainingFile, overwrite, "\t");
-                DataModelUtils.saveDataModel(test, testFile, overwrite, "\t");
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+            DataModelUtils.saveDataModel(training, trainingFile, overwrite, "\t");
+            DataModelUtils.saveDataModel(test, testFile, overwrite, "\t");
         }
     }
 
@@ -320,6 +347,7 @@ public class RichContextEvaluator {
 
         switch (strategy) {
             case TEST_ITEMS:
+            case USER_TEST:
                 LibfmExporter.exportRecommendations(
                         completeTestReviews, libfmPredictionsFile, oneHotIdMap);
                 break;
@@ -388,6 +416,7 @@ public class RichContextEvaluator {
 
             switch (strategy) {
                 case TEST_ITEMS:
+                case USER_TEST:
                     predictionsFile = foldPath + "test.csv";
                     LibfmResultsParser.parseRatingResults(
                             predictionsFile, libfmResultsFile, false, rivalRecommendationsFile);
@@ -436,6 +465,7 @@ public class RichContextEvaluator {
                 "Algorithm",
                 "Strategy",
                 "Context_Format",
+                "Cold-start",
                 "NDCG@" + at,
                 "Precision@" + at,
                 "Recall@" + at,
@@ -516,12 +546,13 @@ public class RichContextEvaluator {
         for (int i = 0; i < numFolds; i++) {
             String foldPath = ratingsFolderPath + "fold_" + i + "/";
             File testFile = new File(foldPath + "test.csv");
-            File strategyFile = new File(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv");
+            File strategyFile = new File(foldPath + "strategymodel_" + algorithm + "_" + strategy.toString().toLowerCase() + ".csv");
             DataModelIF<Long, Long> testModel = new CsvParser().parseData(testFile);
             DataModelIF<Long, Long> recModel;
 
             switch (strategy) {
                 case TEST_ITEMS:
+                case USER_TEST:
                     recModel = new CsvParser().parseData(strategyFile);
                     break;
                 case REL_PLUS_N:
@@ -531,6 +562,7 @@ public class RichContextEvaluator {
                     Set<Long> users = getElementsByFrequency(myMap, 0, 10000000);
                     System.out.println("Num users in training set range: " + users.size());
                     recModel = new CsvParser().parseData(strategyFile, users);
+//                    recModel = new CsvParser().parseData(strategyFile);
                     break;
                 default:
                     throw new UnsupportedOperationException(
@@ -569,6 +601,7 @@ public class RichContextEvaluator {
         results.put("Num Topics", String.valueOf(numTopics));
         results.put("Strategy", strategy.toString());
         results.put("Context_Format", contextFormat.toString());
+        results.put("Cold-start", contextFormat.toString());
         results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
         results.put("Precision@" + at, String.valueOf(precisionRes / numFolds));
         results.put("Recall@" + at, String.valueOf(recallRes / numFolds));
@@ -580,6 +613,7 @@ public class RichContextEvaluator {
         System.out.println("Num Topics: " + numTopics);
         System.out.println("Strategy: " + strategy.toString());
         System.out.println("Context_Format: " + contextFormat.toString());
+        System.out.println("Cold-start: " + coldStart);
         System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
         System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
         System.out.println("Recall@" + at + ": " + recallRes / numFolds);
@@ -702,7 +736,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void prepareRankingStrategy(String algorithm) {
+    public void prepareRankingStrategy(String algorithm) throws IOException {
 
         System.out.println("Prepare Ranking Strategy");
 
@@ -716,17 +750,12 @@ public class RichContextEvaluator {
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
-            try {
-                System.out.println("Parsing Training Model");
-                trainingModel = new CsvParser().parseData(trainingFile);
-                System.out.println("Parsing Test Model");
-                testModel = new CsvParser().parseData(testFile);
-                System.out.println("Parsing Recommendation Model");
-                recModel = new CsvParser().parseData(recFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
+            System.out.println("Parsing Training Model");
+            trainingModel = new CsvParser().parseData(trainingFile);
+            System.out.println("Parsing Test Model");
+            testModel = new CsvParser().parseData(testFile);
+            System.out.println("Parsing Recommendation Model");
+            recModel = new CsvParser().parseData(recFile);
 
             System.out.println("Recommendation model num users: " + recModel.getNumUsers());
             System.out.println("Recommendation model num items: " + recModel.getNumItems());
@@ -747,16 +776,12 @@ public class RichContextEvaluator {
                     }
                 }
             }
-            try {
-                DataModelUtils.saveDataModel(modelToEval, foldPath + "strategymodel_" + algorithm + "_" + strategy.toString() + ".csv", true, "\t");
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+            DataModelUtils.saveDataModel(modelToEval, foldPath + "strategymodel_" + algorithm + "_" + strategy.toString().toLowerCase() + ".csv", true, "\t");
         }
     }
 
 
-    public void prepareRatingStrategy(String algorithm) {
+    public void prepareRatingStrategy(String algorithm) throws IOException {
 
         System.out.println("Prepare Rating Strategy");
 
@@ -770,41 +795,50 @@ public class RichContextEvaluator {
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
-            try {
-                trainingModel = new CsvParser().parseData(trainingFile);
-                testModel = new CsvParser().parseData(testFile);
-                recModel = new CsvParser().parseData(recFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
+            trainingModel = new CsvParser().parseData(trainingFile);
+            testModel = new CsvParser().parseData(testFile);
+            recModel = new CsvParser().parseData(recFile);
+
+            EvaluationStrategy<Long, Long> evaluationStrategy;
+
+            switch (strategy) {
+                case TEST_ITEMS:
+                    evaluationStrategy = new TestItems((DataModel)trainingModel, (DataModel)testModel, relevanceThreshold);
+                    break;
+                case USER_TEST:
+                    evaluationStrategy = new UserTest((DataModel)trainingModel, (DataModel)testModel, relevanceThreshold);
+                    break;
+                default:
+                    String msg = strategy.toString() +
+                            " evaluation strategy not supported for rating";
+                    throw new UnsupportedOperationException(msg);
             }
 
-            EvaluationStrategy<Long, Long> evaluationStrategy =
-                    new TestItems((DataModel)trainingModel, (DataModel)testModel, relevanceThreshold);
 
             DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
             for (Long user : recModel.getUsers()) {
+
+//                System.out.println("Candidate items to rank: " + evaluationStrategy.getCandidateItemsToRank(user).size());
+
                 for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
                     if (recModel.getUserItemPreferences().get(user).containsKey(item)) {
                         modelToEval.addPreference(user, item, recModel.getUserItemPreferences().get(user).get(item));
                     }
                 }
             }
-            try {
-                DataModelUtils.saveDataModel(
-                        modelToEval,
-                        foldPath + "strategymodel_" + algorithm + "_" + strategy.toString().toLowerCase() + ".csv", true, "\t");
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+            DataModelUtils.saveDataModel(
+                    modelToEval,
+                    foldPath + "strategymodel_" + algorithm + "_" + strategy.toString().toLowerCase() + ".csv",
+                    true, "\t");
         }
     }
 
 
-    protected void prepareStrategy(String algorithm) {
+    protected void prepareStrategy(String algorithm) throws IOException {
 
         switch (strategy) {
             case TEST_ITEMS:
+            case USER_TEST:
                 prepareRatingStrategy(algorithm);
                 break;
             case REL_PLUS_N:

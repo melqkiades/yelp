@@ -5,6 +5,7 @@ import net.recommenders.rival.core.*;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ public class JsonParser implements Parser<Long, Long> {
 
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         String folder = "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
 //        String filePath = folder + "yelp_restaurant_recsys_contextual_records_ensemble_numtopics-10_iterations-100_passes-10_targetreview-specificnormalized_lang-en_bow-NN_document_level-review_targettype-context_min_item_reviews-10.json";
@@ -36,20 +37,16 @@ public class JsonParser implements Parser<Long, Long> {
 
 
 
-    public static List<Review> readReviews(File file) {
+    public static List<Review> readReviews(File file) throws IOException {
 
         Gson gson = new Gson();
         List<Review> reviews = new ArrayList<>();
 
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = br.readLine()) != null) {
-                Review review = gson.fromJson(line, Review.class);
-                reviews.add(review);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line;
+        while ((line = br.readLine()) != null) {
+            Review review = gson.fromJson(line, Review.class);
+            reviews.add(review);
         }
 
         System.out.println("Number of reviews: " + reviews.size());
