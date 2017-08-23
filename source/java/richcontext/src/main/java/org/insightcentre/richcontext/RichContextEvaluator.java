@@ -126,7 +126,7 @@ public class RichContextEvaluator {
         numTopics = properties.getNumTopics();
         coldStart = properties.getEvaluateColdStart();
         outputFile = outputFolder +
-                "rival_" + properties.getDataset() + "_results_folds_3.csv";
+                "rival_" + properties.getDataset() + "_results_folds_4.csv";
 
         jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
@@ -464,6 +464,7 @@ public class RichContextEvaluator {
 
         String[] headers = {
                 "Algorithm",
+                "Num_Topics",
                 "Strategy",
                 "Context_Format",
                 "Cold-start",
@@ -579,30 +580,30 @@ public class RichContextEvaluator {
             Recall<Long, Long> recall = new Recall<>(recModel, testModel, relevanceThreshold, new int[]{at});
             recall.compute();
             recallRes += recall.getValueAt(at);
-            results.put("fold_" + i + "_recall", String.valueOf(ndcg.getValueAt(at)));
+            results.put("fold_" + i + "_recall", String.valueOf(recall.getValueAt(at)));
 
             RMSE<Long, Long> rmse = new RMSE<>(recModel, testModel);
             rmse.compute();
             rmseRes += rmse.getValue();
-            results.put("fold_" + i + "_rmse", String.valueOf(ndcg.getValue()));
+            results.put("fold_" + i + "_rmse", String.valueOf(rmse.getValue()));
 
             MAE<Long, Long> mae = new MAE<>(recModel, testModel);
             mae.compute();
             maeRes += mae.getValue();
-            results.put("fold_" + i + "_mae", String.valueOf(ndcg.getValue()));
+            results.put("fold_" + i + "_mae", String.valueOf(mae.getValue()));
 
             Precision<Long, Long> precision = new Precision<>(recModel, testModel, relevanceThreshold, new int[]{at});
             precision.compute();
             precisionRes += precision.getValueAt(at);
-            results.put("fold_" + i + "_precision", String.valueOf(ndcg.getValueAt(at)));
+            results.put("fold_" + i + "_precision", String.valueOf(precision.getValueAt(at)));
         }
 
         results.put("Dataset", dataset.toString());
         results.put("Algorithm", algorithm);
-        results.put("Num Topics", String.valueOf(numTopics));
+        results.put("Num_Topics", String.valueOf(numTopics));
         results.put("Strategy", strategy.toString());
         results.put("Context_Format", contextFormat.toString());
-        results.put("Cold-start", contextFormat.toString());
+        results.put("Cold-start", String.valueOf(coldStart));
         results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
         results.put("Precision@" + at, String.valueOf(precisionRes / numFolds));
         results.put("Recall@" + at, String.valueOf(recallRes / numFolds));
@@ -783,6 +784,8 @@ public class RichContextEvaluator {
             DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
             for (Long user : recModel.getUsers()) {
 
+//                System.out.println("Candidate items to rank: " + evaluationStrategy.getCandidateItemsToRank(user).size());
+
                 Map<Long, Double> itemPreferences = recModel.getUserItemPreferences().get(user);
 
                 for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
@@ -890,15 +893,15 @@ public class RichContextEvaluator {
                 "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
 
         ProcessingTask processingTask;
-//        processingTask =
-//                ProcessingTask.valueOf(cmd.getOptionValue("t").toUpperCase());
+        processingTask =
+                ProcessingTask.valueOf(cmd.getOptionValue("t").toUpperCase());
         String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
 
 //        processingTask = ProcessingTask.PREPARE_LIBFM;
 //        processingTask = ProcessingTask.PROCESS_LIBFM_RESULTS;
-        processingTask = ProcessingTask.EVALUATE_LIBFM_RESULTS;
+//        processingTask = ProcessingTask.EVALUATE_LIBFM_RESULTS;
 
         long startTime = System.currentTimeMillis();
 
