@@ -13,6 +13,14 @@ def load_nmf_factors(in_path):
     return W, H, doc_ids, terms
 
 
+def load_corpus( in_path ):
+    """
+    Load a pre-processed scikit-learn corpus and associated metadata using Joblib.
+    """
+    (X, terms, doc_ids, classes) = joblib.load(in_path)
+    return X, terms, doc_ids, classes
+
+
 def load_tfidf(in_path):
     """
     Load a pre-processed scikit-learn corpus and associated metadata using
@@ -55,6 +63,20 @@ class NmfTopicExtractor:
             str(self.document_topic_matrix.shape),
             str(self.topic_term_matrix.shape)
         )
+
+    @staticmethod
+    def load_document_term_matrix():
+        topic_model_corpus_folder = \
+            Constants.CACHE_FOLDER + 'topic_models/corpus/'
+        corpus_path = Constants.generate_file_name(
+            'topic_ensemble_corpus', '', topic_model_corpus_folder,
+            None, None, False)[:-1] + '.pkl'
+
+        document_term_matrix, _, _, _ = load_corpus(corpus_path)
+
+        print("Loaded document-term matrix of size %s" % str(document_term_matrix.shape))
+
+        return document_term_matrix
 
     def update_reviews_with_topics(self, records):
 
