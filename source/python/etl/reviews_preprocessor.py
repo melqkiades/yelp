@@ -672,13 +672,10 @@ class ReviewsPreprocessor:
         utilities.plant_seeds()
 
         if self.use_cache and \
-                os.path.exists(Constants.FULL_PROCESSED_RECORDS_FILE):
+                os.path.exists(Constants.PROCESSED_RECORDS_FILE):
             print('Records have already been processed')
             self.records = \
-                ETLUtils.load_json_file(Constants.FULL_PROCESSED_RECORDS_FILE)
-            self.drop_unnecessary_fields()
-            ETLUtils.save_json_file(
-                Constants.PROCESSED_RECORDS_FILE, self.records)
+                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
         else:
             self.load_records()
 
