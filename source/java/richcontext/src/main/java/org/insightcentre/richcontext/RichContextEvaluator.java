@@ -66,6 +66,15 @@ public class RichContextEvaluator {
     public static final String RANKING = "ranking";
 
 
+    protected enum EvaluationSet {
+        TRAIN_USERS,
+        TEST_USERS,
+        TEST_ONLY_USERS,
+        TRAIN_ONLY_USERS,
+    }
+
+    protected static EvaluationSet evaluationSet;
+
     protected enum Strategy {
         ALL_ITEMS(RATING),
         REL_PLUS_N(RANKING),
@@ -419,12 +428,12 @@ public class RichContextEvaluator {
                 case TEST_ITEMS:
                 case USER_TEST:
                     predictionsFile = foldPath + "test.csv";
-                    LibfmResultsParser.parseRatingResults(
+                    LibfmResultsParser.parseResults(
                             predictionsFile, libfmResultsFile, false, rivalRecommendationsFile);
                     break;
                 case REL_PLUS_N:
                     predictionsFile = foldPath + "predictions.csv";
-                    LibfmResultsParser.parseRatingResults(
+                    LibfmResultsParser.parseResults(
                             predictionsFile, libfmResultsFile, true, rivalRecommendationsFile);
                     break;
                 default:
@@ -531,7 +540,7 @@ public class RichContextEvaluator {
         parseRecommendationResults(algorithm);
         prepareStrategy(algorithm);
         resultsList.add(evaluate(algorithm));
-        writeResultsToFile(resultsList);
+//        writeResultsToFile(resultsList);
     }
 
 
@@ -560,9 +569,67 @@ public class RichContextEvaluator {
                 case REL_PLUS_N:
                     File trainingFile = new File(foldPath + "train.csv");
                     DataModelIF<Long, Long> trainModel = new CsvParser().parseData(trainingFile);
-                    Map<Long, Integer> myMap = countUserReviewFrequency(trainModel);
-                    Set<Long> users = getElementsByFrequency(myMap, 0, 10000000);
-                    System.out.println("Num users in training set range: " + users.size());
+                    Map<Long, Integer> trainMap = countUserReviewFrequency(trainModel);
+                    Set<Long> trainUsers = trainMap.keySet();
+                    System.out.println("Num train users = " + trainUsers.size());
+                    Map<Long, Integer> testMap = countUserReviewFrequency(testModel);
+                    Set<Long> testUsers = testMap.keySet();
+                    System.out.println("Num test users = " + testUsers.size());
+                    Set<Long> users;
+
+                    System.out.println("Evaluation set: " + evaluationSet);
+
+                    switch (evaluationSet) {
+
+                        case TEST_USERS:
+                            users = testUsers;
+                            break;
+                        case TRAIN_USERS:
+                            users = trainUsers;
+                            break;
+                        case TEST_ONLY_USERS:
+                            testUsers.removeAll(trainUsers);
+                            users = testUsers;
+                            break;
+                        case TRAIN_ONLY_USERS:
+                            trainUsers.removeAll(testUsers);
+                            users = trainUsers;
+                            break;
+                        default:
+                            String msg =
+                                    "Evaluation set " + evaluationSet +
+                                    " not supported";
+                            throw new UnsupportedOperationException(msg);
+
+                    }
+//                    System.out.println("Train Only Users");
+
+                    // Option #1: Test users
+//                    System.out.println("Evaluating test users");
+//                    users = testUsers;
+
+//                    // Option #2: Train users
+//                    System.out.println("Evaluating train users");
+//                    users = trainUsers;
+
+                    // Option #3: Train users minus test-only users
+//                    System.out.println("Evaluating train users minus test-only users");
+//                    testUsers.removeAll(trainUsers);
+//                    trainUsers.removeAll(testUsers);
+//                    users = trainUsers;
+
+                    // Option #4: Test-only users
+//                    System.out.println("Evaluating test-only users");
+//                    testUsers.removeAll(trainUsers);
+//                    users = testUsers;
+
+//                    System.out.println("Test Only Users");
+//                    Set<Long> trainUsers = getElementsByFrequency(testMap, 0, 10000000);
+//                    System.out.println("Num test-only users = " + testUsers.size());
+
+//                    System.out.println("Train users size: " + trainUsers.size());
+//                    testUsers.removeAll(trainUsers);
+//                    System.out.println("Num users in training set range: " + testUsers.size());
                     recModel = new CsvParser().parseData(strategyFile, users);
 //                    recModel = new CsvParser().parseData(strategyFile);
                     break;
@@ -711,7 +778,7 @@ public class RichContextEvaluator {
 
         List<Map<String, String>> resultsList = new ArrayList<>();
         resultsList.add(results);
-        evaluator.writeResultsToFile(resultsList);
+//        evaluator.writeResultsToFile(resultsList);
     }
 
 
@@ -881,6 +948,7 @@ public class RichContextEvaluator {
         options.addOption("d", true, "The folder containing the data file");
         options.addOption("o", true, "The folder containing the output file");
         options.addOption("p", true, "The properties file path");
+        options.addOption("s", true, "The evaluation set");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -891,6 +959,7 @@ public class RichContextEvaluator {
                         "properties.yaml";
         String defaultCacheFolder =
                 "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
+        String defaultEvaluationSet = "TRAIN_USERS";
 
         ProcessingTask processingTask;
         processingTask =
@@ -898,6 +967,8 @@ public class RichContextEvaluator {
         String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
+        evaluationSet = EvaluationSet.valueOf(
+                cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
 
 //        processingTask = ProcessingTask.PREPARE_LIBFM;
 //        processingTask = ProcessingTask.PROCESS_LIBFM_RESULTS;
