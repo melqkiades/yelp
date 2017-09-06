@@ -36,46 +36,44 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static org.insightcentre.richcontext.RichContextEvaluator.Strategy.valueOf;
-
 /**
  * Created by fpena on 18/07/2017.
  */
 public class RichContextEvaluator {
 
-    protected final int numFolds;
-    protected final int at;
-    protected final int additionalItems;
-    protected final int numTopics;
-    protected final double relevanceThreshold;
-    protected final long seed;
-    protected final Strategy strategy;
-    protected final ContextFormat contextFormat;
-    protected final Dataset dataset;
-    protected final String outputFile;
-    protected final boolean coldStart;
+    private final int numFolds;
+    private final int at;
+    private final int additionalItems;
+    private final int numTopics;
+    private final double relevanceThreshold;
+    private final long seed;
+    private final Strategy strategy;
+    private final ContextFormat contextFormat;
+    private final Dataset dataset;
+    private final String outputFile;
+    private final boolean coldStart;
 
 
-    protected Map<String, Review> reviewsMap;
-    protected String ratingsFolderPath;
-    protected String jsonRatingsFile;
-    protected int numUsers;
-    protected int numItems;
+    private Map<String, Review> reviewsMap;
+    private String ratingsFolderPath;
+    private String jsonRatingsFile;
+    private int numUsers;
+    private int numItems;
 
-    public static final String RATING = "rating";
-    public static final String RANKING = "ranking";
+    private static final String RATING = "rating";
+    private static final String RANKING = "ranking";
 
 
-    protected enum EvaluationSet {
+    private enum EvaluationSet {
         TRAIN_USERS,
         TEST_USERS,
         TEST_ONLY_USERS,
         TRAIN_ONLY_USERS,
     }
 
-    protected static EvaluationSet evaluationSet;
+    private static EvaluationSet evaluationSet;
 
-    protected enum Strategy {
+    private enum Strategy {
         ALL_ITEMS(RATING),
         REL_PLUS_N(RANKING),
         TEST_ITEMS(RATING),
@@ -93,7 +91,7 @@ public class RichContextEvaluator {
         }
     }
 
-    protected enum ContextFormat {
+    private enum ContextFormat {
         NO_CONTEXT,
         CONTEXT_TOPIC_WEIGHTS,
         TOP_WORDS,
@@ -101,13 +99,13 @@ public class RichContextEvaluator {
         TOPIC_PREDEFINED_CONTEXT
     }
 
-    protected enum Dataset {
+    private enum Dataset {
         YELP_HOTEL,
         YELP_RESTAURANT,
         FOURCITY_HOTEL,
     }
 
-    protected enum ProcessingTask {
+    private enum ProcessingTask {
         PREPARE_LIBFM,
         PREPARE_CARSKIT,
         PROCESS_LIBFM_RESULTS,
@@ -125,7 +123,7 @@ public class RichContextEvaluator {
         at = properties.getTopN();
         relevanceThreshold = properties.getRelevanceThreshold();
         seed = properties.getSeed();
-        strategy = valueOf(
+        strategy = Strategy.valueOf(
                 (properties.getStrategy().toUpperCase(Locale.ENGLISH)));
         additionalItems = properties.getTopnNumItems();
         contextFormat = ContextFormat.valueOf(
@@ -148,7 +146,7 @@ public class RichContextEvaluator {
         init();
     }
 
-    private void init() {
+    private void init() throws IOException {
 
         File jsonFile =  new File(jsonRatingsFile);
         String jsonFileName = jsonFile.getName();
@@ -158,8 +156,7 @@ public class RichContextEvaluator {
         File rivalDir = new File(rivalFolderPath);
         if (!rivalDir.exists()) {
             if (!rivalDir.mkdir()) {
-                System.err.println("Directory " + rivalDir + " could not be created");
-                return;
+                throw new IOException("Directory " + rivalDir + " could not be created");
             }
         }
 
@@ -174,8 +171,7 @@ public class RichContextEvaluator {
         File ratingsDir = new File(ratingsFolderPath);
         if (!ratingsDir.exists()) {
             if (!ratingsDir.mkdir()) {
-                System.err.println("Directory " + ratingsDir + " could not be created");
-                return;
+                throw new IOException("Directory " + ratingsDir + " could not be created");
             }
         }
 
@@ -188,7 +184,7 @@ public class RichContextEvaluator {
     /**
      * Downloads a dataset and stores the splits generated from it.
      */
-    public void prepareSplits() throws IOException {
+    private void prepareSplits() throws IOException {
 
         String dataFile = jsonRatingsFile;
         boolean perUser = false;
@@ -263,7 +259,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void transformSplitToCarskit(int fold) throws IOException {
+    private void transformSplitToCarskit(int fold) throws IOException {
 
         String foldPath = ratingsFolderPath + "fold_" + fold + "/";
         String trainFile = foldPath + "train.csv";
@@ -313,7 +309,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void transformSplitsToCarskit() throws IOException {
+    private void transformSplitsToCarskit() throws IOException {
 
         for (int fold = 0; fold < numFolds; fold++) {
             transformSplitToCarskit(fold);
@@ -321,7 +317,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void transformSplitToLibfm(int fold) throws IOException {
+    private void transformSplitToLibfm(int fold) throws IOException {
 
         System.out.println("Transform split " + fold + " to LibFM");
 
@@ -376,7 +372,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void transformSplitsToLibfm() throws IOException {
+    private void transformSplitsToLibfm() throws IOException {
 
         for (int fold = 0; fold < numFolds; fold++) {
             transformSplitToLibfm(fold);
@@ -384,7 +380,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void parseRecommendationResults(String algorithm) throws IOException, InterruptedException {
+    private void parseRecommendationResults(String algorithm) throws IOException, InterruptedException {
 
         System.out.println("Parse Recommendation Results");
 
@@ -408,7 +404,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void parseRecommendationResultsLibfm() throws IOException, InterruptedException {
+    private void parseRecommendationResultsLibfm() throws IOException, InterruptedException {
 
         System.out.println("Parse Recommendation Results LibFM");
 
@@ -447,7 +443,7 @@ public class RichContextEvaluator {
     }
 
 
-    public String getRecommendationsFileName(
+    private String getRecommendationsFileName(
             String workingPath, String algorithm, int foldIndex, int topN) {
 
         String filePath;
@@ -468,7 +464,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected void writeResultsToFile(
+    private void writeResultsToFile(
             List<Map<String, String>> resultsList) throws IOException {
 
         String[] headers = {
@@ -532,7 +528,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected void postProcess(String algorithm)
+    private void postProcess(String algorithm)
             throws IOException, InterruptedException {
 
         List<Map<String, String>> resultsList = new ArrayList<>();
@@ -540,11 +536,11 @@ public class RichContextEvaluator {
         parseRecommendationResults(algorithm);
         prepareStrategy(algorithm);
         resultsList.add(evaluate(algorithm));
-//        writeResultsToFile(resultsList);
+        writeResultsToFile(resultsList);
     }
 
 
-    protected Map<String, String> evaluate(String algorithm) throws IOException {
+    private Map<String, String> evaluate(String algorithm) throws IOException {
 
         System.out.println("Evaluate");
 
@@ -602,34 +598,7 @@ public class RichContextEvaluator {
                             throw new UnsupportedOperationException(msg);
 
                     }
-//                    System.out.println("Train Only Users");
 
-                    // Option #1: Test users
-//                    System.out.println("Evaluating test users");
-//                    users = testUsers;
-
-//                    // Option #2: Train users
-//                    System.out.println("Evaluating train users");
-//                    users = trainUsers;
-
-                    // Option #3: Train users minus test-only users
-//                    System.out.println("Evaluating train users minus test-only users");
-//                    testUsers.removeAll(trainUsers);
-//                    trainUsers.removeAll(testUsers);
-//                    users = trainUsers;
-
-                    // Option #4: Test-only users
-//                    System.out.println("Evaluating test-only users");
-//                    testUsers.removeAll(trainUsers);
-//                    users = testUsers;
-
-//                    System.out.println("Test Only Users");
-//                    Set<Long> trainUsers = getElementsByFrequency(testMap, 0, 10000000);
-//                    System.out.println("Num test-only users = " + testUsers.size());
-
-//                    System.out.println("Train users size: " + trainUsers.size());
-//                    testUsers.removeAll(trainUsers);
-//                    System.out.println("Num users in training set range: " + testUsers.size());
                     recModel = new CsvParser().parseData(strategyFile, users);
 //                    recModel = new CsvParser().parseData(strategyFile);
                     break;
@@ -694,7 +663,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected static Set<Long> getElementsByFrequency(
+    private static Set<Long> getElementsByFrequency(
             Map<Long, Integer> frequencyMap, int min, int max) {
 
         Set<Long> elementsSet = new HashSet<>();
@@ -711,7 +680,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected static Map<Long, Integer> countUserReviewFrequency(
+    private static Map<Long, Integer> countUserReviewFrequency(
             DataModelIF<Long, Long> dataModel) {
 
         Map<Long, Integer> frequencyMap = new HashMap<>();
@@ -727,7 +696,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected static void prepareLibfm(
+    private static void prepareLibfm(
             String cacheFolder, String outputFolder, String propertiesFile)
             throws IOException {
 
@@ -738,7 +707,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected static void prepareCarskit(
+    private static void prepareCarskit(
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException {
 
@@ -750,7 +719,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected static void processLibfmResults(
+    private static void processLibfmResults(
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException, InterruptedException {
 
@@ -767,7 +736,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected static void prepareStrategyAndEvaluate(
+    private static void prepareStrategyAndEvaluate(
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException, InterruptedException {
 
@@ -778,11 +747,11 @@ public class RichContextEvaluator {
 
         List<Map<String, String>> resultsList = new ArrayList<>();
         resultsList.add(results);
-//        evaluator.writeResultsToFile(resultsList);
+        evaluator.writeResultsToFile(resultsList);
     }
 
 
-    protected static void processCarskitResults(
+    private static void processCarskitResults(
             String jsonFile, String outputFolder, String propertiesFile)
             throws IOException, InterruptedException {
 
@@ -820,7 +789,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void prepareRankingStrategy(String algorithm) throws IOException {
+    private void prepareRankingStrategy(String algorithm) throws IOException {
 
         System.out.println("Prepare Ranking Strategy");
 
@@ -867,7 +836,7 @@ public class RichContextEvaluator {
     }
 
 
-    public void prepareRatingStrategy(String algorithm) throws IOException {
+    private void prepareRatingStrategy(String algorithm) throws IOException {
 
         System.out.println("Prepare Rating Strategy");
 
@@ -920,7 +889,7 @@ public class RichContextEvaluator {
     }
 
 
-    protected void prepareStrategy(String algorithm) throws IOException {
+    private void prepareStrategy(String algorithm) throws IOException {
 
         switch (strategy) {
             case TEST_ITEMS:
@@ -970,10 +939,6 @@ public class RichContextEvaluator {
         evaluationSet = EvaluationSet.valueOf(
                 cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
 
-//        processingTask = ProcessingTask.PREPARE_LIBFM;
-//        processingTask = ProcessingTask.PROCESS_LIBFM_RESULTS;
-//        processingTask = ProcessingTask.EVALUATE_LIBFM_RESULTS;
-
         long startTime = System.currentTimeMillis();
 
         switch (processingTask) {
@@ -996,11 +961,6 @@ public class RichContextEvaluator {
                 throw new UnsupportedOperationException(
                         "Unknown processing task: " + processingTask.toString());
         }
-
-//        prepareLibfm(jsonFile, outputFolder, propertiesFile);
-//        processLibfmResults(jsonFile, outputFolder, propertiesFile);
-//        prepareCarskit(jsonFile, outputFolder, propertiesFile);
-//        processCarskitResults(jsonFile, outputFolder, propertiesFile);
 
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
