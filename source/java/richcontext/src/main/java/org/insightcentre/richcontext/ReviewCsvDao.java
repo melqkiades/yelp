@@ -17,13 +17,13 @@ public class ReviewCsvDao {
     private static final int ITEM_ID_INDEX = 1;
     private static final int RATING_INDEX = 2;
 
-    private static final String separator = "\t";
+    private static final char separator = '\t';
 
 
     public static List<Review> readCsvFile(String filePath)
             throws IOException {
 
-        CSVReader reader = new CSVReader(new FileReader(filePath), '\t');
+        CSVReader reader = new CSVReader(new FileReader(filePath), separator);
         List<Review> reviews = new ArrayList<>();
 
         String [] nextLine;

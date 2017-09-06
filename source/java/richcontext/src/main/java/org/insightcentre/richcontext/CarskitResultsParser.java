@@ -23,13 +23,13 @@ public class CarskitResultsParser {
     private static final int RATING_INDEX = 3;
     private static final int PREDICTION_INDEX = 4;
 
-    private static final String separator = "\t";
+    private static final char separator = '\t';
 
 
     public static List<Review> parseRatingResults(String filePath)
             throws IOException {
 
-        CSVReader reader = new CSVReader(new FileReader(filePath), '\t');
+        CSVReader reader = new CSVReader(new FileReader(filePath), separator);
         List<Review> reviews = new ArrayList<>();
 
         String [] nextLine;

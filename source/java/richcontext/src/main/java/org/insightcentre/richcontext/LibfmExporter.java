@@ -4,7 +4,6 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 
 import java.io.BufferedWriter;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -144,47 +143,6 @@ public class LibfmExporter {
 //        System.out.printf("\n");
 
         return exportReviews;
-    }
-
-
-    public static void exportRankingPredictionsFile(
-            List<Review> trainReviews, List<Review> testReviews,
-            String predictionsFilePath, Map<String, Integer> oneHotIdMap) throws IOException {
-
-        System.out.println("Export ranking predictions file");
-
-        List<Review> exportReviews =
-                getReviewsForRanking(trainReviews, testReviews);
-
-//        for (Review exportReview : exportReviews) {
-//            System.out.println(exportReview);
-//        }
-
-        exportRecommendations(exportReviews, predictionsFilePath, oneHotIdMap);
-    }
-
-
-    public static void exportRankingTestFile(
-            List<Review> trainReviews, List<Review> testReviews,
-            String testFilePath, Map<String, Integer> oneHotIdMap) throws IOException {
-
-        Set<Long> testUsersSet = new HashSet<>();
-        Set<Long> trainItemsSet = new HashSet<>();
-
-        for (Review review : trainReviews) {
-            trainItemsSet.add(review.getItemId());
-        }
-
-        for (Review review : testReviews) {
-            testUsersSet.add(review.getUserId());
-        }
-
-        for (Long user : testUsersSet) {
-
-            for (Long item : trainItemsSet) {
-
-            }
-        }
     }
 
 
@@ -511,28 +469,5 @@ public class LibfmExporter {
         }
 
         bufferedWriter.write(String.join(delimiter, row) + "\n");
-    }
-
-    private static Review parseReview(String line, String[] headers)
-            throws IOException {
-
-        final int USER_TOK = 0;
-        final int ITEM_TOK = 1;
-        final int RATING_TOK = 2;
-
-        String[] lineTokens = line.split("\t");
-        long user_id = Long.parseLong(lineTokens[USER_TOK]);
-        long item_id = Long.parseLong(lineTokens[ITEM_TOK]);
-        double rating = Double.parseDouble(lineTokens[RATING_TOK]);
-        Map<String, Double> contextMap = new HashMap<>();
-
-        for (int i = 3; i < lineTokens.length; i++) {
-            contextMap.put(headers[i], Double.parseDouble(lineTokens[i]));
-        }
-
-        Review review = new Review(user_id, item_id, rating);
-        review.setContext(contextMap);
-
-        return review;
     }
 }

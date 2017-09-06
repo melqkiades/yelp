@@ -4,46 +4,15 @@ import com.opencsv.CSVWriter;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by fpena on 27/03/2017.
  */
 public class CarskitExporter {
-
-    public static void exportWithoutContext(
-            List<Review> reviews, String filePath) throws IOException {
-
-        CSVWriter writer = new CSVWriter(new FileWriter(filePath), ',', CSVWriter.NO_QUOTE_CHARACTER);
-
-
-        String[] headers = {"user_id", "business_id", "stars", "context:na"};
-        writer.writeNext(headers);
-
-        for (Review review : reviews) {
-
-            String contextValue = "1";
-
-            String[] row = {
-                    String.valueOf(review.getUserId()),
-                    String.valueOf(review.getItemId()),
-                    Double.toString(review.getRating()),
-                    contextValue
-            };
-
-            writer.writeNext(row);
-        }
-        writer.close();
-    }
-
 
     public static void  exportWithContext(
             List<Review> reviews, String filePath) throws IOException {
@@ -124,75 +93,6 @@ public class CarskitExporter {
 
             bufferedWriter.write(String.join(delimiter, row) + "\n");
         }
-        bufferedWriter.flush();
-        bufferedWriter.close();
-
-//        CSVWriter writer = new CSVWriter(new FileWriter(filePath), '\t', CSVWriter.NO_QUOTE_CHARACTER);
-
-//        int totalReviews = reviews.size();
-//        int progress = 1;
-//
-//        for (Review review : reviews) {
-//
-//            System.out.print("Progress: " + progress + "/" + totalReviews + "\r");
-//            progress++;
-//
-//            String[] row = {
-//                    String.valueOf(review.getUserId()),
-//                    String.valueOf(review.getItemId()),
-//                    Double.toString(review.getPredictedRating())
-//            };
-//
-//            writer.writeNext(row);
-//        }
-//        writer.close();
-    }
-
-
-
-    public static void exportContextRecommendationsToCsv(
-            List<Review> reviews, String filePath) throws IOException {
-
-        System.out.println("Export Context Recommendations To CSV");
-
-        BufferedWriter bufferedWriter =
-                new BufferedWriter(new FileWriter(filePath));
-        String delimiter = "\t";
-
-
-        int totalReviews = reviews.size();
-        int progress = 1;
-        Set<String> contextKeys = reviews.get(0).getContext().keySet();
-
-        List<String> firstRow = new ArrayList<>();
-        firstRow.add("user");
-        firstRow.add("item");
-        firstRow.add("predicted_rating");
-
-        for (String context : contextKeys) {
-            firstRow.add(context);
-        }
-        bufferedWriter.write(String.join(delimiter, firstRow) + "\n");
-
-        for (Review review : reviews) {
-
-            System.out.print("Progress: " + progress + "/" + totalReviews + "\r");
-            progress++;
-
-            List<String> row = new ArrayList<>();
-            row.add(String.valueOf(review.getUserId()));
-            row.add(String.valueOf(review.getItemId()));
-            row.add(Double.toString(review.getPredictedRating()));
-
-            for (String context : contextKeys) {
-                row.add(Double.toString(review.getContext().get(context)));
-            }
-
-            bufferedWriter.write(String.join(delimiter, row) + "\n");
-        }
-
-        System.out.println();
-
         bufferedWriter.flush();
         bufferedWriter.close();
     }
