@@ -63,6 +63,15 @@ def run_local_parse_directory():
     parse_directory_command = CODE_FOLDER + 'topicmodeling/' \
         'belford_tfidf.py'
 
+    if not os.path.isdir(Constants.TOPIC_MODEL_FOLDER):
+        os.mkdir(Constants.TOPIC_MODEL_FOLDER)
+
+    if not os.path.isdir(BASE_FOLDER):
+        os.mkdir(BASE_FOLDER)
+
+    if not os.path.isdir(CORPUS_FOLDER):
+        os.mkdir(CORPUS_FOLDER)
+
     command = [
         PYTHON_COMMAND,
         parse_directory_command,
