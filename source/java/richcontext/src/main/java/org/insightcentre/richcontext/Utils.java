@@ -98,28 +98,4 @@ public class Utils {
         }
         writer.close();
     }
-
-
-    /**
-     * Returns a map in which the key is the user ID and the value is the number
-     * of review that that user has in the {@code dataModel}
-     *
-     * @param dataModel the dataset containing the user-item ratings
-     * @return a {@link Map} in which the key is the user ID and the value is the number
-     * of review that that user has in the {@code dataModel}
-     */
-    public static Map<Long, Integer> countUserReviewFrequency(
-            DataModelIF<Long, Long> dataModel) {
-
-        Map<Long, Integer> frequencyMap = new HashMap<>();
-        Map<Long, Map<Long, Double>> userItemPreferences =
-                dataModel.getUserItemPreferences();
-        for (Map.Entry<Long, Map<Long, Double>> entry : userItemPreferences.entrySet()) {
-            frequencyMap.put(entry.getKey(), entry.getValue().size());
-        }
-
-//        System.out.println("User review frequency: " + frequencyMap);
-
-        return frequencyMap;
-    }
 }

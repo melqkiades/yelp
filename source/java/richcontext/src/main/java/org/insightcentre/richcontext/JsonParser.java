@@ -60,18 +60,14 @@ public class JsonParser implements Parser<Long, Long> {
     }
 
     @Override
-    public ContextDataModelIF<Long, Long> parseData(File f) throws IOException {
+    public DataModelIF<Long, Long> parseData(File f) throws IOException {
 
-        ContextDataModelIF<Long, Long> dataset = new ContextDataModel<>();
+        DataModelIF<Long, Long> dataset = new TemporalDataModel<>();
         this.reviews = readReviews(f);
 
         for (Review review : this.reviews) {
             dataset.addPreference(
                     review.getUserId(), review.getItemId(), review.getRating()
-            );
-            dataset.addContext(
-                    review.getUserId(), review.getItemId(),
-                    review.getContext()
             );
         }
 

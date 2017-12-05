@@ -110,24 +110,6 @@ public class RichContextDataInitializer {
             DataModelIF<Long, Long> training = splits[2 * i];
             DataModelIF<Long, Long> test = splits[2 * i + 1];
 
-            // If we want to test cold-start scenarios
-            if (coldStart) {
-
-                // Filter the users from the training and testing sets
-                List<Long> allUsers = new ArrayList<>(usersSet);
-                Collections.shuffle(allUsers, new Random(i));
-
-                int cutPoint = allUsers.size() - allUsers.size() / numFolds;
-                List<Long> trainUsers = allUsers.subList(0, cutPoint);
-                List<Long> testUsers = allUsers.subList(cutPoint, allUsers.size());
-                for (Long trainUser : trainUsers) {
-                    test.getUserItemPreferences().remove(trainUser);
-                }
-                for (Long testUser : testUsers) {
-                    training.getUserItemPreferences().remove(testUser);
-                }
-            }
-
             String trainingFile = foldPath + "train.csv";
             String testFile = foldPath + "test.csv";
             boolean overwrite = true;

@@ -80,7 +80,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.insightcentre.richcontext.RichContextEvaluator</mainClass>
+                            <mainClass>org.insightcentre.richcontext.AlejandroRichContextEvaluator</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

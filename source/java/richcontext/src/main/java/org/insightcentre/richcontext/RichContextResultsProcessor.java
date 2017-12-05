@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -277,12 +278,9 @@ public class RichContextResultsProcessor {
 
             DataModelIF<Long, Long> modelToEval = DataModelFactory.getDefaultModel();
             for (Long user : recModel.getUsers()) {
-
-                Map<Long, Double> itemPreferences = recModel.getUserItemPreferences().get(user);
-
                 for (Long item : evaluationStrategy.getCandidateItemsToRank(user)) {
-                    if (itemPreferences.containsKey(item)) {
-                        modelToEval.addPreference(user, item, itemPreferences.get(item));
+                    if (!Double.isNaN(recModel.getUserItemPreference(user, item))) {
+                        modelToEval.addPreference(user, item, recModel.getUserItemPreference(user, item));
                     }
                 }
             }
@@ -330,11 +328,16 @@ public class RichContextResultsProcessor {
                 case REL_PLUS_N:
                     File trainingFile = new File(foldPath + "train.csv");
                     DataModelIF<Long, Long> trainModel = new CsvParser().parseData(trainingFile);
-                    Map<Long, Integer> trainMap = Utils.countUserReviewFrequency(trainModel);
-                    Set<Long> trainUsers = trainMap.keySet();
+                    Set<Long> trainUsers = new HashSet<>();
+                    for (Long user : trainModel.getUsers()) {
+                        trainUsers.add(user);
+                    }
                     System.out.println("Num train users = " + trainUsers.size());
-                    Map<Long, Integer> testMap = Utils.countUserReviewFrequency(testModel);
-                    Set<Long> testUsers = testMap.keySet();
+
+                    Set<Long> testUsers = new HashSet<>();
+                    for (Long user : testModel.getUsers()) {
+                        testUsers.add(user);
+                    }
                     System.out.println("Num test users = " + testUsers.size());
                     Set<Long> users;
 

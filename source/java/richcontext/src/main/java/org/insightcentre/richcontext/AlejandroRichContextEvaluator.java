@@ -37,11 +37,13 @@ public class AlejandroRichContextEvaluator {
                         "properties.yaml";
         String defaultCacheFolder =
                 "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
-        String defaultEvaluationSet = "TRAIN_USERS";
+        String defaultEvaluationSet = "test_users";
+//        String defaultProcessingTask = "prepare_libfm";
+        String defaultProcessingTask = "process_libfm_results";
 
         RichContextResultsProcessor.ProcessingTask processingTask;
         processingTask =
-                RichContextResultsProcessor.ProcessingTask.valueOf(cmd.getOptionValue("t").toUpperCase());
+                RichContextResultsProcessor.ProcessingTask.valueOf(cmd.getOptionValue("t", defaultProcessingTask).toUpperCase());
         String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
