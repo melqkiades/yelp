@@ -80,6 +80,7 @@ class Constants(object):
     TOPIC_MODEL_PASSES_FIELD = 'topic_model_passes'
     TOPIC_MODEL_REVIEW_TYPE_FIELD = 'topic_model_review_type'
     TOPIC_MODEL_TARGET_FIELD = 'topic_model_target'
+    TOPIC_MODEL_TARGET_REVIEWS_FIELD = 'topic_model_target_reviews'
     TOPIC_MODEL_TYPE_FIELD = 'topic_model_type'
     TOPIC_WEIGHTING_METHOD_FIELD = 'topic_weighting_method'
     TOPICS_FIELD = 'topics'
