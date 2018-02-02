@@ -1,34 +1,31 @@
-import itertools
+import random
+
+import numpy
+import numbers
 import time
 
-import matplotlib as mpl
-import numpy
-import sklearn.metrics as skmetrics
-from sklearn.cross_validation import StratifiedKFold
+from imblearn.combine import SMOTEENN
+from imblearn.combine import SMOTETomek
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline
+from imblearn.under_sampling import EditedNearestNeighbours
+from imblearn.under_sampling import NeighbourhoodCleaningRule
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.under_sampling import TomekLinks
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import auc
-from sklearn.metrics import confusion_matrix, classification_report, roc_curve
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import NuSVC
 from sklearn.svm import SVC
 from sklearn.tree import tree
-from unbalanced_dataset.combine import SMOTEENN
-from unbalanced_dataset.combine import SMOTETomek
-from unbalanced_dataset.over_sampling import RandomOverSampler
-from unbalanced_dataset.over_sampling import SMOTE
 
 from etl import ETLUtils
 from etl.reviews_preprocessor import ReviewsPreprocessor
 from topicmodeling.context import review_metrics_extractor
-from utils import utilities
 from utils.constants import Constants
-mpl.use('TkAgg')
-import matplotlib.pyplot as plt
-
-import seaborn as sns
-sns.set()
 
 
 def load_records():
@@ -85,48 +82,25 @@ def transform(records):
     return x_matrix, y_vector
 
 
-def resample(x_matrix, y_vector, sampler_type):
-    """
-    Resamples a dataset with imbalanced data so that the labels contained in
-    the y_vector are distributed equally. This is done to prevent a classifier
-    from being biased by the number of sample of a certain class.
+def preprocess_records(records):
 
-    :param x_matrix: a numpy matrix with the independent variables
-    :param y_vector: a numpy vector with the dependent variables
-    :param sampler_type: the type of sampler that is going to be used to
-    resample the data
-    :return: a numpy matrix and a numpy vector with the data resampled using the
-    selected sampler
-    """
+    print('length before: %d' % len(records))
 
-    if sampler_type is None:
-        return x_matrix, y_vector
+    empty_records = []
+    for record in records:
+        sentence_type = record['sentence_type']
+        record['specific'] = \
+            'yes' if sentence_type in ['specific', 'unknown'] else 'no'
+        if sentence_type == 'empty':
+            empty_records.append(record)
 
-    verbose = False
-    ratio = 'auto'
-    random_state = 0
-    samplers = {
-        'random_over_sampler': RandomOverSampler(
-            ratio=ratio, verbose=verbose),
-        'smote_regular': SMOTE(
-            ratio=ratio, random_state=random_state, verbose=verbose,
-            kind='regular'),
-        'smote_bl1': SMOTE(
-            ratio=ratio, random_state=random_state, verbose=verbose,
-            kind='borderline1'),
-        'smote_bl2': SMOTE(
-            ratio=ratio, random_state=random_state, verbose=verbose,
-            kind='borderline2'),
-        'smote_tomek': SMOTETomek(
-            ratio=ratio, random_state=random_state, verbose=verbose),
-        'smoteenn': SMOTEENN(
-            ratio=ratio, random_state=random_state, verbose=verbose)
-    }
+    for empty_record in empty_records:
+        records.remove(empty_record)
 
-    sampler = samplers[sampler_type]
-    resampled_x, resampled_y = sampler.fit_transform(x_matrix, y_vector)
+    print('length after: %d' % len(records))
 
-    return resampled_x, resampled_y
+    # lemmatize_reviews(records)
+    ReviewsPreprocessor.lemmatize_reviews(records)
 
 
 def count_specific_generic(records):
@@ -155,295 +129,219 @@ def count_specific_generic(records):
     print('specific percentage: %f%%' % specific_percentage)
     print('generic percentage: %f%%' % generic_percentage)
 
-# count_specific_generic()
+
+def plant_random_seeds():
+    numpy.random.seed(0)
+    random.seed(0)
 
 
-def plot(records):
-    num_features = len(review_metrics_extractor.get_review_metrics(records[0]))
-    metrics = numpy.zeros((len(records), num_features))
-    for index in range(len(records)):
-        metrics[index] = \
-            review_metrics_extractor.get_review_metrics(records[index])
+def dummy_sample():
 
-    review_metrics_extractor.normalize_matrix_by_columns(metrics)
-    labels = numpy.array([record['specific'] == 'yes' for record in records])
+    # sampler = None
 
-    clf = LogisticRegression(C=100)
-    clf.fit(metrics, labels)
+    plant_random_seeds()
 
-    coef = clf.coef_[0]
-    intercept = clf.intercept_
+    my_records = load_records()
+    preprocess_records(my_records)
+    x_matrix, y_vector = transform(my_records)
 
-    print('coef', coef)
-    # print('intercept', intercept)
+    count_specific_generic(my_records)
 
-    xvals = numpy.linspace(0, 1.0, 2)
-    yvals = -(coef[0] * xvals + intercept[0]) / coef[1]
-    plt.plot(xvals, yvals, color='g', label='Decision boundary')
+    # param_grid = {
+    #     'reduce_dim': [None, PCA(5), PCA(10)],
+    #     'clf': [SVC(), LogisticRegression()],
+    #     'clf__C': [0.1, 10, 100]
+    # }
 
-    plt.xlabel("log number of words (normalized)")
-    plt.ylabel("log number of verbs in past tense (normalized)")
-    my_legends = ['Specific reviews', 'Generic reviews']
-    for outcome, marker, colour, legend in zip([0, 1], "ox", "br", my_legends):
-        plt.scatter(
-            metrics[:, 0][labels == outcome],
-            metrics[:, 1][labels == outcome], c=colour, marker=marker,
-            label=legend)
-    # plt.legend([red_dot, (red_dot, white_cross)], ["Attr A", "Attr A+B"])
-    plt.legend(loc='lower left', numpoints=1, ncol=3, fontsize=8,
-               bbox_to_anchor=(0, 0))
-    # plt.savefig('/Users/fpena/tmp/restaurant_sentence_classification.pdf')
+    sampler = RandomOverSampler()
+    sampler = SMOTEENN()
+    sampler = None
 
-
-# plot()
-
-def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Blues):
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    target_names = ['generic', 'specific']
-    tick_marks = numpy.arange(len(target_names))
-    plt.xticks(tick_marks, target_names, rotation=45)
-    plt.yticks(tick_marks, target_names)
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-
-
-def preprocess_records(records):
-
-    print('length before: %d' % len(records))
-
-    empty_records = []
-    for record in records:
-        sentence_type = record['sentence_type']
-        record['specific'] = \
-            'yes' if sentence_type in ['specific', 'unknown'] else 'no'
-        if sentence_type == 'empty':
-            empty_records.append(record)
-
-    for empty_record in empty_records:
-        records.remove(empty_record)
-
-    print('length after: %d' % len(records))
-
-    # lemmatize_reviews(records)
-    ReviewsPreprocessor.lemmatize_reviews(records)
-
-
-def plot_roc_curve(y_true, y_predictions):
-
-    false_positive_rate, true_positive_rate, thresholds =\
-        roc_curve(y_true, y_predictions)
-    roc_auc = auc(false_positive_rate, true_positive_rate)
-    print('roc auc', roc_auc)
-
-    plt.title('Receiver Operating Characteristic')
-    plt.plot(false_positive_rate, true_positive_rate, 'b',
-             label='AUC = %0.2f' % roc_auc)
-    plt.legend(loc='lower right')
-    plt.plot([0, 1], [0, 1], 'r--')
-    plt.xlim([-0.1, 1.2])
-    plt.ylim([-0.1, 1.2])
-    plt.ylabel('True Positive Rate')
-    plt.xlabel('False Positive Rate')
-    # plt.show()
-
-    metrics = {'roc_auc': roc_auc}
-
-    return metrics
-
-# plot_roc_curve(y_test, preds)
-
-
-def print_confusion_matrix(y_true, y_predictions):
-
-    target_names = ['generic', 'specific']
-    print(classification_report(
-        y_true, y_predictions, target_names=target_names))
-
-    cm = confusion_matrix(y_true, y_predictions)
-    numpy.set_printoptions(precision=2)
-    print('Confusion matrix, without normalization')
-    print(cm)
-
-    # plt.figure()
-    # plot_confusion_matrix(cm, title='Unnormalized confusion matrix')
-    # plt.show()
-
-    # Normalize the confusion matrix by row (i.e by the number of samples
-    # in each class)
-    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, numpy.newaxis]
-    print('Normalized confusion matrix')
-    print(cm_normalized)
-    min_tp_tn = min(cm_normalized[0][0], cm_normalized[1][1])
-    print('min of true positives and true negatives: %f' % min_tp_tn)
-
-    plt.figure()
-    plot_confusion_matrix(cm_normalized, title='Normalized confusion matrix')
-    # plt.show()
-
-    accuracy = skmetrics.accuracy_score(y_true, y_predictions)
-    precision = skmetrics.precision_score(y_true, y_predictions)
-    recall = skmetrics.recall_score(y_true, y_predictions)
-    f1 = skmetrics.f1_score(y_true, y_predictions)
-
-    metrics = {
-        'dataset': Constants.ITEM_TYPE,
-        'document_level': Constants.DOCUMENT_LEVEL,
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-        'min_tp_tn': min_tp_tn
-    }
-
-    print('Accuracy: %f' % accuracy)
-
-    return metrics
-
-
-def test_classifier(x_matrix, y_vector, sampler_type, my_classifier):
-    utilities.plant_seeds()
-
-    results = {
-        'resampler': sampler_type,
-        'classifier': type(my_classifier).__name__
-    }
-    resampled_x, resampled_y = resample(x_matrix, y_vector, sampler_type)
-    print('num samples: %d' % len(resampled_y))
-
-    y_predictions, y_true_values = cross_validation_predict(
-        my_classifier, resampled_x, resampled_y, 10, sampler_type, 'predict')
-    results.update(print_confusion_matrix(y_true_values, y_predictions))
-
-    y_probabilities, y_true_values = cross_validation_predict(
-        my_classifier, resampled_x, resampled_y, 10, sampler_type,
-        'predict_proba'
-    )
-    y_probabilities = y_probabilities[:, 1]
-
-    results.update(plot_roc_curve(y_true_values, y_probabilities))
-
-    # importances = my_classifier.feature_importances_
-    # indices = numpy.argsort(importances)[::-1]
-    #
-    # # Print the feature ranking
-    # print("Feature ranking:")
-    #
-    # for f in range(x_matrix.shape[1]):
-    #     print(
-    #         "%d. feature %d (%f)" %
-    #         (f + 1, indices[f], importances[indices[f]]))
-
-    # std = numpy.std([
-    #         tree.feature_importances_ for tree in my_classifier.estimators_],
-    #     axis=0
-    # )
-    #
-    # # Plot the feature importances of the forest
-    # plt.figure()
-    # plt.title("Feature importances")
-    # plt.bar(range(x_matrix.shape[1]), importances[indices],
-    #         color="r", yerr=std[indices], align="center")
-    # plt.xticks(range(x_matrix.shape[1]), indices)
-    # plt.xlim([-1, x_matrix.shape[1]])
-    # plt.show()
-
-    return results
-
-
-def cross_validation_predict(
-        classifier, x_matrix, y_vector, num_folds, sampler_type,
-        method='predict'):
-    cv = StratifiedKFold(y_vector, num_folds)
-
-    all_predictions = []
-    all_true_values = []
-
-    for train, test in cv:
-
-        x_train = x_matrix[train]
-        y_train = y_vector[train]
-        x_test = x_matrix[test]
-        y_test = y_vector[test]
-        x_train, y_train = resample(x_train, y_train, sampler_type)
-
-        classifier.fit(x_train, y_train)
-
-        func = getattr(classifier, method)
-        fold_predictions = func(x_test)
-        # fold_predictions = classifier.predict(x_test)
-        all_predictions.append(fold_predictions)
-        all_true_values.append(y_test)
-
-    predictions = numpy.concatenate(all_predictions)
-    true_values = numpy.concatenate(all_true_values)
-    return predictions, true_values
-
-
-def main():
-    utilities.plant_seeds()
-
-    my_resamplers = [
-        None,
-        'random_over_sampler',
-        'smote_regular',
-        'smote_bl1',
-        'smote_bl2',
-        'smote_tomek',
-        'smoteenn'
-    ]
-
-    my_classifiers = [
+    classifiers = [
         DummyClassifier(strategy='most_frequent', random_state=0),
         DummyClassifier(strategy='stratified', random_state=0),
         DummyClassifier(strategy='uniform', random_state=0),
-        DummyClassifier(strategy='constant', random_state=0, constant=True),
         LogisticRegression(C=100),
         SVC(C=1.0, kernel='rbf', probability=True),
-        SVC(C=1.0, kernel='linear', probability=True),
+        # # SVC(C=1.0, kernel='linear', probability=True),
         KNeighborsClassifier(n_neighbors=10),
         tree.DecisionTreeClassifier(),
-        NuSVC(probability=True),
+        # # NuSVC(probability=True),
         RandomForestClassifier(n_estimators=100)
     ]
 
-    document_levels = ['review', 'sentence', 1]
+    random_state = 0
+    resamplers = [
+        None,
+        RandomUnderSampler(random_state=random_state),
+        TomekLinks(random_state=random_state),
+        EditedNearestNeighbours(random_state=random_state),
+        NeighbourhoodCleaningRule(random_state=random_state),
+        RandomOverSampler(random_state=random_state),
+        SMOTE(random_state=random_state),
+        SMOTETomek(random_state=random_state),
+        SMOTEENN(random_state=random_state)
+    ]
 
-    num_cyles = len(my_resamplers) * len(my_classifiers) * len(document_levels)
-    index = 1
 
-    results_list = []
+    plant_random_seeds()
+    # pipeline = Pipeline([('resampler', SMOTEENN()), ('classifier', tree.DecisionTreeClassifier())])
+    # pipeline = Pipeline([('classifier', classifier)])
+    param_grid = [
+        {
+            'resampler': resamplers,
+            'classifier': [DummyClassifier(random_state=random_state)],
+            'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
+        },
+        {
+            'resampler': resamplers,
+            'classifier': [
+                LogisticRegression(random_state=random_state),
+                SVC(random_state=random_state)
+            ],
+            'classifier__C': [0.1, 1.0, 10, 100, 1000]
+            # 'classifier__C': [0.1, 1.0, 10]
+        },
+        {
+            'resampler': resamplers,
+            'classifier': [KNeighborsClassifier()],
+            'classifier__n_neighbors': [1, 2, 5, 10, 20],
+            'classifier__weights': ['uniform', 'distance']
+        },
+        {
+            'resampler': resamplers,
+            'classifier': [
+                tree.DecisionTreeClassifier(random_state=random_state)
+            ],
+            'classifier__max_depth': [None, 2, 3, 5, 10],
+            'classifier__min_samples_leaf': [2, 5, 10]
+        },
+        {
+            'resampler': resamplers,
+            'classifier': [RandomForestClassifier(random_state=random_state)],
+            'classifier__n_estimators': [10, 50, 100, 200]
+        }
+    ]
 
-    for document_level in document_levels:
+    inner_cv = StratifiedKFold(n_splits=5)
+    outer_cv = StratifiedKFold(n_splits=5)
+    # scores = cross_val_score(pipeline, x_matrix, y_vector, cv=inner_cv)
+    # score = scores.mean()
+    # print('Score: %f' % score)
+    # print(score)
+    #
+    # plant_random_seeds()
+    # scores = cross_val_score(pipeline, x_matrix, y_vector, cv=inner_cv)
+    # score = scores.mean()
+    # print('Score: %f' % score)
+    # print(score)
 
-        Constants.DOCUMENT_LEVEL = document_level
-        my_records = load_records()
-        preprocess_records(my_records)
-        x_matrix, y_vector = transform(my_records)
+    # plant_random_seeds()
+    # grid_search_cv = GridSearchCV(pipeline, param_grid, cv=inner_cv, verbose=10)
+    # grid_search_cv.fit(x_matrix, y_vector)
+    # # print(grid_search_cv.best_estimator_)
+    # print(grid_search_cv.best_params_)
+    # print(grid_search_cv.best_score_)
+    # mean_scores = numpy.array(grid_search_cv.cv_results_['mean_test_score'])
+    # # print(grid_search_cv.cv_results_)
+    # print(mean_scores)
 
-        count_specific_generic(my_records)
+    grid_list = [GridSearchCV(Pipeline([('resampler', None), ('classifier', DummyClassifier())]), params, cv=StratifiedKFold(n_splits=5)) for params in param_grid]
+    tuned_estimators_param_grid = {
+        'classifier': grid_list
+    }
 
-        for resampler, classifier in itertools.product(
-                my_resamplers, my_classifiers):
+    print('********************\n\n')
 
-            print('Cycle %d/%d' % (index, num_cyles))
+    for grid in grid_list:
+        grid.fit(x_matrix, y_vector)
+        print('\nBest estimator')
+        print(grid.best_estimator_.get_params()[
+                  'classifier'].best_estimator_)
+        print('End best estimator\n')
+        # print(tuned_grid_search_cv.best_params_)
+        print('Best score: %f' % grid.best_score_)
+        print('Best classifier algorithm index: %d\n' % grid.best_index_)
 
-            classification_results =\
-                test_classifier(x_matrix, y_vector, resampler, classifier)
-            results_list.append(classification_results)
-            index += 1
+    print('********************\n\n')
 
-    for results in results_list:
-        print(results)
 
-    csv_file = Constants.DATASET_FOLDER + Constants.ITEM_TYPE +\
-        '_sentence_classifier_results.csv'
-    ETLUtils.save_csv_file(csv_file, results_list, results_list[0].keys())
+    # tuned_pipeline = Pipeline([('classifier', DummyClassifier())])
+    # tuned_grid_search_cv = GridSearchCV(tuned_pipeline, tuned_estimators_param_grid, cv=outer_cv)
+    # tuned_grid_search_cv.fit(x_matrix, y_vector)
+    # # print(grid_search_cv.best_estimator_)
+    # mean_scores = numpy.array(tuned_grid_search_cv.cv_results_['mean_test_score'])
+    # # print(grid_search_cv.cv_results_)
+    # # print(tuned_grid_search_cv.best_estimator_)
+    # print(mean_scores)
+    # print('\nBest estimator')
+    # print(tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_)
+    # print('End best estimator\n')
+    # # print(tuned_grid_search_cv.best_params_)
+    # print('Best score: %f' % tuned_grid_search_cv.best_score_)
+    # print('Best classifier algorithm index: %d' % tuned_grid_search_cv.best_index_)
+    #
+    # # final_scores = cross_val_score(grid_search_cv, x_matrix, y_vector, cv=outer_cv)
+    # # print(grid_search_cv.best_params_)
+    # # print(grid_search_cv.best_params_)
+    # # print(final_scores.mean())
+    #
+    # final_cv = StratifiedKFold(n_splits=5)
+    # final_estimator = tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_
+    # final_grid_search_cv = GridSearchCV(final_estimator,
+    #                                     param_grid[tuned_grid_search_cv.best_index_],
+    #                                     cv=final_cv)
+    # final_grid_search_cv.fit(x_matrix, y_vector)
+    # print('\nFinal estimator')
+    # print(final_grid_search_cv.best_params_)
+    # print('End final estimator\n')
+    # print('Final score: %f' % final_grid_search_cv.best_score_)
+    # # print(final_grid_search_cv.cv_results_.keys())
+    # # print(final_grid_search_cv.cv_results_['params'])
+    # # print('params size: %d' % len(final_grid_search_cv.cv_results_['params']))
+    # # print('param_classifier size: %d' % len(final_grid_search_cv.cv_results_['param_classifier']))
+    # # print('param_classifier__strategy size %d' % len(final_grid_search_cv.cv_results_['param_classifier__strategy']))
+    # # print('param_resampler size % d' % len(final_grid_search_cv.cv_results_['param_resampler']))
+    # # print('mean_test_score size % d' % len(final_grid_search_cv.cv_results_['mean_test_score']))
 
-# start = time.time()
+    # results = get_scores(final_grid_search_cv.cv_results_)
+
+    csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
+    # ETLUtils.save_csv_file(csv_file, results, results[0].keys())
+
+    # print(csv_file)
+
+
+def get_scores(cv_results):
+    params = cv_results['params']
+    scores = cv_results['mean_test_score']
+    param_keys = params[0].keys()
+    param_values_list = []
+    for param, score in zip(params, scores):
+        param_values = {'score': score}
+        for param_key in param_keys:
+            param_values[param_key] = get_param_value_name(param[param_key])
+
+        param_values_list.append(param_values)
+
+    for param_values in param_values_list:
+        print(param_values)
+
+    return param_values_list
+
+
+def get_param_value_name(param_value):
+
+    if isinstance(param_value, basestring) or \
+            isinstance(param_value, numbers.Number):
+        return param_value
+
+    return type(param_value).__name__
+
+start = time.time()
 # main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+dummy_sample()
+# new_main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
