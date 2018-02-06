@@ -18,12 +18,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import NuSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from unbalanced_dataset.combine import SMOTEENN
-from unbalanced_dataset.combine import SMOTETomek
-from unbalanced_dataset.over_sampling import RandomOverSampler
-from unbalanced_dataset.over_sampling import SMOTE
 
 from etl import ETLUtils
+from etl import sampler_factory
 from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
 from nlp import nlp_utils
 from topicmodeling.context import lda_context_utils
@@ -45,11 +42,7 @@ class ReviewsPreprocessor:
         self.records = None
         self.dictionary = None
 
-        ratio = 'auto'
-        verbose = False
-        resampler = Constants.RESAMPLER
         classifier = Constants.DOCUMENT_CLASSIFIER
-        random_state = Constants.DOCUMENT_CLASSIFIER_SEED
         classifiers = {
             'logistic_regression': LogisticRegression(C=100),
             'svc': SVC(),
@@ -58,27 +51,10 @@ class ReviewsPreprocessor:
             'nu_svc': NuSVC(),
             'random_forest': RandomForestClassifier(n_estimators=100)
         }
-        samplers = {
-            'random_over_sampler': RandomOverSampler(
-                ratio, random_state=random_state, verbose=verbose),
-            'smote_regular': SMOTE(
-                ratio, random_state=random_state, verbose=verbose,
-                kind='regular'),
-            'smote_bl1': SMOTE(
-                ratio, random_state=random_state, verbose=verbose,
-                kind='borderline1'),
-            'smote_bl2': SMOTE(
-                ratio, random_state=random_state, verbose=verbose,
-                kind='borderline2'),
-            'smote_tomek': SMOTETomek(
-                ratio, random_state=random_state, verbose=verbose),
-            'smote-enn': SMOTEENN(
-                ratio, random_state=random_state, verbose=verbose)
-        }
         self.classifier = classifiers[classifier]
-        self.resampler = samplers[resampler]
+        self.resampler = sampler_factory.create_sampler(
+            Constants.RESAMPLER, Constants.DOCUMENT_CLASSIFIER_SEED)
         classifiers = None
-        samplers = None
 
     def load_records(self):
         print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
