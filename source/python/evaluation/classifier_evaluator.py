@@ -28,6 +28,56 @@ from topicmodeling.context import review_metrics_extractor
 from utils.constants import Constants
 
 
+RANDOM_STATE = 0
+resamplers = [
+    None,
+    RandomUnderSampler(random_state=RANDOM_STATE),
+    TomekLinks(random_state=RANDOM_STATE),
+    EditedNearestNeighbours(random_state=RANDOM_STATE),
+    NeighbourhoodCleaningRule(random_state=RANDOM_STATE),
+    RandomOverSampler(random_state=RANDOM_STATE),
+    SMOTE(random_state=RANDOM_STATE),
+    SMOTETomek(random_state=RANDOM_STATE),
+    SMOTEENN(random_state=RANDOM_STATE)
+]
+
+param_grid = [
+    {
+        'resampler': resamplers,
+        'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
+        'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
+    },
+    {
+        'resampler': resamplers,
+        'classifier': [
+            LogisticRegression(random_state=RANDOM_STATE),
+            SVC(random_state=RANDOM_STATE)
+        ],
+        'classifier__C': [0.1, 1.0, 10, 100, 1000]
+        # 'classifier__C': [0.1, 1.0, 10]
+    },
+    {
+        'resampler': resamplers,
+        'classifier': [KNeighborsClassifier()],
+        'classifier__n_neighbors': [1, 2, 5, 10, 20],
+        'classifier__weights': ['uniform', 'distance']
+    },
+    {
+        'resampler': resamplers,
+        'classifier': [
+            tree.DecisionTreeClassifier(random_state=RANDOM_STATE)
+        ],
+        'classifier__max_depth': [None, 2, 3, 5, 10],
+        'classifier__min_samples_leaf': [2, 5, 10]
+    },
+    {
+        'resampler': resamplers,
+        'classifier': [RandomForestClassifier(random_state=RANDOM_STATE)],
+        'classifier__n_estimators': [10, 50, 100, 200]
+    }
+]
+
+
 def load_records():
     """
     Loads the reviews that have been manually tagged at a sentence level,
@@ -135,181 +185,77 @@ def plant_random_seeds():
     random.seed(0)
 
 
-def dummy_sample():
-
-    # sampler = None
+def nested_grid_search_cross_validation():
 
     plant_random_seeds()
+    my_records = load_records()
+    preprocess_records(my_records)
+    x_matrix, y_vector = transform(my_records)
+    count_specific_generic(my_records)
 
+    grid_list = create_grid_list()
+
+    tuned_estimators_param_grid = {'classifier': grid_list}
+    tuned_pipeline = Pipeline([('classifier', DummyClassifier())])
+    outer_cv = StratifiedKFold(n_splits=5)
+    tuned_grid_search_cv = GridSearchCV(
+        tuned_pipeline, tuned_estimators_param_grid, cv=outer_cv)
+    tuned_grid_search_cv.fit(x_matrix, y_vector)
+
+    print('\nBest estimator')
+    print(tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_)
+    print('End best estimator\n')
+    # print(tuned_grid_search_cv.best_params_)
+    print('Best score: %f' % tuned_grid_search_cv.best_score_)
+    print('Best classifier algorithm index: %d' % tuned_grid_search_cv.best_index_)
+
+    print('\n\n***************')
+    get_scores_deep(tuned_grid_search_cv.cv_results_)
+    print('***************\n\n')
+
+    final_cv = StratifiedKFold(n_splits=5)
+    final_estimator = tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_
+    final_grid_search_cv = GridSearchCV(
+        final_estimator, param_grid[tuned_grid_search_cv.best_index_],
+        cv=final_cv
+    )
+    final_grid_search_cv.fit(x_matrix, y_vector)
+    print('\nFinal estimator')
+    print(final_grid_search_cv.best_params_)
+    print('End final estimator\n')
+    print('Final score: %f' % final_grid_search_cv.best_score_)
+
+    results = get_scores(final_grid_search_cv.cv_results_)
+    csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
+    ETLUtils.save_csv_file(csv_file, results, results[0].keys())
+
+    print(csv_file)
+
+
+def grid_search_cross_validation():
+
+    plant_random_seeds()
     my_records = load_records()
     preprocess_records(my_records)
     x_matrix, y_vector = transform(my_records)
 
-    count_specific_generic(my_records)
-
-    # param_grid = {
-    #     'reduce_dim': [None, PCA(5), PCA(10)],
-    #     'clf': [SVC(), LogisticRegression()],
-    #     'clf__C': [0.1, 10, 100]
-    # }
-
-    sampler = RandomOverSampler()
-    sampler = SMOTEENN()
-    sampler = None
-
-    classifiers = [
-        DummyClassifier(strategy='most_frequent', random_state=0),
-        DummyClassifier(strategy='stratified', random_state=0),
-        DummyClassifier(strategy='uniform', random_state=0),
-        LogisticRegression(C=100),
-        SVC(C=1.0, kernel='rbf', probability=True),
-        # # SVC(C=1.0, kernel='linear', probability=True),
-        KNeighborsClassifier(n_neighbors=10),
-        tree.DecisionTreeClassifier(),
-        # # NuSVC(probability=True),
-        RandomForestClassifier(n_estimators=100)
-    ]
-
-    random_state = 0
-    resamplers = [
-        None,
-        RandomUnderSampler(random_state=random_state),
-        TomekLinks(random_state=random_state),
-        EditedNearestNeighbours(random_state=random_state),
-        NeighbourhoodCleaningRule(random_state=random_state),
-        RandomOverSampler(random_state=random_state),
-        SMOTE(random_state=random_state),
-        SMOTETomek(random_state=random_state),
-        SMOTEENN(random_state=random_state)
-    ]
-
-
-    plant_random_seeds()
-    # pipeline = Pipeline([('resampler', SMOTEENN()), ('classifier', tree.DecisionTreeClassifier())])
-    # pipeline = Pipeline([('classifier', classifier)])
-    param_grid = [
-        {
-            'resampler': resamplers,
-            'classifier': [DummyClassifier(random_state=random_state)],
-            'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
-        },
-        {
-            'resampler': resamplers,
-            'classifier': [
-                LogisticRegression(random_state=random_state),
-                SVC(random_state=random_state)
-            ],
-            'classifier__C': [0.1, 1.0, 10, 100, 1000]
-            # 'classifier__C': [0.1, 1.0, 10]
-        },
-        {
-            'resampler': resamplers,
-            'classifier': [KNeighborsClassifier()],
-            'classifier__n_neighbors': [1, 2, 5, 10, 20],
-            'classifier__weights': ['uniform', 'distance']
-        },
-        {
-            'resampler': resamplers,
-            'classifier': [
-                tree.DecisionTreeClassifier(random_state=random_state)
-            ],
-            'classifier__max_depth': [None, 2, 3, 5, 10],
-            'classifier__min_samples_leaf': [2, 5, 10]
-        },
-        {
-            'resampler': resamplers,
-            'classifier': [RandomForestClassifier(random_state=random_state)],
-            'classifier__n_estimators': [10, 50, 100, 200]
-        }
-    ]
-
-    inner_cv = StratifiedKFold(n_splits=5)
-    outer_cv = StratifiedKFold(n_splits=5)
-    # scores = cross_val_score(pipeline, x_matrix, y_vector, cv=inner_cv)
-    # score = scores.mean()
-    # print('Score: %f' % score)
-    # print(score)
-    #
-    # plant_random_seeds()
-    # scores = cross_val_score(pipeline, x_matrix, y_vector, cv=inner_cv)
-    # score = scores.mean()
-    # print('Score: %f' % score)
-    # print(score)
-
-    # plant_random_seeds()
-    # grid_search_cv = GridSearchCV(pipeline, param_grid, cv=inner_cv, verbose=10)
-    # grid_search_cv.fit(x_matrix, y_vector)
-    # # print(grid_search_cv.best_estimator_)
-    # print(grid_search_cv.best_params_)
-    # print(grid_search_cv.best_score_)
-    # mean_scores = numpy.array(grid_search_cv.cv_results_['mean_test_score'])
-    # # print(grid_search_cv.cv_results_)
-    # print(mean_scores)
-
-    grid_list = [GridSearchCV(Pipeline([('resampler', None), ('classifier', DummyClassifier())]), params, cv=StratifiedKFold(n_splits=5)) for params in param_grid]
-    tuned_estimators_param_grid = {
-        'classifier': grid_list
-    }
-
-    print('********************\n\n')
+    grid_list = create_grid_list()
 
     for grid in grid_list:
         grid.fit(x_matrix, y_vector)
         print('\nBest estimator')
-        print(grid.best_estimator_.get_params()[
-                  'classifier'].best_estimator_)
+        print(grid.best_estimator_.get_params()['classifier'])
         print('End best estimator\n')
         # print(tuned_grid_search_cv.best_params_)
         print('Best score: %f' % grid.best_score_)
         print('Best classifier algorithm index: %d\n' % grid.best_index_)
 
-    print('********************\n\n')
 
-
-    # tuned_pipeline = Pipeline([('classifier', DummyClassifier())])
-    # tuned_grid_search_cv = GridSearchCV(tuned_pipeline, tuned_estimators_param_grid, cv=outer_cv)
-    # tuned_grid_search_cv.fit(x_matrix, y_vector)
-    # # print(grid_search_cv.best_estimator_)
-    # mean_scores = numpy.array(tuned_grid_search_cv.cv_results_['mean_test_score'])
-    # # print(grid_search_cv.cv_results_)
-    # # print(tuned_grid_search_cv.best_estimator_)
-    # print(mean_scores)
-    # print('\nBest estimator')
-    # print(tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_)
-    # print('End best estimator\n')
-    # # print(tuned_grid_search_cv.best_params_)
-    # print('Best score: %f' % tuned_grid_search_cv.best_score_)
-    # print('Best classifier algorithm index: %d' % tuned_grid_search_cv.best_index_)
-    #
-    # # final_scores = cross_val_score(grid_search_cv, x_matrix, y_vector, cv=outer_cv)
-    # # print(grid_search_cv.best_params_)
-    # # print(grid_search_cv.best_params_)
-    # # print(final_scores.mean())
-    #
-    # final_cv = StratifiedKFold(n_splits=5)
-    # final_estimator = tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_
-    # final_grid_search_cv = GridSearchCV(final_estimator,
-    #                                     param_grid[tuned_grid_search_cv.best_index_],
-    #                                     cv=final_cv)
-    # final_grid_search_cv.fit(x_matrix, y_vector)
-    # print('\nFinal estimator')
-    # print(final_grid_search_cv.best_params_)
-    # print('End final estimator\n')
-    # print('Final score: %f' % final_grid_search_cv.best_score_)
-    # # print(final_grid_search_cv.cv_results_.keys())
-    # # print(final_grid_search_cv.cv_results_['params'])
-    # # print('params size: %d' % len(final_grid_search_cv.cv_results_['params']))
-    # # print('param_classifier size: %d' % len(final_grid_search_cv.cv_results_['param_classifier']))
-    # # print('param_classifier__strategy size %d' % len(final_grid_search_cv.cv_results_['param_classifier__strategy']))
-    # # print('param_resampler size % d' % len(final_grid_search_cv.cv_results_['param_resampler']))
-    # # print('mean_test_score size % d' % len(final_grid_search_cv.cv_results_['mean_test_score']))
-
-    # results = get_scores(final_grid_search_cv.cv_results_)
-
-    csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
-    # ETLUtils.save_csv_file(csv_file, results, results[0].keys())
-
-    # print(csv_file)
+def create_grid_list():
+    grid_list = [GridSearchCV(
+        Pipeline([('resampler', None), ('classifier', DummyClassifier())]),
+        params, cv=StratifiedKFold(n_splits=5)) for params in param_grid]
+    return grid_list
 
 
 def get_scores(cv_results):
@@ -330,6 +276,27 @@ def get_scores(cv_results):
     return param_values_list
 
 
+def get_scores_deep(cv_results):
+    params = cv_results['params']
+    scores = cv_results['mean_test_score']
+    param_keys = params[0].keys()
+    param_values_list = []
+    for param, score in zip(params, scores):
+        param_values = {'score': score}
+        for param_key in param_keys:
+            param_values[param_key] = param[param_key].best_estimator_.get_params()['classifier']
+            # param_values['one'] = param[param_key]
+            # param_values['two'] = param[param_key].best_estimator_
+            # param_values['three'] = param[param_key].best_estimator_.get_params()['classifier']
+
+        param_values_list.append(param_values)
+
+    for param_values in param_values_list:
+        print(param_values)
+
+    return param_values_list
+
+
 def get_param_value_name(param_value):
 
     if isinstance(param_value, basestring) or \
@@ -340,8 +307,7 @@ def get_param_value_name(param_value):
 
 start = time.time()
 # main()
-dummy_sample()
-# new_main()
+nested_grid_search_cross_validation()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)
