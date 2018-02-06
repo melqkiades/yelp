@@ -419,7 +419,7 @@ class ReviewsPreprocessor:
 
         if self.use_cache and os.path.exists(Constants.DICTIONARY_FILE):
             print('Dictionary already exists')
-            return corpora.Dictionary.load(Constants.DICTIONARY_FILE)
+            self.dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
 
         all_words = []
 
@@ -666,46 +666,39 @@ class ReviewsPreprocessor:
         with open(Constants.RATINGS_FILE, 'w') as f:
             numpy.savetxt(f, matrix, fmt='%d')
 
-    def full_cycle(self):
-        Constants.print_properties()
-        print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-        utilities.plant_seeds()
+        print('Records exported as a triplet in: %s' % Constants.RATINGS_FILE)
 
-        if self.use_cache and \
-                os.path.exists(Constants.PROCESSED_RECORDS_FILE):
-            print('Records have already been processed')
-            self.records = \
-                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
-        else:
-            self.load_records()
+    def preprocess(self):
 
-            if 'yelp' in Constants.ITEM_TYPE:
-                self.transform_yelp_records()
-            elif 'fourcity' in Constants.ITEM_TYPE:
-                self.transform_fourcity_records()
+        self.load_records()
 
-            self.add_integer_ids()
-            self.clean_reviews()
-            self.remove_duplicate_reviews()
-            self.tag_reviews_language()
-            self.remove_foreign_reviews()
-            self.lemmatize_records()
-            self.remove_users_with_low_reviews()
-            self.remove_items_with_low_reviews()
-            self.count_frequencies()
-            self.shuffle_records()
-            print('total_records: %d' % len(self.records))
-            self.classify_reviews()
-            self.build_bag_of_words()
-            self.tag_contextual_reviews()
-            # self.load_full_records()
-            self.build_dictionary()
-            self.build_corpus()
-            self.label_review_targets()
-            self.export_records()
+        if 'yelp' in Constants.ITEM_TYPE:
+            self.transform_yelp_records()
+        elif 'fourcity' in Constants.ITEM_TYPE:
+            self.transform_fourcity_records()
+
+        self.add_integer_ids()
+        self.clean_reviews()
+        self.remove_duplicate_reviews()
+        self.tag_reviews_language()
+        self.remove_foreign_reviews()
+        self.lemmatize_records()
+        self.remove_users_with_low_reviews()
+        self.remove_items_with_low_reviews()
+        self.count_frequencies()
+        self.shuffle_records()
+        print('total_records: %d' % len(self.records))
+        self.classify_reviews()
+        self.build_bag_of_words()
+        self.tag_contextual_reviews()
+        # self.load_full_records()
+        self.build_dictionary()
+        self.build_corpus()
+        self.label_review_targets()
+        self.export_records()
 
         self.count_specific_generic_ratio()
-        # self.export_to_triplet()
+        self.export_to_triplet()
 
         rda = ReviewsDatasetAnalyzer(self.records)
         print('density: %f' % rda.calculate_density_approx())
@@ -717,6 +710,19 @@ class ReviewsPreprocessor:
             extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
         print('total users', len(user_ids))
         print('total items', len(item_ids))
+
+    def full_cycle(self):
+        Constants.print_properties()
+        print('%s: full cycle' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+        utilities.plant_seeds()
+
+        if self.use_cache and \
+                os.path.exists(Constants.PROCESSED_RECORDS_FILE):
+            print('Records have already been processed')
+            self.records = \
+                ETLUtils.load_json_file(Constants.PROCESSED_RECORDS_FILE)
+        else:
+            self.preprocess()
 
         if Constants.SEPARATE_TOPIC_MODEL_RECSYS_REVIEWS:
             self.separate_recsys_topic_model_records()
