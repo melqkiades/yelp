@@ -229,6 +229,19 @@ class ReviewsPreprocessor:
               "were duplicated" % (removed_records_count, percentage)
         print(msg)
 
+    def remove_reviews_from_classifier_training_set(self):
+        """
+        Removes the records that are part of the training set of the reviews
+        classifier
+        """
+        classifier_records = \
+            ETLUtils.load_json_file(Constants.CLASSIFIED_RECORDS_FILE)
+        classifier_review_ids = \
+            {record[Constants.REVIEW_ID_FIELD] for record in classifier_records}
+
+        self.records = ETLUtils.filter_out_records(
+            self.records, Constants.REVIEW_ID_FIELD, classifier_review_ids)
+
     def count_frequencies(self):
         """
         Counts the number of reviews each user and item have and stores the
@@ -658,6 +671,7 @@ class ReviewsPreprocessor:
         self.remove_duplicate_reviews()
         self.tag_reviews_language()
         self.remove_foreign_reviews()
+        self.remove_reviews_from_classifier_training_set()
         self.lemmatize_records()
         self.remove_users_with_low_reviews()
         self.remove_items_with_low_reviews()
