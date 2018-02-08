@@ -29,6 +29,8 @@ from utils.constants import Constants
 
 
 RANDOM_STATE = 0
+SCORE_METRIC = 'accuracy'
+# SCORE_METRIC = 'roc_auc'
 resamplers = [
     None,
     RandomUnderSampler(random_state=RANDOM_STATE),
@@ -41,7 +43,7 @@ resamplers = [
     SMOTEENN(random_state=RANDOM_STATE)
 ]
 
-param_grid = [
+PARAM_GRID = [
     {
         'resampler': resamplers,
         'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
@@ -86,11 +88,7 @@ def load_records():
     """
 
     print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
-    dataset = Constants.ITEM_TYPE
-    folder = Constants.DATASET_FOLDER
-    records_file = folder + \
-                   'classified_' + dataset + '_reviews_sentences.json'
-    records = ETLUtils.load_json_file(records_file)
+    records = ETLUtils.load_json_file(Constants.CLASSIFIED_RECORDS_FILE)
 
     # Take only the first sentence
     # document_level = 1
@@ -137,12 +135,13 @@ def preprocess_records(records):
     print('length before: %d' % len(records))
 
     empty_records = []
-    for record in records:
-        sentence_type = record['sentence_type']
-        record['specific'] = \
-            'yes' if sentence_type in ['specific', 'unknown'] else 'no'
-        if sentence_type == 'empty':
-            empty_records.append(record)
+    if isinstance(Constants.DOCUMENT_LEVEL, (int, long)):
+        for record in records:
+            sentence_type = record['sentence_type']
+            record['specific'] = \
+                'yes' if sentence_type in ['specific', 'unknown'] else 'no'
+            if sentence_type == 'empty':
+                empty_records.append(record)
 
     for empty_record in empty_records:
         records.remove(empty_record)
@@ -195,11 +194,14 @@ def nested_grid_search_cross_validation():
 
     grid_list = create_grid_list()
 
+    print('score metric: %s' % SCORE_METRIC)
+
     tuned_estimators_param_grid = {'classifier': grid_list}
     tuned_pipeline = Pipeline([('classifier', DummyClassifier())])
     outer_cv = StratifiedKFold(n_splits=5)
     tuned_grid_search_cv = GridSearchCV(
-        tuned_pipeline, tuned_estimators_param_grid, cv=outer_cv)
+        tuned_pipeline, tuned_estimators_param_grid, cv=outer_cv,
+        scoring=SCORE_METRIC)
     tuned_grid_search_cv.fit(x_matrix, y_vector)
 
     print('\nBest estimator')
@@ -216,8 +218,8 @@ def nested_grid_search_cross_validation():
     final_cv = StratifiedKFold(n_splits=5)
     final_estimator = tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_
     final_grid_search_cv = GridSearchCV(
-        final_estimator, param_grid[tuned_grid_search_cv.best_index_],
-        cv=final_cv
+        final_estimator, PARAM_GRID[tuned_grid_search_cv.best_index_],
+        cv=final_cv, scoring=SCORE_METRIC
     )
     final_grid_search_cv.fit(x_matrix, y_vector)
     print('\nFinal estimator')
@@ -254,7 +256,8 @@ def grid_search_cross_validation():
 def create_grid_list():
     grid_list = [GridSearchCV(
         Pipeline([('resampler', None), ('classifier', DummyClassifier())]),
-        params, cv=StratifiedKFold(n_splits=5)) for params in param_grid]
+        params, cv=StratifiedKFold(n_splits=5), scoring=SCORE_METRIC)
+                 for params in PARAM_GRID]
     return grid_list
 
 
