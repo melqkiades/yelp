@@ -1,9 +1,8 @@
 import copy
 import csv
 import json
-import random
+import os
 import nltk
-import numpy
 
 __author__ = 'franpena'
 
@@ -187,12 +186,14 @@ class ETLUtils:
 
         return founded_tips
 
-
     @staticmethod
     def split_train_test(records, split=0.8, start=0.):
         """
         Splits the data in two disjunct datasets: train and test
 
+        :param start: the position in which the split should start. This value
+        must be in the range [0,1]
+        :param records: the list to be split
         :param split: % of training set to be used (test set size = 100-percent)
         :type split: float
 
@@ -205,11 +206,15 @@ class ETLUtils:
             train = records[:int(round(split*length))]
             test = records[int(round(split*length)):]
         elif split_start > 1:
-            train = records[int(round(start*length)):] + records[:int(round((split_start-1)*length))]
-            test = records[int(round((split_start-1)*length)):int(round(start*length))]
+            train = records[int(round(start*length)):] +\
+                records[:int(round((split_start-1)*length))]
+            test = records[
+                   int(round((split_start-1)*length)):int(round(start*length))]
         else:
-            train = records[int(round(start*length)):int(round(split_start*length))]
-            test = records[int(round(split_start*length)):] + records[:int(round(start*length))]
+            train = records[
+                    int(round(start*length)):int(round(split_start*length))]
+            test = records[int(round(split_start*length)):] +\
+                records[:int(round(start*length))]
 
         return train, test
 
@@ -219,6 +224,9 @@ class ETLUtils:
         Splits the data in two distinct datasets: train and test by making a
         deep copy of the records
 
+        :param start: the position in which the split should start. This value
+        must be in the range [0,1]
+        :param records: the list to be split
         :param split: % of training set to be used (test set size = 100-percent)
         :type split: float
 
@@ -232,11 +240,15 @@ class ETLUtils:
             train = records[:int(round(split*length))]
             test = records[int(round(split*length)):]
         elif split_start > 1:
-            train = records[int(round(start*length)):] + records[:int(round((split_start-1)*length))]
-            test = records[int(round((split_start-1)*length)):int(round(start*length))]
+            train = records[int(round(start*length)):] +\
+                records[:int(round((split_start-1)*length))]
+            test = records[
+                   int(round((split_start-1)*length)):int(round(start*length))]
         else:
-            train = records[int(round(start*length)):int(round(split_start*length))]
-            test = records[int(round(split_start*length)):] + records[:int(round(start*length))]
+            train = records[
+                    int(round(start*length)):int(round(split_start*length))]
+            test = records[int(round(split_start*length)):] +\
+                records[:int(round(start*length))]
 
         return train, test
 
@@ -246,10 +258,12 @@ class ETLUtils:
         records = []
 
         with open(file_path) as read_file:
-            reader = csv.DictReader(read_file, delimiter=delimiter)  # read rows into a dictionary format
+            # read rows into a dictionary format
+            reader = csv.DictReader(read_file, delimiter=delimiter)
             for row in reader:
                 dictionary = {}
-                for (key, value) in row.items(): # go over each column name and value
+                # go over each column name and value
+                for (key, value) in row.items():
                     dictionary[key] = value
                 records.append(dictionary)
 
@@ -267,6 +281,46 @@ class ETLUtils:
 
             for record in records:
                 writer.writerow(record)
+
+    @staticmethod
+    def write_row_to_csv(file_name, row):
+        """
+        Writes a new line to the end of the specified CSV file. The new line
+        will be composed of the values of the row dictionary sorted by their
+        key values in alphabetical order. If file_name does not exists, then it
+        will be created automatically. The headers will be the keys of the row
+        dictionary sorted in alphabetical order
+
+        :param file_name: the name of the CSV file
+        :param row: a dictionary
+        """
+        if not os.path.exists(file_name):
+            with open(file_name, 'w') as f:
+                w = csv.DictWriter(f, sorted(row.keys()))
+                w.writeheader()
+                w.writerow(row)
+        else:
+            with open(file_name, 'a') as f:
+                w = csv.DictWriter(f, sorted(row.keys()))
+                w.writerow(row)
+
+    @staticmethod
+    def write_row_to_json(file_name, row):
+        """
+        Writes a new line to the end of the specified JSON file. If file_name
+        does not exists, then it will be created automatically.
+
+        :param file_name: the name of the JSON file
+        :param row: a dictionary
+        """
+        if not os.path.exists(file_name):
+            with open(file_name, 'w') as f:
+                json.dump(row, f)
+                f.write('\n')
+        else:
+            with open(file_name, 'a') as f:
+                json.dump(row, f)
+                f.write('\n')
 
     @staticmethod
     def transform_ids(records, user_field, item_field, rating_field):
@@ -327,49 +381,3 @@ class ETLUtils:
             frequency_map[key] += 1
 
         return frequency_map
-
-
-# headers = ['Algorithm',
-#            # 'Multi-cluster',
-#            # 'Similarity',
-#            # 'Distance metric',
-#            # 'Dataset',
-#            # 'MAE	RMSE',
-#            # 'Execution time',
-#            # 'Cross validation',
-#            'Machine']
-# records = [
-#     {'Algorithm': 'Clu_Overall', 'Machine': 'Mac'},
-#     {'Algorithm': 'Clu_CF_Euc', 'Machine': 'Mac'},
-#     {'Algorithm': 'Single_CF', 'Machine': 'PC'}
-# ]
-# ETLUtils.save_csv_file('/Users/fpena/tmp/test.csv', records, headers, delimiter='|')
-
-# my_input_folder = '/Users/fpena/UCC/Thesis/datasets/context/'
-# my_input_file = my_input_folder + 'yelp_training_set_review_hotels.json'
-# my_fields = ['user_id', 'business_id', 'stars']
-# my_records = ETLUtils.load_json_file(my_input_file)
-# my_records = ETLUtils.select_fields(my_fields, my_records)
-# random.shuffle(my_records)
-
-# my_export_folder = '/Users/fpena/tmp/libfm-1.42.src/scripts/'
-# my_export_file = my_export_folder + 'yelp_training_set_review_hotels_shuffled.csv'
-# my_export_file = my_export_folder + 'yelp.csv'
-# ETLUtils.save_csv_file(my_export_file, my_records, my_fields, '\t', False)
-
-# my_new_records = ETLUtils.transform_ids(my_records, 'user_id', 'business_id', 'stars')
-
-# for my_new_record in my_new_records:
-#     print(my_new_record)
-
-# ETLUtils.json_to_csv(my_input_file, my_export_file, 'user_id', 'business_id', 'stars', True, True)
-#
-# print(my_records[0])
-# print(my_records[2])
-# print(my_records[5])
-#
-# data_frame = DataFrame(my_records)
-# column = 'user_id'
-# counts = data_frame.groupby(column).size()
-# print(len(counts))
-
