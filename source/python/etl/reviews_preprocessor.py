@@ -3,8 +3,6 @@ import random
 
 import time
 
-import operator
-
 import langdetect
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
@@ -409,6 +407,7 @@ class ReviewsPreprocessor:
         if self.use_cache and os.path.exists(Constants.DICTIONARY_FILE):
             print('Dictionary already exists')
             self.dictionary = corpora.Dictionary.load(Constants.DICTIONARY_FILE)
+            return
 
         all_words = []
 
@@ -416,10 +415,6 @@ class ReviewsPreprocessor:
             all_words.append(record[Constants.BOW_FIELD])
 
         self.dictionary = corpora.Dictionary(all_words)
-        sorted_words = sorted(self.dictionary.dfs.items(),
-                              key=operator.itemgetter(1), reverse=True)
-        for word_id, frequency in sorted_words[:100]:
-            print(self.dictionary[word_id], frequency)
 
         self.dictionary.filter_extremes(
             Constants.MIN_DICTIONARY_WORD_COUNT,
@@ -721,6 +716,7 @@ class ReviewsPreprocessor:
 def main():
     reviews_preprocessor = ReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
+    # reviews_preprocessor.preprocess()
 
 # start = time.time()
 # main()

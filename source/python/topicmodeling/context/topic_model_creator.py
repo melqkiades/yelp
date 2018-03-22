@@ -102,7 +102,8 @@ def train_context_extractor(records, stable=True):
         context_extractor.get_context_rich_topics()
         context_extractor.clear_reviews()
     else:
-        raise ValueError('Unrecognized topic model type')
+        raise ValueError('Unrecognized topic model type: \'%s\'' %
+                         Constants.TOPIC_MODEL_TYPE)
 
     print('%s: Trained Topic Model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 

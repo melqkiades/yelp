@@ -18,6 +18,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import tree
@@ -43,41 +44,142 @@ resamplers = [
     SMOTEENN(random_state=RANDOM_STATE)
 ]
 
-PARAM_GRID = [
-    {
+
+PARAM_GRID_MAP = {
+    'DummyClassifier': {
         'resampler': resamplers,
         'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
         'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
     },
-    {
+    'LogisticRegression': {
         'resampler': resamplers,
-        'classifier': [
-            LogisticRegression(random_state=RANDOM_STATE),
-            SVC(random_state=RANDOM_STATE)
-        ],
+        'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
         'classifier__C': [0.1, 1.0, 10, 100, 1000]
         # 'classifier__C': [0.1, 1.0, 10]
     },
-    {
+    'SVC': {
+        'resampler': resamplers,
+        'classifier': [SVC(random_state=RANDOM_STATE)],
+        'classifier__kernel': ['rbf', 'linear'],
+        'classifier__C': [0.1, 1.0, 10, 100, 1000]
+        # 'classifier__C': [0.1, 1.0, 10]
+    },
+    'KNeighborsClassifier': {
         'resampler': resamplers,
         'classifier': [KNeighborsClassifier()],
         'classifier__n_neighbors': [1, 2, 5, 10, 20],
         'classifier__weights': ['uniform', 'distance']
     },
-    {
+    'DecisionTreeClassifier': {
         'resampler': resamplers,
-        'classifier': [
-            tree.DecisionTreeClassifier(random_state=RANDOM_STATE)
-        ],
+        'classifier': [tree.DecisionTreeClassifier(random_state=RANDOM_STATE)],
         'classifier__max_depth': [None, 2, 3, 5, 10],
         'classifier__min_samples_leaf': [2, 5, 10]
     },
-    {
+    'RandomForestClassifier': {
         'resampler': resamplers,
         'classifier': [RandomForestClassifier(random_state=RANDOM_STATE)],
         'classifier__n_estimators': [10, 50, 100, 200]
     }
-]
+}
+
+
+# PARAM_GRID_MAP = {
+#     'SVC None': {
+#         'resampler': [None],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.1 ' + type(resamplers[1]).__name__: {
+#         'resampler': [resamplers[1]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.2 ' + type(resamplers[2]).__name__: {
+#         'resampler': [resamplers[2]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.3 ' + type(resamplers[3]).__name__: {
+#         'resampler': [resamplers[3]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.4 ' + type(resamplers[4]).__name__: {
+#         'resampler': [resamplers[4]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.5 ' + type(resamplers[5]).__name__: {
+#         'resampler': [resamplers[5]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.6 ' + type(resamplers[6]).__name__: {
+#         'resampler': [resamplers[6]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.7 ' + type(resamplers[7]).__name__: {
+#         'resampler': [resamplers[7]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'SVC.8 ' + type(resamplers[8]).__name__: {
+#         'resampler': [resamplers[8]],
+#         'classifier': [SVC(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+# }
+
+
+# PARAM_GRID_MAP = {
+#     'LogisticRegression None': {
+#         'resampler': [None],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.1 ' + type(resamplers[1]).__name__: {
+#         'resampler': [resamplers[1]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.2 ' + type(resamplers[2]).__name__: {
+#         'resampler': [resamplers[2]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.3 ' + type(resamplers[3]).__name__: {
+#         'resampler': [resamplers[3]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.4 ' + type(resamplers[4]).__name__: {
+#         'resampler': [resamplers[4]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.5 ' + type(resamplers[5]).__name__: {
+#         'resampler': [resamplers[5]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.6 ' + type(resamplers[6]).__name__: {
+#         'resampler': [resamplers[6]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.7 ' + type(resamplers[7]).__name__: {
+#         'resampler': [resamplers[7]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+#     'LogisticRegression.8 ' + type(resamplers[8]).__name__: {
+#         'resampler': [resamplers[8]],
+#         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
+#         'classifier__C': [0.1, 1.0, 10, 100, 1000]
+#     },
+# }
 
 
 def load_records():
@@ -88,6 +190,9 @@ def load_records():
     """
 
     print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+    # file_name = '/Users/fpena/UCC/Thesis/datasets/context/oldClassifiedFiles/classified_yelp_hotel_reviews.json'
+    # file_name = '/Users/fpena/UCC/Thesis/datasets/context/oldClassifiedFiles/classified_yelp_restaurant_reviews.json'
+    # records = ETLUtils.load_json_file(file_name)
     records = ETLUtils.load_json_file(Constants.CLASSIFIED_RECORDS_FILE)
 
     # Take only the first sentence
@@ -184,7 +289,7 @@ def plant_random_seeds():
     random.seed(0)
 
 
-def nested_grid_search_cross_validation():
+def full_cycle():
 
     plant_random_seeds()
     my_records = load_records()
@@ -192,112 +297,59 @@ def nested_grid_search_cross_validation():
     x_matrix, y_vector = transform(my_records)
     count_specific_generic(my_records)
 
-    grid_list = create_grid_list()
+    # Error estimation
+    best_classifier = None
+    best_score = 0.0
+    for classifier, params in PARAM_GRID_MAP.items():
+        # print('Classifier: %s' % classifier)
+        cv = StratifiedKFold(Constants.CROSS_VALIDATION_NUM_FOLDS)
+        score = error_estimation(x_matrix, y_vector, params, cv, SCORE_METRIC).mean()
+        print('%s score: %f' % (classifier, score))
 
-    print('score metric: %s' % SCORE_METRIC)
+        if score > best_score:
+            best_score = score
+            best_classifier = classifier
 
-    tuned_estimators_param_grid = {'classifier': grid_list}
-    tuned_pipeline = Pipeline([('classifier', DummyClassifier())])
-    outer_cv = StratifiedKFold(n_splits=5)
-    tuned_grid_search_cv = GridSearchCV(
-        tuned_pipeline, tuned_estimators_param_grid, cv=outer_cv,
-        scoring=SCORE_METRIC)
-    tuned_grid_search_cv.fit(x_matrix, y_vector)
+    # Model selection
+    cv = StratifiedKFold(Constants.CROSS_VALIDATION_NUM_FOLDS)
+    grid_search_cv = model_selection(
+        x_matrix, y_vector, PARAM_GRID_MAP[best_classifier], cv, SCORE_METRIC)
+    # best_model = grid_search_cv.best_estimator_.get_params()['classifier']
+    # features_importance = best_model.coef_
+    print('%s: %f' % (SCORE_METRIC, grid_search_cv.best_score_))
+    print('best params', grid_search_cv.best_params_)
+    print('best estimator', grid_search_cv.best_estimator_)
+    # print('features importance', features_importance)
 
-    print('\nBest estimator')
-    print(tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_)
-    print('End best estimator\n')
-    # print(tuned_grid_search_cv.best_params_)
-    print('Best score: %f' % tuned_grid_search_cv.best_score_)
-    print('Best classifier algorithm index: %d' % tuned_grid_search_cv.best_index_)
-
-    print('\n\n***************')
-    get_scores_deep(tuned_grid_search_cv.cv_results_)
-    print('***************\n\n')
-
-    final_cv = StratifiedKFold(n_splits=5)
-    final_estimator = tuned_grid_search_cv.best_estimator_.get_params()['classifier'].best_estimator_
-    final_grid_search_cv = GridSearchCV(
-        final_estimator, PARAM_GRID[tuned_grid_search_cv.best_index_],
-        cv=final_cv, scoring=SCORE_METRIC
-    )
-    final_grid_search_cv.fit(x_matrix, y_vector)
-    print('\nFinal estimator')
-    print(final_grid_search_cv.best_params_)
-    print('End final estimator\n')
-    print('Final score: %f' % final_grid_search_cv.best_score_)
-
-    results = get_scores(final_grid_search_cv.cv_results_)
-    csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
-    ETLUtils.save_csv_file(csv_file, results, results[0].keys())
-
-    print(csv_file)
+    # results = get_scores(final_grid_search_cv.cv_results_)
+    # csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
+    # ETLUtils.save_csv_file(csv_file, results, results[0].keys())
+    #
+    # print(csv_file)
 
 
-def grid_search_cross_validation():
+def error_estimation(
+        x_matrix, y_vector, param_grid, cv=None, scoring=None):
+    pipeline = Pipeline([('resampler', None), ('classifier', DummyClassifier())])
+    grid_search_cv = GridSearchCV(pipeline, param_grid, cv=cv, scoring=scoring)
 
-    plant_random_seeds()
-    my_records = load_records()
-    preprocess_records(my_records)
-    x_matrix, y_vector = transform(my_records)
-
-    grid_list = create_grid_list()
-
-    for grid in grid_list:
-        grid.fit(x_matrix, y_vector)
-        print('\nBest estimator')
-        print(grid.best_estimator_.get_params()['classifier'])
-        print('End best estimator\n')
-        # print(tuned_grid_search_cv.best_params_)
-        print('Best score: %f' % grid.best_score_)
-        print('Best classifier algorithm index: %d\n' % grid.best_index_)
+    return cross_val_score(grid_search_cv, x_matrix, y_vector)
 
 
-def create_grid_list():
-    grid_list = [GridSearchCV(
-        Pipeline([('resampler', None), ('classifier', DummyClassifier())]),
-        params, cv=StratifiedKFold(n_splits=5), scoring=SCORE_METRIC)
-                 for params in PARAM_GRID]
-    return grid_list
+def model_selection(
+        x_matrix, y_vector, param_grid, cv=None, scoring=None):
+    pipeline = Pipeline(
+        [('resampler', None), ('classifier', DummyClassifier())])
+    grid_search_cv = GridSearchCV(pipeline, param_grid, cv=cv, scoring=scoring)
+    grid_search_cv.fit(x_matrix, y_vector)
+    return grid_search_cv
 
 
-def get_scores(cv_results):
-    params = cv_results['params']
-    scores = cv_results['mean_test_score']
-    param_keys = params[0].keys()
-    param_values_list = []
-    for param, score in zip(params, scores):
-        param_values = {'score': score}
-        for param_key in param_keys:
-            param_values[param_key] = get_param_value_name(param[param_key])
+def get_features_importance(estimator):
 
-        param_values_list.append(param_values)
-
-    for param_values in param_values_list:
-        print(param_values)
-
-    return param_values_list
-
-
-def get_scores_deep(cv_results):
-    params = cv_results['params']
-    scores = cv_results['mean_test_score']
-    param_keys = params[0].keys()
-    param_values_list = []
-    for param, score in zip(params, scores):
-        param_values = {'score': score}
-        for param_key in param_keys:
-            param_values[param_key] = param[param_key].best_estimator_.get_params()['classifier']
-            # param_values['one'] = param[param_key]
-            # param_values['two'] = param[param_key].best_estimator_
-            # param_values['three'] = param[param_key].best_estimator_.get_params()['classifier']
-
-        param_values_list.append(param_values)
-
-    for param_values in param_values_list:
-        print(param_values)
-
-    return param_values_list
+    features_importance = estimator.coef_
+    print(features_importance)
+    return features_importance
 
 
 def get_param_value_name(param_value):
@@ -308,9 +360,8 @@ def get_param_value_name(param_value):
 
     return type(param_value).__name__
 
-start = time.time()
-# main()
-nested_grid_search_cross_validation()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# full_cycle()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)

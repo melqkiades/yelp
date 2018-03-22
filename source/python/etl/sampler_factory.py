@@ -15,18 +15,18 @@ def create_sampler(sampler_name, random_state=None):
     if sampler_name.lower() == 'random_under_sampler':
         return RandomUnderSampler(random_state=random_state)
     if sampler_name.lower() == 'tomek_links':
-        TomekLinks(random_state=random_state),
+        return TomekLinks(random_state=random_state),
     if sampler_name.lower() == 'enn':
-        EditedNearestNeighbours(random_state=random_state)
+        return EditedNearestNeighbours(random_state=random_state)
     if sampler_name.lower() == 'ncl':
-        NeighbourhoodCleaningRule(random_state=random_state)
+        return NeighbourhoodCleaningRule(random_state=random_state)
     if sampler_name.lower() == 'random_over_sampler':
         return RandomOverSampler(random_state=random_state)
     if sampler_name.lower() == 'smote':
-        SMOTE(random_state=random_state)
-    if sampler_name.lower() == 'smote_tomek':
-        SMOTETomek(random_state=random_state)
-    if sampler_name.lower() == 'smote_enn':
-        SMOTEENN(random_state=random_state)
+        return SMOTE(random_state=random_state)
+    if sampler_name.lower() == 'smote-tomek':
+        return SMOTETomek(random_state=random_state)
+    if sampler_name.lower() == 'smote-enn':
+        return SMOTEENN(random_state=random_state)
     else:
         raise ValueError('Unsupported value \'%s\' for sampler' % sampler_name)
