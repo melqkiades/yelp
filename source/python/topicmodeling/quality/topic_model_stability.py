@@ -52,6 +52,8 @@ def evaluate_topic_model(metric):
 
 
 def create_all_term_rankings(records, metric):
+    print('%s: creating all term rankings' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
     all_term_rankings = []
 
     # context_extractor =\
@@ -76,7 +78,9 @@ def create_all_term_rankings(records, metric):
               'topic_model_stability_sample_ratio value to None' % metric
         print(msg)
 
-    for _ in range(Constants.TOPIC_MODEL_STABILITY_ITERATIONS - 1):
+    num_iterations = Constants.TOPIC_MODEL_STABILITY_ITERATIONS
+    for i in range(num_iterations - 1):
+        print('Iteration %d/%d' % (i+1, num_iterations))
 
         if sample_ratio is None:
             sampled_records = records

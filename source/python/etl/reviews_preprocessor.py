@@ -489,6 +489,9 @@ class ReviewsPreprocessor:
             topic_extractor = NmfTopicExtractor()
             topic_extractor.load_trained_data()
             topic_extractor.update_reviews_with_topics(records)
+        else:
+            raise ValueError('unrecognized topic modeling algorithm: \'%s\'' %
+                             Constants.TOPIC_MODEL_TYPE)
 
         if Constants.TOPIC_MODEL_NORMALIZE:
             ReviewsPreprocessor.normalize_topics(records)
@@ -718,8 +721,8 @@ def main():
     reviews_preprocessor.full_cycle()
     # reviews_preprocessor.preprocess()
 
-# start = time.time()
-# main()
-# end = time.time()
-# total_time = end - start
-# print("Total time = %f seconds" % total_time)
+start = time.time()
+main()
+end = time.time()
+total_time = end - start
+print("Total time = %f seconds" % total_time)
