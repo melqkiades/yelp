@@ -1,5 +1,5 @@
 # Properties for the recommender system
-business_type: yelp_restaurant
+business_type: yelp_hotel
 fm_review_type:
 topic_model_review_type: specific
 topn_n: 10
@@ -28,7 +28,7 @@ bow_type: NN
 lemmatize: True
 min_dictionary_word_count: 5
 max_dictionary_word_count: 0.2
-# Possible values: review, sentence or integer numer indicating the number of
+# Possible values: review, sentence or integer number indicating the number of
 # sentences to use (1 is 1st sentence, 2 is 1st and 2nd, etc.)
 document_level: review
 solver: libfm
@@ -59,7 +59,7 @@ nested_cross_validation_cycle: 0
 # set to test
 cross_validation_strategy: nested_test
 topic_model_type: ensemble
-topic_model_stability_iterations: 50
+topic_model_stability_iterations: 100
 topic_model_stability_num_terms: 10
 topic_model_stability_sample_ratio: 0.8
 separate_topic_model_recsys_reviews: True
@@ -76,7 +76,7 @@ carskit_recommenders: globalavg
 carskit_nominal_format: no_context
 carskit_item_ranking: True
 topic_model_normalize: True
-context_format: no_context
+context_format: context_topic_weights
 rival_relevance_threshold: 5.0
 rival_seed: 2048
 rival_evaluation_strategy: rel_plus_n

@@ -258,7 +258,7 @@ def generate_excel_file(records, file_name=None):
 
     if file_name is None:
         file_name = Constants.generate_file_name(
-            'topic_model', 'xlsx', Constants.DATASET_FOLDER, None, None, True)
+            'topic_model', 'xlsx', Constants.RESULTS_FOLDER, None, None, True)
     workbook = xlsxwriter.Workbook(file_name)
     worksheet7 = workbook.add_worksheet()
 
@@ -326,10 +326,10 @@ def generate_excel_file(records, file_name=None):
 def main():
 
     csv_file_name = Constants.generate_file_name(
-        'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
+        'topic_model_analysis', 'csv', Constants.RESULTS_FOLDER, None, None,
         False)
     json_file_name = Constants.generate_file_name(
-        'topic_model_analysis', 'json', Constants.DATASET_FOLDER, None, None,
+        'topic_model_analysis', 'json', Constants.RESULTS_FOLDER, None, None,
         False)
     print(csv_file_name)
 
@@ -398,10 +398,10 @@ def main():
 def manual_main():
 
     csv_file_name = Constants.generate_file_name(
-        'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
+        'topic_model_analysis', 'csv', Constants.RESULTS_FOLDER, None, None,
         False)
     json_file_name = Constants.generate_file_name(
-        'topic_model_analysis', 'json', Constants.DATASET_FOLDER, None, None,
+        'topic_model_analysis', 'json', Constants.RESULTS_FOLDER, None, None,
         False)
     print(json_file_name)
     print(csv_file_name)
@@ -444,10 +444,10 @@ def cli_main():
     results.update(analyze_topics(include_stability=True))
 
     csv_file_name = Constants.generate_file_name(
-        'topic_model_analysis', 'csv', Constants.DATASET_FOLDER, None, None,
+        'topic_model_analysis', 'csv', Constants.RESULTS_FOLDER, None, None,
         False)
     json_file_name = Constants.generate_file_name(
-        'topic_model_analysis', 'json', Constants.DATASET_FOLDER, None, None,
+        'topic_model_analysis', 'json', Constants.RESULTS_FOLDER, None, None,
         False)
 
     write_results_to_csv(csv_file_name, results)

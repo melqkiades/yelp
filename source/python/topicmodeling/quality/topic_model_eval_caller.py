@@ -79,7 +79,7 @@ def read_csv_first_column_as_key(csv_file, metric):
 def cycle_eval_topic_model(metric, num_topics_list):
 
     csv_file_name = Constants.generate_file_name(
-        metric, 'csv', Constants.DATASET_FOLDER, None, None,
+        metric, 'csv', Constants.RESULTS_FOLDER, None, None,
         False)
 
     for topic in num_topics_list:

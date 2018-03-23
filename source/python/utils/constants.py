@@ -79,6 +79,8 @@ class Constants(object):
     TOPIC_MODEL_NUM_TOPICS_FIELD = 'topic_model_num_topics'
     TOPIC_MODEL_PASSES_FIELD = 'topic_model_passes'
     TOPIC_MODEL_REVIEW_TYPE_FIELD = 'topic_model_review_type'
+    TOPIC_MODEL_STABILITY_SAMPLE_RATIO_FIELD =\
+        'topic_model_stability_sample_ratio'
     TOPIC_MODEL_TARGET_FIELD = 'topic_model_target'
     TOPIC_MODEL_TARGET_REVIEWS_FIELD = 'topic_model_target_reviews'
     TOPIC_MODEL_TYPE_FIELD = 'topic_model_type'
@@ -113,6 +115,7 @@ class Constants(object):
     # TOPIC_ENSEMBLE_FOLDER = '/Users/fpena/tmp/topic-ensemble/'
     # CARSKIT_FOLDER = '/Users/fpena/tmp/CARSKit/'
     GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
+    RESULTS_FOLDER = DATASET_FOLDER + 'results/'
 
     _properties = load_properties()
     ITEM_TYPE = _properties['business_type']

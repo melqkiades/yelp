@@ -321,6 +321,13 @@ def full_cycle():
     print('best estimator', grid_search_cv.best_estimator_)
     # print('features importance', features_importance)
 
+    # csv_file_name = Constants.generate_file_name(
+    #     'classifier_results', 'csv', Constants.RESULTS_FOLDER, None,
+    #     None, False)
+    # json_file_name = Constants.generate_file_name(
+    #     'classifier_results', 'json', Constants.RESULTS_FOLDER, None,
+    #     None, False)
+
     # results = get_scores(final_grid_search_cv.cv_results_)
     # csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
     # ETLUtils.save_csv_file(csv_file, results, results[0].keys())
