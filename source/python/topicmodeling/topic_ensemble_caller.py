@@ -25,9 +25,14 @@ DATASET_FILE_NAME = Constants.generate_file_name(
 
 
 # TODO: Consider moving this to the Constants class
-def get_topic_model_prefix():
+def get_topic_model_prefix(folder='', seed=None):
+
+    prefix = 'topic_model'
+    if seed is not None:
+        prefix += '_seed-' + str(seed)
+
     return Constants.generate_file_name(
-        'topic_model', '', '', None, None, True, True)[:-1]
+        prefix, '', folder, None, None, True, True)[:-1]
 
 
 def run_parse_directory():
@@ -139,10 +144,11 @@ def run_generate_nmf():
 
 
 # Call generate kfold
-def run_generate_kfold():
+def run_generate_kfold(seed=None):
     generate_nmf_command = Constants.TOPIC_ENSEMBLE_FOLDER + \
         'generate-kfold.py'
-    output_folder = BASE_FOLDER + get_topic_model_prefix() + '/'
+    base_topic_folder = get_topic_model_prefix(seed=seed)
+    output_folder = BASE_FOLDER + base_topic_folder + '/'
 
     if not os.path.isdir(Constants.TOPIC_MODEL_FOLDER):
         os.mkdir(Constants.TOPIC_MODEL_FOLDER)
@@ -167,10 +173,16 @@ def run_generate_kfold():
         output_folder,
     ]
 
+    if seed is not None:
+        command.extend([
+            '--seed',
+            str(seed)
+        ])
+
     print(command)
 
     unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + get_topic_model_prefix() + \
+    log_file_name = Constants.GENERATED_FOLDER + base_topic_folder + \
         '_parse_directory_' + unique_id + '.log'
 
     log_file = open(log_file_name, "w")
@@ -180,12 +192,14 @@ def run_generate_kfold():
 
 
 # Call combine nmf
-def run_combine_nmf():
+def run_combine_nmf(seed=None):
     generate_nmf_command = Constants.TOPIC_ENSEMBLE_FOLDER + \
         'combine-nmf.py'
+    base_topic_folder = get_topic_model_prefix(seed=seed)
     base_files = \
-        glob.glob(BASE_FOLDER + get_topic_model_prefix() + '/*factors*.pkl')
-    output_folder = Constants.ENSEMBLED_RESULTS_FOLDER
+        glob.glob(BASE_FOLDER + base_topic_folder + '/*factors*.pkl')
+    output_folder = \
+        get_topic_model_prefix(Constants.ENSEMBLE_FOLDER, seed) + '/'
 
     if not os.path.isdir(Constants.ENSEMBLE_FOLDER):
         os.mkdir(Constants.ENSEMBLE_FOLDER)
@@ -206,10 +220,16 @@ def run_combine_nmf():
         output_folder,
     ])
 
+    if seed is not None:
+        command.extend([
+            '--seed',
+            str(seed)
+        ])
+
     print(command)
 
     unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + get_topic_model_prefix() + \
+    log_file_name = Constants.GENERATED_FOLDER + base_topic_folder + \
         '_parse_directory_' + unique_id + '.log'
 
     log_file = open(log_file_name, "w")
@@ -217,7 +237,19 @@ def run_combine_nmf():
         command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
 
-    shutil.rmtree(BASE_FOLDER + get_topic_model_prefix())
+    shutil.rmtree(BASE_FOLDER + base_topic_folder)
+
+
+def create_several_topic_models():
+
+    run_local_parse_directory()
+
+    random_seeds = range(1, 101)
+    total_topic_models = len(random_seeds)
+    for seed in random_seeds:
+        print('\n\n\nCreating %d of %d topic models' % (seed, total_topic_models))
+        run_generate_kfold(seed)
+        run_combine_nmf(seed)
 
 
 def main():
@@ -227,6 +259,8 @@ def main():
     # run_generate_nmf()
     run_generate_kfold()
     run_combine_nmf()
+
+    # create_several_topic_models()
 
 
 # start = time.time()

@@ -36,7 +36,15 @@ def evaluate_topic_model(metric):
         records = records[:num_records / 2]
     print('num_reviews', len(records))
 
-    all_term_rankings = create_all_term_rankings(records, metric)
+    all_term_rankings = None
+    topic_model_type = Constants.TOPIC_MODEL_TYPE
+    if topic_model_type in ['lda', 'nmf']:
+        all_term_rankings = create_all_term_rankings(records, metric)
+    elif topic_model_type == 'ensemble':
+        all_term_rankings = create_all_term_rankings_from_ensemble()
+    else:
+        raise ValueError(
+            'Unrecognized topic modeling algorithm: \'%s\'' % topic_model_type)
     print('Total iterations: %d' % len(all_term_rankings))
 
     if metric == TERM_STABILITY_REFERENCE:
@@ -93,6 +101,53 @@ def create_all_term_rankings(records, metric):
         all_term_rankings.append(terms_matrix)
 
     return all_term_rankings
+
+
+def create_all_term_rankings_from_ensemble():
+    print('%s: creating all term rankings from ensemble' %
+          time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    file_paths = get_topic_ensemble_ranks_file_paths()
+
+    all_term_rankings = []
+    top = Constants.TOPIC_MODEL_STABILITY_NUM_TERMS
+    for rank_path in file_paths:
+        log.debug("Loading term ranking set from %s ..." % rank_path)
+        (term_rankings, labels) = util.load_term_rankings(
+            rank_path)
+        log.debug("Set has %d rankings covering %d terms" % (
+            len(term_rankings), rankings.term_rankings_size(term_rankings)))
+        # do we need to truncate the number of terms in the ranking?
+        if top > 1:
+            term_rankings = rankings.truncate_term_rankings(term_rankings,
+                                                            top)
+            log.debug(
+                "Truncated to %d -> set now has %d rankings covering %d terms" % (
+                    top, len(term_rankings),
+                    rankings.term_rankings_size(term_rankings)))
+        all_term_rankings.append(term_rankings)
+
+    return all_term_rankings
+
+
+def get_topic_ensemble_ranks_file_paths():
+
+    num_models = Constants.TOPIC_MODEL_STABILITY_ITERATIONS
+    random_seeds = range(1, num_models + 1)
+
+    suffix = 'ranks_ensemble_k%02d.pkl' % Constants.TOPIC_MODEL_NUM_TOPICS
+
+    file_paths = []
+
+    for seed in random_seeds:
+        prefix = 'topic_model_seed-' + str(seed)
+        topic_model_folder = Constants.generate_file_name(
+            prefix, '', Constants.ENSEMBLE_FOLDER, None, None, True, True)[:-1]
+        topic_model_file = topic_model_folder + '/' + suffix
+        print(topic_model_file)
+        file_paths.append(topic_model_file)
+
+    return file_paths
 
 
 def sample_list(lst, sample_ratio):

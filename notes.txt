@@ -97,4 +97,29 @@
    parallel -j 10 -a topicmodel-restaurant.sh &
 - To run a hyperopt instance use
   hyperopt-mongo-worker --mongo=node44:1234/restaurant_context_db_nested_0 > /dev/null &
+- To have the proper reference format in the LaTeX PhD thesis document remove the following line and add the next one
+  % \@usebib{alpha}{Default}{}
+  \@usebib[natbib,har2nat]{agsm}{Harvard}{}  % Added by franpena
+  Then recompile the uccthesis.ins file and move the generated files to the /Users/fpena/Library/texmf/tex/latex/ucc folder
+  > pdflatex uccthesis.ins
+
+****************
+Update from a git server overwritting any local changes
+
+
+Like Hedgehog I think the answers are terrible. But though Hedgehog's answer might be better, I don't think it is as elegant as it could be. The way I found to do this is by using "fetch" and "merge" with a defined strategy. Which should make it so that your local changes are preserved as long as they are not one of the files that you are trying to force an overwrite with.
+First do a commit of your changes
+
+ git add *
+ git commit -a -m "local file server commit message"
+
+Then fetch the changes and overwrite if there is a conflict
+
+ git fetch origin master
+ git merge -s recursive -X theirs origin/master
+
+"-X" is an option name, and "theirs" is the value for that option. You're choosing to use "their" changes, instead of "your" changes if there is a conflict.
+
+
+***************
 

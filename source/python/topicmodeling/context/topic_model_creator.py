@@ -80,6 +80,10 @@ def train_topic_model(records):
         topic_ensemble_caller.run_generate_kfold()
         topic_ensemble_caller.run_combine_nmf()
 
+    else:
+        raise ValueError('Unrecognized topic modeling algorithm: \'%s\'' %
+                         Constants.TOPIC_MODEL_TYPE)
+
 
 def train_context_extractor(records, stable=True):
     print('%s: train context topics model' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -157,7 +161,8 @@ def create_single_topic_model(cycle_index, fold_index, check_exists=True):
     cv_start = float(fold_index) / num_folds
     train_records, test_records = \
         ETLUtils.split_train_test(records, split=split, start=cv_start)
-    return create_topic_model(train_records, cycle_index, fold_index, check_exists)
+    return create_topic_model(
+        train_records, cycle_index, fold_index, check_exists)
 
 
 def generate_file_with_commands():
