@@ -78,7 +78,7 @@ def create_all_term_rankings(records, metric):
 
     sample_ratio = Constants.TOPIC_MODEL_STABILITY_SAMPLE_RATIO
 
-    if metric == TERM_STABILITY_PAIRWISE:
+    if metric in [TERM_STABILITY_PAIRWISE, TERM_DIFFERENCE]:
         sample_ratio = None
         Constants.update_properties(
             {Constants.TOPIC_MODEL_STABILITY_SAMPLE_RATIO_FIELD: sample_ratio})
@@ -89,6 +89,7 @@ def create_all_term_rankings(records, metric):
     num_iterations = Constants.TOPIC_MODEL_STABILITY_ITERATIONS
     for i in range(num_iterations - 1):
         print('Iteration %d/%d' % (i+1, num_iterations))
+        print('sample_ratio:', sample_ratio)
 
         if sample_ratio is None:
             sampled_records = records
