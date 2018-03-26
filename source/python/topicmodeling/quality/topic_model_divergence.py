@@ -2,16 +2,19 @@ import numpy
 import time
 from scipy import stats
 
+from etl import ETLUtils
 from etl.reviews_preprocessor import ReviewsPreprocessor
 from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
 from utils.constants import Constants
 
 
-def calculate_divergence(document_term_matrix, document_topic_matrix, topic_term_matrix):
+def calculate_divergence(
+        document_term_matrix, document_topic_matrix, topic_term_matrix):
 
     print(document_term_matrix.shape)
 
-    document_lengths = numpy.squeeze(numpy.asarray(document_term_matrix.sum(axis=1)))
+    document_lengths =\
+        numpy.squeeze(numpy.asarray(document_term_matrix.sum(axis=1)))
     normalized_document_lengths = numpy.linalg.norm(document_lengths)
 
     c_m1 = numpy.linalg.svd(topic_term_matrix, compute_uv=False)
@@ -24,7 +27,10 @@ def calculate_divergence(document_term_matrix, document_topic_matrix, topic_term
 
 
 def symmetric_kl(distrib_p, distrib_q):
-    return numpy.sum([stats.entropy(distrib_p, distrib_q), stats.entropy(distrib_p, distrib_q)])
+    return numpy.sum([
+        stats.entropy(distrib_p, distrib_q),
+        stats.entropy(distrib_p, distrib_q)
+    ])
 
 
 def KL(a, b):
@@ -62,6 +68,7 @@ def test():
 
     results = []
 
+    # my_list = range(2, 31)
     my_list = range(2, 61)
 
     for i in my_list:
@@ -72,14 +79,31 @@ def test():
         document_topic_matrix = topic_model.document_topic_matrix
         topic_term_matrix = topic_model.topic_term_matrix
 
-        divergence = calculate_divergence(document_term_matrix, document_topic_matrix, topic_term_matrix)
+        divergence = calculate_divergence(
+            document_term_matrix, document_topic_matrix, topic_term_matrix)
 
-        results.append((Constants.TOPIC_MODEL_NUM_TOPICS, divergence))
+        result = {
+            'num_topics': Constants.TOPIC_MODEL_NUM_TOPICS,
+            'divergence': divergence,
+            Constants.TOPIC_MODEL_TYPE_FIELD: 'ensemble',
+            Constants.BUSINESS_TYPE_FIELD: Constants.ITEM_TYPE
+        }
 
-        print('Num topics: %d, Divergence: %f' % (Constants.TOPIC_MODEL_NUM_TOPICS, divergence))
+        results.append(result)
 
-    for num_topic, divergence in results:
-        print('%d %f' % (num_topic, divergence))
+        print('Num topics: %d, Divergence: %f' %
+              (Constants.TOPIC_MODEL_NUM_TOPICS, divergence))
+
+    for result in results:
+        print('%d %f' % (result['num_topics'], result['divergence']))
+
+    prefix = Constants.RESULTS_FOLDER + Constants.ITEM_TYPE +\
+        '_topic_model_divergence'
+    csv_file_path = prefix + '.csv'
+    json_file_path = prefix + '.json'
+    headers = sorted(results[0].keys())
+    ETLUtils.save_csv_file(csv_file_path, results, headers)
+    ETLUtils.save_json_file(json_file_path, results)
 
 
 def main():
@@ -92,4 +116,3 @@ main()
 end = time.time()
 total_time = end - start
 print("Total time = %f seconds" % total_time)
-

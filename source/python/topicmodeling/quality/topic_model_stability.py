@@ -145,7 +145,6 @@ def get_topic_ensemble_ranks_file_paths():
         topic_model_folder = Constants.generate_file_name(
             prefix, '', Constants.ENSEMBLE_FOLDER, None, None, True, True)[:-1]
         topic_model_file = topic_model_folder + '/' + suffix
-        print(topic_model_file)
         file_paths.append(topic_model_file)
 
     return file_paths
