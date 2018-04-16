@@ -1,7 +1,9 @@
+import json
 import random
 
 import numpy
 import numbers
+import os
 import time
 
 from imblearn.combine import SMOTEENN
@@ -20,11 +22,14 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import NuSVC
 from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree import tree
 
 from etl import ETLUtils
-from etl.reviews_preprocessor import ReviewsPreprocessor
+from etl import sampler_factory
+from nlp import nlp_utils
 from topicmodeling.context import review_metrics_extractor
 from utils.constants import Constants
 
@@ -46,41 +51,41 @@ resamplers = [
 
 
 PARAM_GRID_MAP = {
-    'DummyClassifier': {
-        'resampler': resamplers,
-        'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
-        'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
-    },
+    # 'DummyClassifier': {
+    #     'resampler': resamplers,
+    #     'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
+    #     'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
+    # },
     'LogisticRegression': {
         'resampler': resamplers,
         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
         'classifier__C': [0.1, 1.0, 10, 100, 1000]
         # 'classifier__C': [0.1, 1.0, 10]
     },
-    'SVC': {
-        'resampler': resamplers,
-        'classifier': [SVC(random_state=RANDOM_STATE)],
-        'classifier__kernel': ['rbf', 'linear'],
-        'classifier__C': [0.1, 1.0, 10, 100, 1000]
-        # 'classifier__C': [0.1, 1.0, 10]
-    },
-    'KNeighborsClassifier': {
-        'resampler': resamplers,
-        'classifier': [KNeighborsClassifier()],
-        'classifier__n_neighbors': [1, 2, 5, 10, 20],
-        'classifier__weights': ['uniform', 'distance']
-    },
-    'DecisionTreeClassifier': {
-        'resampler': resamplers,
-        'classifier': [tree.DecisionTreeClassifier(random_state=RANDOM_STATE)],
-        'classifier__max_depth': [None, 2, 3, 5, 10],
-        'classifier__min_samples_leaf': [2, 5, 10]
-    },
-    'RandomForestClassifier': {
-        'resampler': resamplers,
-        'classifier': [RandomForestClassifier(random_state=RANDOM_STATE)],
-        'classifier__n_estimators': [10, 50, 100, 200]
-    }
+    # 'SVC': {
+    #     'resampler': resamplers,
+    #     'classifier': [SVC(random_state=RANDOM_STATE)],
+    #     'classifier__kernel': ['rbf', 'linear'],
+    #     'classifier__C': [0.1, 1.0, 10, 100, 1000]
+    #     'classifier__C': [0.1, 1.0, 10]
+    # },
+    # 'KNeighborsClassifier': {
+    #     'resampler': resamplers,
+    #     'classifier': [KNeighborsClassifier()],
+    #     'classifier__n_neighbors': [1, 2, 5, 10, 20],
+    #     'classifier__weights': ['uniform', 'distance']
+    # },
+    # 'DecisionTreeClassifier': {
+    #     'resampler': resamplers,
+    #     'classifier': [tree.DecisionTreeClassifier(random_state=RANDOM_STATE)],
+    #     'classifier__max_depth': [None, 2, 3, 5, 10],
+    #     'classifier__min_samples_leaf': [2, 5, 10]
+    # },
+    # 'RandomForestClassifier': {
+    #     'resampler': resamplers,
+    #     'classifier': [RandomForestClassifier(random_state=RANDOM_STATE)],
+    #     'classifier__n_estimators': [10, 50, 100, 200]
+    # }
 }
 
 
@@ -253,8 +258,31 @@ def preprocess_records(records):
 
     print('length after: %d' % len(records))
 
-    # lemmatize_reviews(records)
-    ReviewsPreprocessor.lemmatize_reviews(records)
+    lemmatize_reviews(records)
+    # ReviewsPreprocessor.lemmatize_reviews(records)
+
+
+def lemmatize_reviews(records):
+    """
+    Performs a POS tagging on the text contained in the reviews and
+    additionally finds the lemma of each word in the review
+
+    :type records: list[dict]
+    :param records: a list of dictionaries with the reviews
+    """
+    print('%s: lemmatize reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    record_index = 0
+    for record in records:
+        #
+
+        tagged_words =\
+            nlp_utils.lemmatize_text(record[Constants.TEXT_FIELD])
+
+        record[Constants.POS_TAGS_FIELD] = tagged_words
+        record_index += 1
+
+    return records
 
 
 def count_specific_generic(records):
@@ -318,7 +346,11 @@ def full_cycle():
     # features_importance = best_model.coef_
     print('%s: %f' % (SCORE_METRIC, grid_search_cv.best_score_))
     print('best params', grid_search_cv.best_params_)
-    print('best estimator', grid_search_cv.best_estimator_)
+
+    # for key, value in grid_search_cv.best_params_.items():
+    #     print(key, value)
+
+    # print('best estimator', grid_search_cv.best_estimator_)
     # print('features importance', features_importance)
 
     # csv_file_name = Constants.generate_file_name(
@@ -333,6 +365,11 @@ def full_cycle():
     # ETLUtils.save_csv_file(csv_file, results, results[0].keys())
     #
     # print(csv_file)
+
+    best_hyperparams_file_name = Constants.generate_file_name(
+        'best_hyperparameters', 'json', '/tmp/', None,
+        None, False)
+    save_parameters(best_hyperparams_file_name, grid_search_cv.best_params_)
 
 
 def error_estimation(
@@ -367,8 +404,96 @@ def get_param_value_name(param_value):
 
     return type(param_value).__name__
 
+
+def save_parameters(file_name, parameters):
+
+    for key, value in parameters.items():
+
+        if key in ['classifier', 'resampler']:
+            # new_value = None
+            if value is not None:
+                value = type(value).__name__
+            parameters[key] = value
+
+        parameters[key] = value
+        # print(key, parameters[key])
+
+    file_contents = json.dumps(parameters)
+    print(file_contents)
+    with open(file_name, 'w') as json_file:
+        json_file.write(file_contents)
+
+
+def load_pipeline():
+
+    best_hyperparams_file_name = Constants.generate_file_name(
+        'best_hyperparameters', 'json', Constants.CACHE_FOLDER, None,
+        None, False)
+
+    if not os.path.exists(best_hyperparams_file_name):
+        print('Recsys contextual records have already been generated')
+        full_cycle()
+
+    with open(best_hyperparams_file_name, 'r') as json_file:
+        file_contents = json_file.read()
+        parameters = json.loads(file_contents)
+
+        print(parameters)
+
+        classifiers = {
+            'logisticregression': LogisticRegression(),
+            'svc': SVC(),
+            'kneighborsclassifier': KNeighborsClassifier(),
+            'decisiontreeclassifier': DecisionTreeClassifier(),
+            'nusvc': NuSVC(),
+            'randomforestclassifier': RandomForestClassifier()
+        }
+
+        classifier = classifiers[parameters['classifier'].lower()]
+        # print(classifier)
+        classifier_params = get_classifier_params(parameters)
+        classifier.set_params(**classifier_params)
+        print(classifier)
+
+        resampler = sampler_factory.create_sampler(
+            parameters['resampler'], Constants.DOCUMENT_CLASSIFIER_SEED)
+
+        return Pipeline([('resampler', resampler), ('classifier', classifier)])
+
+        # for pname, pval in parameters.items():
+        #     print(pname, pval)
+        #
+        #     if pname.startswith('classifier__'):
+        #         step, param = pname.split('__', 1)
+        #         # fit_params_steps[step][param] = pval
+        #         print(step, param)
+
+
+def get_classifier_params(parameters):
+
+    classifier_params = {}
+
+    for pname, pval in parameters.items():
+        print(pname, pval)
+
+        if pname.startswith('classifier__'):
+            step, param = pname.split('__', 1)
+            # fit_params_steps[step][param] = pval
+            print(step, param)
+            classifier_params[param] = pval
+
+    # print(classifier_params)
+    return classifier_params
+
+
+def main():
+
+    print(load_pipeline())
+
+
 # start = time.time()
 # full_cycle()
+# main()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)

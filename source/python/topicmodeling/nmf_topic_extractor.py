@@ -111,6 +111,9 @@ class NmfTopicExtractor:
 
     def print_topic_model(self, num_terms=10):
 
+        if num_terms == 'max':
+            num_terms = len(self.terms)
+
         return [
             self.print_topic(topic_id, num_terms)
             for topic_id in range(self.num_topics)

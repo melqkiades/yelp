@@ -48,8 +48,8 @@ class ReviewsClassifier:
 
         metrics, labels = self.transform(records)
 
-        if self.sampler is not None:
-            metrics, labels = self.sampler.fit_sample(metrics, labels)
+        # if self.sampler is not None:
+        #     metrics, labels = self.sampler.fit_sample(metrics, labels)
 
         self.classifier.fit(metrics, labels)
 

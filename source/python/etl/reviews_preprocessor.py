@@ -10,16 +10,10 @@ import numpy
 from gensim import corpora
 from nltk import PerceptronTagger
 from nltk.corpus import stopwords
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import NuSVC
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
 
 from etl import ETLUtils
-from etl import sampler_factory
 from etl.reviews_dataset_analyzer import ReviewsDatasetAnalyzer
+from evaluation import classifier_evaluator
 from nlp import nlp_utils
 from topicmodeling.context import lda_context_utils
 from topicmodeling.context import topic_model_creator
@@ -39,20 +33,6 @@ class ReviewsPreprocessor:
         self.use_cache = use_cache
         self.records = None
         self.dictionary = None
-
-        classifier = Constants.DOCUMENT_CLASSIFIER
-        classifiers = {
-            'logistic_regression': LogisticRegression(C=100),
-            'svc': SVC(),
-            'kneighbors': KNeighborsClassifier(n_neighbors=10),
-            'decision_tree': DecisionTreeClassifier(),
-            'nu_svc': NuSVC(),
-            'random_forest': RandomForestClassifier(n_estimators=100)
-        }
-        self.classifier = classifiers[classifier]
-        self.resampler = sampler_factory.create_sampler(
-            Constants.RESAMPLER, Constants.DOCUMENT_CLASSIFIER_SEED)
-        classifiers = None
 
     def load_records(self):
         print('%s: load records' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -78,7 +58,8 @@ class ReviewsPreprocessor:
                     Constants.ITEM_ID_FIELD: item_id,
                     Constants.RATING_FIELD: record['stars'],
                     Constants.TEXT_FIELD: record['text'],
-                    Constants.USER_ITEM_KEY_FIELD: '%s|%s' % (str(user_id), str(item_id)),
+                    Constants.USER_ITEM_KEY_FIELD: '%s|%s' %
+                                                   (str(user_id), str(item_id)),
                 }
             )
 
@@ -368,7 +349,7 @@ class ReviewsPreprocessor:
 
         training_records = self.lemmatize_reviews(training_records)
 
-        classifier = ReviewsClassifier(self.classifier, self.resampler)
+        classifier = ReviewsClassifier(classifier_evaluator.load_pipeline())
         classifier.train(training_records)
         classifier.label_json_reviews(self.records)
 
