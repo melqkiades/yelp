@@ -8,12 +8,11 @@ __author__ = 'fpena'
 
 class ReviewsClassifier:
 
-    def __init__(self, classifier, sampler=None):
+    def __init__(self, classifier):
         self.num_features = None
         self.min_values = None
         self.max_values = None
         self.classifier = classifier
-        self.sampler = sampler
 
     def transform(self, records):
         """
