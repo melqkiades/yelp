@@ -376,10 +376,10 @@ public class LibfmExporter {
         firstRow.add("item");
         firstRow.add("predicted_rating");
 
-        Set<String> contextKeys = trainReviews.get(0).getContext().keySet();
-        for (String context : contextKeys) {
-            firstRow.add(context);
-        }
+//        Set<String> contextKeys = trainReviews.get(0).getContext().keySet();
+//        for (String context : contextKeys) {
+//            firstRow.add(context);
+//        }
         String delimiter = "\t";
         // Write the header of the CSV file
         predictionsWriter.write(String.join(delimiter, firstRow) + "\n");
