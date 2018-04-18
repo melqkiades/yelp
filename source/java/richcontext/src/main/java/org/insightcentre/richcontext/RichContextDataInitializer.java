@@ -82,8 +82,8 @@ public class RichContextDataInitializer {
         }
         int numItems = itemsSet.size();
         int numUsers = usersSet.size();
-        System.out.println("Num items: " + numItems);
-        System.out.println("Num users: " + numUsers);
+        System.err.println("Num items: " + numItems);
+        System.err.println("Num users: " + numUsers);
 
 
         DataModelIF<Long, Long>[] splits =
@@ -127,7 +127,7 @@ public class RichContextDataInitializer {
      */
     private void transformSplitToLibfm(int fold) throws IOException {
 
-        System.out.println("Transform split " + fold + " to LibFM");
+        System.err.println("Transform split " + fold + " to LibFM");
 
         String foldPath = ratingsFolderPath + "fold_" + fold + "/";
         String trainFile = foldPath + "train.csv";

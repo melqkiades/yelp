@@ -186,7 +186,7 @@ public class RichContextResultsProcessor {
      */
     private void parseRecommendationResultsLibfm() throws IOException, InterruptedException {
 
-        System.out.println("Parse Recommendation Results LibFM");
+        System.err.println("Parse Recommendation Results LibFM");
 
         for (int fold = 0; fold < numFolds; fold++) {
 
@@ -220,7 +220,7 @@ public class RichContextResultsProcessor {
                     throw new UnsupportedOperationException(msg);
             }
 
-            System.out.println("Recommendations file name: " + rivalRecommendationsFile);
+            System.err.println("Recommendations file name: " + rivalRecommendationsFile);
         }
     }
 
@@ -232,7 +232,7 @@ public class RichContextResultsProcessor {
      */
     private void prepareStrategy(String algorithm) throws IOException {
 
-        System.out.println("Prepare Rating Strategy");
+        System.err.println("Prepare Rating Strategy");
 
         for (int i = 0; i < numFolds; i++) {
 
@@ -244,11 +244,11 @@ public class RichContextResultsProcessor {
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
-            System.out.println("Parsing Training Model");
+            System.err.println("Parsing Training Model");
             trainingModel = new CsvParser().parseData(trainingFile);
-            System.out.println("Parsing Test Model");
+            System.err.println("Parsing Test Model");
             testModel = new CsvParser().parseData(testFile);
-            System.out.println("Parsing Recommendation Model");
+            System.err.println("Parsing Recommendation Model");
             recModel = new CsvParser().parseData(recFile);
 
             EvaluationStrategy<Long, Long> evaluationStrategy;
@@ -303,7 +303,7 @@ public class RichContextResultsProcessor {
      */
     private Map<String, String> evaluate(String algorithm) throws IOException {
 
-        System.out.println("Evaluate");
+        System.err.println("Evaluate");
 
         double ndcgRes = 0.0;
         double recallRes = 0.0;
@@ -332,16 +332,16 @@ public class RichContextResultsProcessor {
                     for (Long user : trainModel.getUsers()) {
                         trainUsers.add(user);
                     }
-                    System.out.println("Num train users = " + trainUsers.size());
+                    System.err.println("Num train users = " + trainUsers.size());
 
                     Set<Long> testUsers = new HashSet<>();
                     for (Long user : testModel.getUsers()) {
                         testUsers.add(user);
                     }
-                    System.out.println("Num test users = " + testUsers.size());
+                    System.err.println("Num test users = " + testUsers.size());
                     Set<Long> users;
 
-                    System.out.println("Evaluation set: " + evaluationSet);
+                    System.err.println("Evaluation set: " + evaluationSet);
 
                     switch (evaluationSet) {
 
@@ -415,17 +415,17 @@ public class RichContextResultsProcessor {
         results.put("RMSE", String.valueOf(rmseRes / numFolds));
         results.put("MAE", String.valueOf(maeRes / numFolds));
 
-        System.out.println("Dataset: " + dataset.toString());
-        System.out.println("Algorithm: " + algorithm);
-        System.out.println("Num Topics: " + numTopics);
-        System.out.println("Strategy: " + strategy.toString());
-        System.out.println("Context_Format: " + contextFormat.toString());
-        System.out.println("Cold-start: " + coldStart);
-        System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
-        System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
-        System.out.println("Recall@" + at + ": " + recallRes / numFolds);
-        System.out.println("RMSE: " + rmseRes / numFolds);
-        System.out.println("MAE: " + maeRes / numFolds);
+        System.err.println("Dataset: " + dataset.toString());
+        System.err.println("Algorithm: " + algorithm);
+        System.err.println("Num Topics: " + numTopics);
+        System.err.println("Strategy: " + strategy.toString());
+        System.err.println("Context_Format: " + contextFormat.toString());
+        System.err.println("Cold-start: " + coldStart);
+        System.err.println("NDCG@" + at + ": " + ndcgRes / numFolds);
+        System.err.println("Precision@" + at + ": " + precisionRes / numFolds);
+        System.err.println("Recall@" + at + ": " + recallRes / numFolds);
+        System.err.println("RMSE: " + rmseRes / numFolds);
+        System.err.println("MAE: " + maeRes / numFolds);
 
         return results;
     }

@@ -16,7 +16,7 @@ public class AlejandroRichContextEvaluator {
 
     public static void main(final String[] args) throws IOException, InterruptedException, ParseException {
 
-        System.out.println("AlejandroRichContextEvaluator");
+        System.err.println("AlejandroRichContextEvaluator");
 
         // create Options object
         Options options = new Options();
@@ -68,6 +68,6 @@ public class AlejandroRichContextEvaluator {
 
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
-        System.out.println("Running time: " + (totalTime/1000));
+        System.err.println("Running time: " + (totalTime/1000));
     }
 }
