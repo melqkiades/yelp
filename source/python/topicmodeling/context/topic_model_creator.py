@@ -169,7 +169,7 @@ def generate_file_with_commands():
     print('%s: Generating file with commands' %
           time.strftime("%Y/%m/%d-%H:%M:%S"))
 
-    code_path = constants.CODE_FOLDER[:-1]
+    code_path = constants.PYTHON_CODE_FOLDER[:-1]
     python_path = "PYTHONPATH='" + code_path + "' "
     python_command = "stdbuf -oL nohup python "
     base_file_name = "topicmodel-" + Constants.ITEM_TYPE
@@ -180,7 +180,7 @@ def generate_file_with_commands():
 
     for cycle in range(Constants.NUM_CYCLES):
         for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
-            python_file = constants.CODE_FOLDER +\
+            python_file = constants.PYTHON_CODE_FOLDER +\
                 "topicmodeling/context/topic_model_creator.py -c %d -f %d"
             full_command = python_path + python_command + python_file + log_file
             command_list.append(full_command % (cycle, fold, cycle+1, fold+1))

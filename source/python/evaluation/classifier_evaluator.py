@@ -51,41 +51,41 @@ resamplers = [
 
 
 PARAM_GRID_MAP = {
-    # 'DummyClassifier': {
-    #     'resampler': resamplers,
-    #     'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
-    #     'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
-    # },
+    'DummyClassifier': {
+        'resampler': resamplers,
+        'classifier': [DummyClassifier(random_state=RANDOM_STATE)],
+        'classifier__strategy': ['most_frequent', 'stratified', 'uniform']
+    },
     'LogisticRegression': {
         'resampler': resamplers,
         'classifier': [LogisticRegression(random_state=RANDOM_STATE)],
         'classifier__C': [0.1, 1.0, 10, 100, 1000]
         # 'classifier__C': [0.1, 1.0, 10]
     },
-    # 'SVC': {
-    #     'resampler': resamplers,
-    #     'classifier': [SVC(random_state=RANDOM_STATE)],
-    #     'classifier__kernel': ['rbf', 'linear'],
-    #     'classifier__C': [0.1, 1.0, 10, 100, 1000]
-    #     'classifier__C': [0.1, 1.0, 10]
-    # },
-    # 'KNeighborsClassifier': {
-    #     'resampler': resamplers,
-    #     'classifier': [KNeighborsClassifier()],
-    #     'classifier__n_neighbors': [1, 2, 5, 10, 20],
-    #     'classifier__weights': ['uniform', 'distance']
-    # },
-    # 'DecisionTreeClassifier': {
-    #     'resampler': resamplers,
-    #     'classifier': [tree.DecisionTreeClassifier(random_state=RANDOM_STATE)],
-    #     'classifier__max_depth': [None, 2, 3, 5, 10],
-    #     'classifier__min_samples_leaf': [2, 5, 10]
-    # },
-    # 'RandomForestClassifier': {
-    #     'resampler': resamplers,
-    #     'classifier': [RandomForestClassifier(random_state=RANDOM_STATE)],
-    #     'classifier__n_estimators': [10, 50, 100, 200]
-    # }
+    'SVC': {
+        'resampler': resamplers,
+        'classifier': [SVC(random_state=RANDOM_STATE)],
+        'classifier__kernel': ['rbf', 'linear'],
+        'classifier__C': [0.1, 1.0, 10, 100, 1000]
+        # 'classifier__C': [0.1, 1.0, 10]
+    },
+    'KNeighborsClassifier': {
+        'resampler': resamplers,
+        'classifier': [KNeighborsClassifier()],
+        'classifier__n_neighbors': [1, 2, 5, 10, 20],
+        'classifier__weights': ['uniform', 'distance']
+    },
+    'DecisionTreeClassifier': {
+        'resampler': resamplers,
+        'classifier': [tree.DecisionTreeClassifier(random_state=RANDOM_STATE)],
+        'classifier__max_depth': [None, 2, 3, 5, 10],
+        'classifier__min_samples_leaf': [2, 5, 10]
+    },
+    'RandomForestClassifier': {
+        'resampler': resamplers,
+        'classifier': [RandomForestClassifier(random_state=RANDOM_STATE)],
+        'classifier__n_estimators': [10, 50, 100, 200]
+    }
 }
 
 
@@ -367,7 +367,7 @@ def full_cycle():
     # print(csv_file)
 
     best_hyperparams_file_name = Constants.generate_file_name(
-        'best_hyperparameters', 'json', '/tmp/', None,
+        'best_hyperparameters', 'json', Constants.CACHE_FOLDER, None,
         None, False)
     save_parameters(best_hyperparams_file_name, grid_search_cv.best_params_)
 

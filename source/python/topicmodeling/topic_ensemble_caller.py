@@ -9,7 +9,7 @@ import uuid
 
 import shutil
 
-from utils.constants import Constants, CODE_FOLDER
+from utils.constants import Constants, PYTHON_CODE_FOLDER
 
 PYTHON_COMMAND = 'python'
 BASE_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'base/'
@@ -65,7 +65,7 @@ def run_parse_directory():
 
 def run_local_parse_directory():
 
-    parse_directory_command = CODE_FOLDER + 'topicmodeling/' \
+    parse_directory_command = PYTHON_CODE_FOLDER + 'topicmodeling/' \
         'belford_tfidf.py'
 
     if not os.path.isdir(Constants.TOPIC_MODEL_FOLDER):

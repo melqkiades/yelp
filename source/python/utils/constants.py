@@ -8,9 +8,12 @@ import subprocess
 __author__ = 'fpena'
 
 
-CODE_FOLDER = '/home/fpena/yelp/source/python/'
-# CODE_FOLDER = '/Users/fpena/UCC/Thesis/projects/yelp/source/python/'
-PROPERTIES_FILE = CODE_FOLDER + 'properties.yaml'
+PROJECT_FOLDER = '/home/fpena/yelp/'
+# PROJECT_FOLDER = '/Users/fpena/UCC/Thesis/projects/yelp/'
+SOURCE_FOLDER = PROJECT_FOLDER + 'source/'
+PYTHON_CODE_FOLDER = SOURCE_FOLDER + 'python/'
+JAVA_CODE_FOLDER = SOURCE_FOLDER + 'java/'
+PROPERTIES_FILE = PYTHON_CODE_FOLDER + 'properties.yaml'
 
 
 def load_properties():
@@ -195,6 +198,7 @@ class Constants(object):
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
+    # CACHE_FOLDER = '/tmp/cache_context/'
     TEXT_FILES_FOLDER = CACHE_FOLDER + 'text_files/'
     TOPIC_MODEL_FOLDER = CACHE_FOLDER + 'topic_models/'
     ENSEMBLE_FOLDER = TOPIC_MODEL_FOLDER + 'ensemble/'
@@ -225,7 +229,7 @@ class Constants(object):
     JSON_RESULTS_FILE = DATASET_FOLDER + \
         ITEM_TYPE + '_results.json'
     GIT_REVISION_HASH = strip(subprocess.check_output(
-        ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
+        ['git', 'rev-parse', '--short', 'HEAD'], cwd=PROJECT_FOLDER))
     _properties['git_revision_hash'] = GIT_REVISION_HASH
     OS_NAME = platform.system() + ' ' + platform.release()
     _properties['os_name'] = OS_NAME
@@ -356,6 +360,7 @@ class Constants(object):
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
+        # Constants.CACHE_FOLDER = '/tmp/cache_context/'
         Constants.TEXT_FILES_FOLDER = Constants.CACHE_FOLDER + 'text_files/'
         Constants.TOPIC_MODEL_FOLDER = Constants.CACHE_FOLDER + 'topic_models/'
         Constants.ENSEMBLE_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'ensemble/'
@@ -408,7 +413,7 @@ class Constants(object):
         Constants.JSON_RESULTS_FILE = Constants.DATASET_FOLDER + \
             Constants.ITEM_TYPE + '_results.json'
         Constants.GIT_REVISION_HASH = strip(subprocess.check_output(
-            ['git', 'rev-parse', '--short', 'HEAD'], cwd=CODE_FOLDER))
+            ['git', 'rev-parse', '--short', 'HEAD'], cwd=PROJECT_FOLDER))
         Constants._properties['git_revision_hash'] = Constants.GIT_REVISION_HASH
         Constants.OS_NAME = platform.system() + ' ' + platform.release()
         Constants._properties['os_name'] = Constants.OS_NAME
