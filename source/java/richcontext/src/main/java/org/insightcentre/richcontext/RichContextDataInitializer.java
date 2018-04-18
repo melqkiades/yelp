@@ -128,8 +128,21 @@ public class RichContextDataInitializer {
     private void transformSplitToLibfm(int fold) throws IOException {
 
         System.err.println("Transform split " + fold + " to LibFM");
+        boolean overwrite = false;
 
         String foldPath = ratingsFolderPath + "fold_" + fold + "/";
+        String libfmTrainFile = foldPath + "libfm_train.libfm";
+//        String libfmTestFile = foldPath + "libfm_test.libfm";
+        String libfmPredictionsFile = foldPath + "libfm_predictions_" +
+                strategy.getPredictionType() + ".libfm";
+
+        if (new File(libfmTrainFile).exists() &&
+                new File(libfmPredictionsFile).exists() && !overwrite) {
+            System.err.println(
+                    "LibFM files for split " + fold + " already exist");
+            return;
+        }
+
         String trainFile = foldPath + "train.csv";
         String testFile = foldPath + "test.csv";
         String predictionsFile = foldPath + "predictions.csv";
@@ -147,11 +160,6 @@ public class RichContextDataInitializer {
             Review completeReview = reviewsMap.get(review.getUser_item_key());
             completeTestReviews.add(completeReview);
         }
-
-        String libfmTrainFile = foldPath + "libfm_train.libfm";
-//        String libfmTestFile = foldPath + "libfm_test.libfm";
-        String libfmPredictionsFile = foldPath + "libfm_predictions_" +
-                strategy.getPredictionType() + ".libfm";
 
         Map<String, Integer> oneHotIdMap =
                 LibfmExporter.getOneHot(reviewsMap.values());
