@@ -63,7 +63,8 @@ def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
 
 
 def main():
-
+    print('%s: Making preidctions with LibFM' %
+          time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     prediction_type_map = {
         'user_test': 'rating',
@@ -71,6 +72,7 @@ def main():
         'rel_plus_n': 'ranking'
     }
     prediction_type = prediction_type_map[Constants.RIVAL_EVALUATION_STRATEGY]
+    use_cache = True
 
     for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
 
@@ -81,6 +83,11 @@ def main():
                     prediction_type + '.libfm'
         results_file = ratings_fold_folder + 'libfm_results_' + \
                            prediction_type + '.txt'
+
+        if use_cache and os.path.exists(results_file):
+            print("Fold %d file already exists ('%s') " % (fold, results_file))
+            continue
+
         # predictions_file = ratings_fold_folder + 'libfm_test.libfm'
         # results_file = ratings_fold_folder + 'libfm_predictions.txt'
         log_file = ratings_fold_folder + 'libfm_log.txt'
@@ -91,8 +98,8 @@ def main():
 
         run_libfm(train_file, predictions_file, results_file, log_file, save_file)
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
