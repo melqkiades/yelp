@@ -27,6 +27,7 @@ public class AlejandroRichContextEvaluator {
         options.addOption("o", true, "The folder containing the output file");
         options.addOption("p", true, "The properties file path");
         options.addOption("s", true, "The evaluation set");
+        options.addOption("k", true, "The number of topics");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -47,6 +48,9 @@ public class AlejandroRichContextEvaluator {
         String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
+        Integer numTopics = cmd.hasOption("k") ?
+                Integer.parseInt(cmd.getOptionValue("k", defaultPropertiesFile)) :
+                null;
         RichContextResultsProcessor.EvaluationSet evaluationSet =
                 RichContextResultsProcessor.EvaluationSet.valueOf(
                 cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
@@ -55,11 +59,13 @@ public class AlejandroRichContextEvaluator {
 
         switch (processingTask) {
             case PREPARE_LIBFM:
-                RichContextDataInitializer.prepareLibfm(cacheFolder, propertiesFile);
+                RichContextDataInitializer.prepareLibfm(
+                        cacheFolder, propertiesFile, numTopics);
                 break;
             case PROCESS_LIBFM_RESULTS:
                 RichContextResultsProcessor.processLibfmResults(
-                        cacheFolder, outputFolder, propertiesFile, evaluationSet);
+                        cacheFolder, outputFolder, propertiesFile,
+                        evaluationSet, numTopics);
                 break;
             default:
                 throw new UnsupportedOperationException(

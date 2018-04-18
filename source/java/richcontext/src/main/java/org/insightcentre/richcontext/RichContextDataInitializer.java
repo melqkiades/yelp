@@ -34,7 +34,7 @@ public class RichContextDataInitializer {
 
 
     public RichContextDataInitializer(
-            String cacheFolder, String propertiesFile)
+            String cacheFolder, String propertiesFile, Integer paramNumTopics)
             throws IOException {
 
         Properties properties = Properties.loadProperties(propertiesFile);
@@ -46,7 +46,9 @@ public class RichContextDataInitializer {
                 properties.getContextFormat().toUpperCase(Locale.ENGLISH));
         RichContextResultsProcessor.Dataset dataset = RichContextResultsProcessor.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
-        int numTopics = properties.getNumTopics();
+        int numTopics = (paramNumTopics == null) ?
+                properties.getNumTopics() :
+                paramNumTopics;
         coldStart = properties.getEvaluateColdStart();
 
         jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
@@ -209,11 +211,11 @@ public class RichContextDataInitializer {
      * recommender
      */
     public static void prepareLibfm(
-            String cacheFolder, String propertiesFile)
+            String cacheFolder, String propertiesFile, Integer numTopics)
             throws IOException {
 
         RichContextDataInitializer evaluator = new RichContextDataInitializer(
-                cacheFolder, propertiesFile);
+                cacheFolder, propertiesFile, numTopics);
         evaluator.prepareSplits();
         evaluator.transformSplitsToLibfm();
     }

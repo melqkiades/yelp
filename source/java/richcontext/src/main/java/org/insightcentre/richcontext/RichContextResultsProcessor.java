@@ -100,7 +100,7 @@ public class RichContextResultsProcessor {
 
     public RichContextResultsProcessor(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet)
+            EvaluationSet evaluationSet, Integer paramNumTopics)
             throws IOException {
 
 
@@ -116,7 +116,9 @@ public class RichContextResultsProcessor {
                 properties.getContextFormat().toUpperCase(Locale.ENGLISH));
         dataset = RichContextResultsProcessor.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
-        numTopics = properties.getNumTopics();
+        numTopics = (paramNumTopics == null) ?
+                properties.getNumTopics() :
+                paramNumTopics;
         coldStart = properties.getEvaluateColdStart();
         outputFile = outputFolder +
                 "rival_" + properties.getDataset() + "_results_folds_4.csv";
@@ -445,11 +447,12 @@ public class RichContextResultsProcessor {
      */
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet)
+            EvaluationSet evaluationSet, Integer numTopics)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor evaluator = new RichContextResultsProcessor(
-                cacheFolder, outputFolder, propertiesFile, evaluationSet);
+                cacheFolder, outputFolder, propertiesFile, evaluationSet,
+                numTopics);
         evaluator.parseRecommendationResultsLibfm();
         evaluator.prepareStrategy("libfm");
         Map<String, String> results = evaluator.evaluate("libfm");
