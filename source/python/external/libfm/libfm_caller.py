@@ -6,18 +6,6 @@ import time
 from utils.constants import Constants
 
 
-# LIBFM_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
-#         'recsys_contextual_records', '', Constants.CACHE_FOLDER + 'rival/',
-#         None, None, True, True, normalize_topics=True)[:-1] + '/fold_%d/'
-LIBFM_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
-        'recsys_formatted_context_records', '', Constants.CACHE_FOLDER + 'rival/',
-        None, None, True, True, uses_carskit=False, normalize_topics=True,
-        format_context=True)[:-1] + '/fold_%d/'
-# LIBFM_RATINGS_FOLD_FOLDER = Constants.CACHE_FOLDER + 'rival/' +\
-#     'yelp_hotel_recsys_contextual_records_lang-en_bow-NN_' \
-#     'document_level-review_targettype-context_min_item_reviews-10/fold_%d/'
-
-
 def run_libfm(train_file, test_file, predictions_file, log_file, save_file):
     print('%s: Run LibFM' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
@@ -74,9 +62,15 @@ def main():
     prediction_type = prediction_type_map[Constants.RIVAL_EVALUATION_STRATEGY]
     use_cache = True
 
+    libfm_ratings_fold_folder = Constants.generate_file_name(
+        'recsys_formatted_context_records', '',
+        Constants.CACHE_FOLDER + 'rival/',
+        None, None, True, True, uses_carskit=False, normalize_topics=True,
+        format_context=True)[:-1] + '/fold_%d/'
+
     for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
 
-        ratings_fold_folder = LIBFM_RATINGS_FOLD_FOLDER % fold
+        ratings_fold_folder = libfm_ratings_fold_folder % fold
         # ratings_fold_folder = Constants.CACHE_FOLDER + 'rival/contextaa/fold_%d/' % fold
         train_file = ratings_fold_folder + 'libfm_train.libfm'
         predictions_file = ratings_fold_folder + 'libfm_predictions_' + \

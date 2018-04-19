@@ -4,6 +4,7 @@
 # 2. Run the RiVaL prepare_libfm
 # 3. Run the libfm_caller
 # 4. Run the RiVaL process_libfm_results
+import argparse
 import time
 import uuid
 
@@ -65,11 +66,36 @@ def full_cycle():
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-k', '--numtopics', metavar='int', type=int,
+        nargs=1, help='The number of topics of the topic model')
+    parser.add_argument(
+        '-i', '--itemtype', metavar='int', type=int,
+        nargs=1, help='The type of items')
+    args = parser.parse_args()
+    num_topics = args.numtopics[0] if args.numtopics is not None else None
+    item_type = args.itemtype[0] if args.numtopics is not None else None
+
+    if num_topics is not None:
+        Constants.update_properties(
+            {Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics})
+    if item_type is not None:
+        Constants.update_properties(
+            {Constants.BUSINESS_TYPE_FIELD: item_type})
+
     full_cycle()
 
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
+
+if __name__ == '__main__':
+    start = time.time()
+    main()
+    end = time.time()
+    total_time = end - start
+    print("Total time = %f seconds" % total_time)
