@@ -15,7 +15,7 @@ def create_sampler(sampler_name, random_state=None):
     if sampler_name.lower() == 'randomundersampler':
         return RandomUnderSampler(random_state=random_state)
     if sampler_name.lower() == 'tomeklinks':
-        return TomekLinks(random_state=random_state),
+        return TomekLinks(random_state=random_state)
     if sampler_name.lower() == 'enn':
         return EditedNearestNeighbours(random_state=random_state)
     if sampler_name.lower() == 'ncl':
