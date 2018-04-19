@@ -28,6 +28,8 @@ def run_rival(task, dataset=None):
         jar_file,
         '-t',
         task,
+        '-i',
+        Constants.ITEM_TYPE,
         '-k',
         str(Constants.TOPIC_MODEL_NUM_TOPICS),
         '-p',
@@ -50,8 +52,7 @@ def run_rival(task, dataset=None):
         unique_id + '.log'
 
     log_file = open(log_file_name, "w")
-    p = subprocess.Popen(
-        command, stdout=log_file, cwd=jar_folder)
+    p = subprocess.Popen(command, cwd=jar_folder)
     p.wait()
 
 
