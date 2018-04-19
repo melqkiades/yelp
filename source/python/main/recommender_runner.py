@@ -11,8 +11,7 @@ import subprocess
 
 from etl.reviews_preprocessor import ReviewsPreprocessor
 from external.libfm import libfm_caller
-from utils.constants import Constants, JAVA_CODE_FOLDER
-
+from utils.constants import Constants, JAVA_CODE_FOLDER, PROPERTIES_FILE
 
 JAVA_COMMAND = 'java'
 
@@ -31,6 +30,10 @@ def run_rival(task, dataset=None):
         task,
         '-k',
         str(Constants.TOPIC_MODEL_NUM_TOPICS),
+        '-p',
+        PROPERTIES_FILE,
+        '-d',
+        Constants.CACHE_FOLDER,
         '-o',
         Constants.RESULTS_FOLDER
     ]
