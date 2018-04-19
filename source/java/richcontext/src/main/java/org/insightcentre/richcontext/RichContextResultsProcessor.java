@@ -100,7 +100,8 @@ public class RichContextResultsProcessor {
 
     public RichContextResultsProcessor(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet, Integer paramNumTopics)
+            EvaluationSet evaluationSet, Integer paramNumTopics,
+            String itemType)
             throws IOException {
 
 
@@ -114,8 +115,11 @@ public class RichContextResultsProcessor {
         additionalItems = properties.getTopnNumItems();
         contextFormat = RichContextResultsProcessor.ContextFormat.valueOf(
                 properties.getContextFormat().toUpperCase(Locale.ENGLISH));
-        dataset = RichContextResultsProcessor.Dataset.valueOf(
-                properties.getDataset().toUpperCase(Locale.ENGLISH));
+        dataset = (itemType == null) ?
+                RichContextResultsProcessor.Dataset.valueOf(
+                        properties.getDataset().toUpperCase(Locale.ENGLISH)) :
+                RichContextResultsProcessor.Dataset.valueOf(
+                        itemType.toUpperCase(Locale.ENGLISH));
         numTopics = (paramNumTopics == null) ?
                 properties.getNumTopics() :
                 paramNumTopics;
@@ -188,7 +192,7 @@ public class RichContextResultsProcessor {
      */
     private void parseRecommendationResultsLibfm() throws IOException, InterruptedException {
 
-        System.err.println("Parse Recommendation Results LibFM");
+        System.out.println("Parse Recommendation Results LibFM");
 
         for (int fold = 0; fold < numFolds; fold++) {
 
@@ -222,7 +226,7 @@ public class RichContextResultsProcessor {
                     throw new UnsupportedOperationException(msg);
             }
 
-            System.err.println("Recommendations file name: " + rivalRecommendationsFile);
+            System.out.println("Recommendations file name: " + rivalRecommendationsFile);
         }
     }
 
@@ -234,7 +238,7 @@ public class RichContextResultsProcessor {
      */
     private void prepareStrategy(String algorithm) throws IOException {
 
-        System.err.println("Prepare Rating Strategy");
+        System.out.println("Prepare Rating Strategy");
 
         for (int i = 0; i < numFolds; i++) {
 
@@ -246,11 +250,11 @@ public class RichContextResultsProcessor {
             DataModelIF<Long, Long> trainingModel;
             DataModelIF<Long, Long> testModel;
             DataModelIF<Long, Long> recModel;
-            System.err.println("Parsing Training Model");
+            System.out.println("Parsing Training Model");
             trainingModel = new CsvParser().parseData(trainingFile);
-            System.err.println("Parsing Test Model");
+            System.out.println("Parsing Test Model");
             testModel = new CsvParser().parseData(testFile);
-            System.err.println("Parsing Recommendation Model");
+            System.out.println("Parsing Recommendation Model");
             recModel = new CsvParser().parseData(recFile);
 
             EvaluationStrategy<Long, Long> evaluationStrategy;
@@ -305,7 +309,7 @@ public class RichContextResultsProcessor {
      */
     private Map<String, String> evaluate(String algorithm) throws IOException {
 
-        System.err.println("Evaluate");
+        System.out.println("Evaluate");
 
         double ndcgRes = 0.0;
         double recallRes = 0.0;
@@ -334,16 +338,16 @@ public class RichContextResultsProcessor {
                     for (Long user : trainModel.getUsers()) {
                         trainUsers.add(user);
                     }
-                    System.err.println("Num train users = " + trainUsers.size());
+                    System.out.println("Num train users = " + trainUsers.size());
 
                     Set<Long> testUsers = new HashSet<>();
                     for (Long user : testModel.getUsers()) {
                         testUsers.add(user);
                     }
-                    System.err.println("Num test users = " + testUsers.size());
+                    System.out.println("Num test users = " + testUsers.size());
                     Set<Long> users;
 
-                    System.err.println("Evaluation set: " + evaluationSet);
+                    System.out.println("Evaluation set: " + evaluationSet);
 
                     switch (evaluationSet) {
 
@@ -417,17 +421,17 @@ public class RichContextResultsProcessor {
         results.put("RMSE", String.valueOf(rmseRes / numFolds));
         results.put("MAE", String.valueOf(maeRes / numFolds));
 
-        System.err.println("Dataset: " + dataset.toString());
-        System.err.println("Algorithm: " + algorithm);
-        System.err.println("Num Topics: " + numTopics);
-        System.err.println("Strategy: " + strategy.toString());
-        System.err.println("Context_Format: " + contextFormat.toString());
-        System.err.println("Cold-start: " + coldStart);
-        System.err.println("NDCG@" + at + ": " + ndcgRes / numFolds);
-        System.err.println("Precision@" + at + ": " + precisionRes / numFolds);
-        System.err.println("Recall@" + at + ": " + recallRes / numFolds);
-        System.err.println("RMSE: " + rmseRes / numFolds);
-        System.err.println("MAE: " + maeRes / numFolds);
+        System.out.println("Dataset: " + dataset.toString());
+        System.out.println("Algorithm: " + algorithm);
+        System.out.println("Num Topics: " + numTopics);
+        System.out.println("Strategy: " + strategy.toString());
+        System.out.println("Context_Format: " + contextFormat.toString());
+        System.out.println("Cold-start: " + coldStart);
+        System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
+        System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
+        System.out.println("Recall@" + at + ": " + recallRes / numFolds);
+        System.out.println("RMSE: " + rmseRes / numFolds);
+        System.out.println("MAE: " + maeRes / numFolds);
 
         return results;
     }
@@ -447,12 +451,12 @@ public class RichContextResultsProcessor {
      */
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet, Integer numTopics)
+            EvaluationSet evaluationSet, Integer numTopics, String itemType)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor evaluator = new RichContextResultsProcessor(
                 cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics);
+                numTopics, itemType);
         evaluator.parseRecommendationResultsLibfm();
         evaluator.prepareStrategy("libfm");
         Map<String, String> results = evaluator.evaluate("libfm");

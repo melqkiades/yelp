@@ -16,7 +16,7 @@ public class AlejandroRichContextEvaluator {
 
     public static void main(final String[] args) throws IOException, InterruptedException, ParseException {
 
-        System.err.println("AlejandroRichContextEvaluator");
+        System.out.println("AlejandroRichContextEvaluator");
 
         // create Options object
         Options options = new Options();
@@ -28,6 +28,7 @@ public class AlejandroRichContextEvaluator {
         options.addOption("p", true, "The properties file path");
         options.addOption("s", true, "The evaluation set");
         options.addOption("k", true, "The number of topics");
+        options.addOption("i", true, "The type of items");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -51,6 +52,9 @@ public class AlejandroRichContextEvaluator {
         Integer numTopics = cmd.hasOption("k") ?
                 Integer.parseInt(cmd.getOptionValue("k", defaultPropertiesFile)) :
                 null;
+        String itemType = cmd.hasOption("i") ?
+                cmd.getOptionValue("i", defaultPropertiesFile) :
+                null;
         RichContextResultsProcessor.EvaluationSet evaluationSet =
                 RichContextResultsProcessor.EvaluationSet.valueOf(
                 cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
@@ -60,12 +64,12 @@ public class AlejandroRichContextEvaluator {
         switch (processingTask) {
             case PREPARE_LIBFM:
                 RichContextDataInitializer.prepareLibfm(
-                        cacheFolder, propertiesFile, numTopics);
+                        cacheFolder, propertiesFile, numTopics, itemType);
                 break;
             case PROCESS_LIBFM_RESULTS:
                 RichContextResultsProcessor.processLibfmResults(
                         cacheFolder, outputFolder, propertiesFile,
-                        evaluationSet, numTopics);
+                        evaluationSet, numTopics, itemType);
                 break;
             default:
                 throw new UnsupportedOperationException(
@@ -74,6 +78,6 @@ public class AlejandroRichContextEvaluator {
 
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;
-        System.err.println("Running time: " + (totalTime/1000));
+        System.out.println("Running time: " + (totalTime/1000));
     }
 }

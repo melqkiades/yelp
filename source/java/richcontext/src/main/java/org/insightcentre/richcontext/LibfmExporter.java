@@ -34,7 +34,8 @@ public class LibfmExporter {
         int totalReviews = reviews.size();
 //        int progress = 1;
         ProgressBar progressBar =
-                new ProgressBar("Export recommendations", totalReviews, ProgressBarStyle.ASCII);
+                new ProgressBar("Export recommendations", totalReviews, 1000,
+                        System.out, ProgressBarStyle.ASCII);
         progressBar.start();
 
 //        Map<String, Integer> oneHotIdMap = getOneHot(reviews);
@@ -109,7 +110,8 @@ public class LibfmExporter {
         List<Review> exportReviews = new ArrayList<>();
 
         ProgressBar progressBar = new ProgressBar(
-                "Export user recommendations", testUsersSet.size(), ProgressBarStyle.ASCII);
+                "Export user recommendations", testUsersSet.size(), 1000,
+                System.out, ProgressBarStyle.ASCII);
         progressBar.start();
 
         for (Long user : testUsersSet) {
@@ -368,7 +370,8 @@ public class LibfmExporter {
 //        List<Review> exportReviews = new ArrayList<>();
 
         ProgressBar progressBar = new ProgressBar(
-                "Export user recommendations", testUsersSet.size(), ProgressBarStyle.ASCII);
+                "Export user recommendations", testUsersSet.size(), 1000,
+                System.out, ProgressBarStyle.ASCII);
         progressBar.start();
 
         List<String> firstRow = new ArrayList<>();

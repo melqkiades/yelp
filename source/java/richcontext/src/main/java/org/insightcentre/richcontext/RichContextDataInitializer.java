@@ -34,7 +34,8 @@ public class RichContextDataInitializer {
 
 
     public RichContextDataInitializer(
-            String cacheFolder, String propertiesFile, Integer paramNumTopics)
+            String cacheFolder, String propertiesFile, Integer paramNumTopics,
+            String itemType)
             throws IOException {
 
         Properties properties = Properties.loadProperties(propertiesFile);
@@ -51,7 +52,7 @@ public class RichContextDataInitializer {
                 paramNumTopics;
         coldStart = properties.getEvaluateColdStart();
 
-        jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
+        jsonRatingsFile = cacheFolder + itemType.toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
                 "numtopics-" + numTopics + "_iterations-100_passes-10_targetreview-specific_" +
                 "normalized_contextformat-" + contextFormat.toString().toLowerCase()
@@ -84,8 +85,8 @@ public class RichContextDataInitializer {
         }
         int numItems = itemsSet.size();
         int numUsers = usersSet.size();
-        System.err.println("Num items: " + numItems);
-        System.err.println("Num users: " + numUsers);
+        System.out.println("Num items: " + numItems);
+        System.out.println("Num users: " + numUsers);
 
 
         DataModelIF<Long, Long>[] splits =
@@ -94,7 +95,7 @@ public class RichContextDataInitializer {
         File dir = new File(ratingsFolderPath);
         if (!dir.exists()) {
             if (!dir.mkdir()) {
-                System.err.println("Directory " + dir + " could not be created");
+                System.out.println("Directory " + dir + " could not be created");
                 return;
             }
         }
@@ -104,7 +105,7 @@ public class RichContextDataInitializer {
             File foldDir = new File(foldPath);
             if (!foldDir.exists()) {
                 if (!foldDir.mkdir()) {
-                    System.err.println("Directory " + foldDir + " could not be created");
+                    System.out.println("Directory " + foldDir + " could not be created");
                     return;
                 }
             }
@@ -129,7 +130,7 @@ public class RichContextDataInitializer {
      */
     private void transformSplitToLibfm(int fold) throws IOException {
 
-        System.err.println("Transform split " + fold + " to LibFM");
+        System.out.println("Transform split " + fold + " to LibFM");
         boolean overwrite = false;
 
         String foldPath = ratingsFolderPath + "fold_" + fold + "/";
@@ -140,7 +141,7 @@ public class RichContextDataInitializer {
 
         if (new File(libfmTrainFile).exists() &&
                 new File(libfmPredictionsFile).exists() && !overwrite) {
-            System.err.println(
+            System.out.println(
                     "LibFM files for split " + fold + " already exist");
             return;
         }
@@ -211,11 +212,12 @@ public class RichContextDataInitializer {
      * recommender
      */
     public static void prepareLibfm(
-            String cacheFolder, String propertiesFile, Integer numTopics)
+            String cacheFolder, String propertiesFile, Integer numTopics,
+            String itemType)
             throws IOException {
 
         RichContextDataInitializer evaluator = new RichContextDataInitializer(
-                cacheFolder, propertiesFile, numTopics);
+                cacheFolder, propertiesFile, numTopics, itemType);
         evaluator.prepareSplits();
         evaluator.transformSplitsToLibfm();
     }

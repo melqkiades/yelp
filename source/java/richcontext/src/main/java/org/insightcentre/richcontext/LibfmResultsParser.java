@@ -50,7 +50,8 @@ public class LibfmResultsParser {
 
         long numLines = Files.lines(Paths.get(testFilePath)).count();
         ProgressBar progressBar = new ProgressBar(
-                "Parse rating results", numLines, ProgressBarStyle.ASCII);
+                "Parse rating results", numLines, 1000, System.out,
+                ProgressBarStyle.ASCII);
         progressBar.start();
 
         while ((testLine = testFileReader.readLine()) != null) {

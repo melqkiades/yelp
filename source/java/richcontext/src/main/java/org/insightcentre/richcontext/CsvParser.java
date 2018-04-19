@@ -102,7 +102,8 @@ public class CsvParser {
         BufferedReader br = CsvParser.getBufferedReader(f);
         long numLines = Files.lines(Paths.get(f.getAbsolutePath())).count();
         ProgressBar progressBar = new ProgressBar(
-                "Parsing CSV data", numLines, ProgressBarStyle.ASCII);
+                "Parsing CSV data", numLines, 1000, System.out,
+                ProgressBarStyle.ASCII);
         progressBar.start();
         String line = br.readLine();
         if ((line != null) && (!line.matches(".*[a-zA-Z].*"))) {
