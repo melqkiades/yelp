@@ -198,11 +198,11 @@ def export_to_text(records):
         os.mkdir(Constants.TEXT_FILES_FOLDER)
 
     folder = Constants.GENERATED_TEXT_FILES_FOLDER
-    if os.path.isdir(folder):
-        shutil.rmtree(folder)
-    os.mkdir(folder)
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
 
     topic_model_target = Constants.TOPIC_MODEL_TARGET_REVIEWS
+    all_files_existed = True
 
     for record in records:
 
@@ -212,8 +212,15 @@ def export_to_text(records):
         file_name = \
             folder + 'bow_' + str(record[Constants.REVIEW_ID_FIELD]) + '.txt'
 
+        if os.path.exists(file_name):
+            continue
+        all_files_existed = False
+
         with codecs.open(file_name, 'w', encoding="utf-8-sig") as text_file:
             text_file.write(" ".join(record[Constants.BOW_FIELD]))
+
+    if all_files_existed:
+        print('Text files already existed')
 
 
 def main():
