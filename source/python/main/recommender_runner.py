@@ -71,7 +71,7 @@ def main():
         '-k', '--numtopics', metavar='int', type=int,
         nargs=1, help='The number of topics of the topic model')
     parser.add_argument(
-        '-i', '--itemtype', metavar='int', type=int,
+        '-i', '--itemtype', metavar='string', type=str,
         nargs=1, help='The type of items')
     args = parser.parse_args()
     num_topics = args.numtopics[0] if args.numtopics is not None else None

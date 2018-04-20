@@ -5,7 +5,6 @@ import os
 import subprocess
 
 import time
-import uuid
 
 import shutil
 
@@ -52,14 +51,7 @@ def run_parse_directory():
 
     print(command)
 
-    unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + Constants.ITEM_TYPE + '_' + \
-        Constants.TOPIC_MODEL_TARGET_REVIEWS + '_parse_directory_' +\
-        unique_id + '.log'
-
-    log_file = open(log_file_name, "w")
-    p = subprocess.Popen(
-        command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
+    p = subprocess.Popen(command, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
 
 
@@ -93,14 +85,7 @@ def run_local_parse_directory():
 
     print(command)
 
-    unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + Constants.ITEM_TYPE + '_' + \
-        str(Constants.TOPIC_MODEL_TARGET_REVIEWS) + '_parse_directory_' +\
-        unique_id + '.log'
-
-    log_file = open(log_file_name, "w")
-    p = subprocess.Popen(
-        command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
+    p = subprocess.Popen(command, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
 
 
@@ -133,13 +118,7 @@ def run_generate_nmf():
 
     print(command)
 
-    unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + get_topic_model_prefix() + \
-        '_parse_directory_' + unique_id + '.log'
-
-    log_file = open(log_file_name, "w")
-    p = subprocess.Popen(
-        command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
+    p = subprocess.Popen(command, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
 
 
@@ -181,13 +160,7 @@ def run_generate_kfold(seed=None):
 
     print(command)
 
-    unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + base_topic_folder + \
-        '_parse_directory_' + unique_id + '.log'
-
-    log_file = open(log_file_name, "w")
-    p = subprocess.Popen(
-        command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
+    p = subprocess.Popen(command, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
 
 
@@ -228,13 +201,7 @@ def run_combine_nmf(seed=None):
 
     print(command)
 
-    unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + base_topic_folder + \
-        '_parse_directory_' + unique_id + '.log'
-
-    log_file = open(log_file_name, "w")
-    p = subprocess.Popen(
-        command, stdout=log_file, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
+    p = subprocess.Popen(command, cwd=Constants.TOPIC_ENSEMBLE_FOLDER)
     p.wait()
 
     shutil.rmtree(BASE_FOLDER + base_topic_folder)
