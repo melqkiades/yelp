@@ -49,10 +49,10 @@ public class LibfmResultsParser {
         }
 
         long numLines = Files.lines(Paths.get(testFilePath)).count();
-        ProgressBar progressBar = new ProgressBar(
-                "Parse rating results", numLines, 1000, System.out,
-                ProgressBarStyle.ASCII);
-        progressBar.start();
+//        ProgressBar progressBar = new ProgressBar(
+//                "Parse rating results", numLines, 1000, System.out,
+//                ProgressBarStyle.ASCII);
+//        progressBar.start();
 
         while ((testLine = testFileReader.readLine()) != null) {
             libfmLine = libfmResultsReader.readLine();
@@ -65,11 +65,11 @@ public class LibfmResultsParser {
             Review review = new Review(user_id, item_id, rating);
             review.setPredictedRating(predictedRating);
             LibfmExporter.writeReviewToFile(review, bufferedWriter);
-            progressBar.step();
+//            progressBar.step();
         }
         bufferedWriter.flush();
         bufferedWriter.close();
-        progressBar.stop();
+//        progressBar.stop();
         System.out.println("\n");
     }
 }

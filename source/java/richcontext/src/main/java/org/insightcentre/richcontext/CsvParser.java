@@ -101,20 +101,20 @@ public class CsvParser {
 
         BufferedReader br = CsvParser.getBufferedReader(f);
         long numLines = Files.lines(Paths.get(f.getAbsolutePath())).count();
-        ProgressBar progressBar = new ProgressBar(
-                "Parsing CSV data", numLines, 1000, System.out,
-                ProgressBarStyle.ASCII);
-        progressBar.start();
+//        ProgressBar progressBar = new ProgressBar(
+//                "Parsing CSV data", numLines, 1000, System.out,
+//                ProgressBarStyle.ASCII);
+//        progressBar.start();
         String line = br.readLine();
         if ((line != null) && (!line.matches(".*[a-zA-Z].*"))) {
             parseLine(line, dataset, token);
         }
         while ((line = br.readLine()) != null) {
             parseLine(line, dataset, token);
-            progressBar.step();
+//            progressBar.step();
         }
         br.close();
-        progressBar.stop();
+//        progressBar.stop();
         System.out.println("\n");
 
         return dataset;

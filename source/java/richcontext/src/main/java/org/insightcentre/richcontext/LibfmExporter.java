@@ -33,10 +33,10 @@ public class LibfmExporter {
 
         int totalReviews = reviews.size();
 //        int progress = 1;
-        ProgressBar progressBar =
-                new ProgressBar("Export recommendations", totalReviews, 1000,
-                        System.out, ProgressBarStyle.ASCII);
-        progressBar.start();
+//        ProgressBar progressBar =
+//                new ProgressBar("Export recommendations", totalReviews, 1000,
+//                        System.out, ProgressBarStyle.ASCII);
+//        progressBar.start();
 
 //        Map<String, Integer> oneHotIdMap = getOneHot(reviews);
 
@@ -64,11 +64,11 @@ public class LibfmExporter {
             }
 
             bufferedWriter.write(String.join(delimiter, row) + "\n");
-            progressBar.step();
+//            progressBar.step();
         }
         bufferedWriter.flush();
         bufferedWriter.close();
-        progressBar.stop();
+//        progressBar.stop();
         System.out.println("\n");
     }
 
@@ -109,10 +109,10 @@ public class LibfmExporter {
 //                new BufferedWriter(new FileWriter(filePath));
         List<Review> exportReviews = new ArrayList<>();
 
-        ProgressBar progressBar = new ProgressBar(
-                "Export user recommendations", testUsersSet.size(), 1000,
-                System.out, ProgressBarStyle.ASCII);
-        progressBar.start();
+//        ProgressBar progressBar = new ProgressBar(
+//                "Export user recommendations", testUsersSet.size(), 1000,
+//                System.out, ProgressBarStyle.ASCII);
+//        progressBar.start();
 
         for (Long user : testUsersSet) {
 
@@ -137,11 +137,11 @@ public class LibfmExporter {
                 exportReviews.add(review);
 //                writeReviewToFile(review, writer);
             }
-            progressBar.step();
+//            progressBar.step();
         }
 //        writer.flush();
 //        writer.close();
-        progressBar.stop();
+//        progressBar.stop();
 //        System.out.printf("\n");
 
         return exportReviews;
@@ -369,10 +369,10 @@ public class LibfmExporter {
                 new BufferedWriter(new FileWriter(predictionsFilePath));
 //        List<Review> exportReviews = new ArrayList<>();
 
-        ProgressBar progressBar = new ProgressBar(
-                "Export user recommendations", testUsersSet.size(), 1000,
-                System.out, ProgressBarStyle.ASCII);
-        progressBar.start();
+//        ProgressBar progressBar = new ProgressBar(
+//                "Export user recommendations", testUsersSet.size(), 1000,
+//                System.out, ProgressBarStyle.ASCII);
+//        progressBar.start();
 
         List<String> firstRow = new ArrayList<>();
         firstRow.add("user");
@@ -394,7 +394,7 @@ public class LibfmExporter {
 //            System.out.println(relevantReviews);
 
             if (relevantReviews == null) {
-                progressBar.step();
+//                progressBar.step();
                 continue;
             }
 
@@ -413,13 +413,13 @@ public class LibfmExporter {
                 writeReviewToFile(review, predictionsWriter);
                 writeLibfmReviewToFile(review, oneHotIdMap, libfmWriter);
             }
-            progressBar.step();
+//            progressBar.step();
         }
         predictionsWriter.flush();
         predictionsWriter.close();
         libfmWriter.flush();
         libfmWriter.close();
-        progressBar.stop();
+//        progressBar.stop();
         System.out.println("\n");
 
 
