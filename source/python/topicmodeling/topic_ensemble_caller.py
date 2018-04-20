@@ -16,11 +16,16 @@ CORPUS_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'corpus/'
 
 
 # TODO: Consider moving this to the Constants class
-DATASET_FILE_NAME = Constants.generate_file_name(
-    'topic_ensemble_corpus', '', CORPUS_FOLDER, None, None, False)[:-1]
+# DATASET_FILE_NAME = Constants.generate_file_name(
+#     'topic_ensemble_corpus', '', CORPUS_FOLDER, None, None, False)[:-1]
 # def get_dataset_file_name():
 #     return Constants.CACHE_FOLDER + Constants.ITEM_TYPE + '_' + \
 #         Constants.TOPIC_MODEL_TARGET_REVIEWS + '_document_term_matrix'
+
+
+def get_dataset_file_name():
+    return Constants.generate_file_name(
+        'topic_ensemble_corpus', '', CORPUS_FOLDER, None, None, False)[:-1]
 
 
 # TODO: Consider moving this to the Constants class
@@ -44,7 +49,7 @@ def run_parse_directory():
         parse_directory_command,
         Constants.GENERATED_TEXT_FILES_FOLDER,
         '-o',
-        DATASET_FILE_NAME,
+        get_dataset_file_name(),
         '--tfidf',
         '--norm',
     ]
@@ -57,7 +62,7 @@ def run_parse_directory():
 
 def run_local_parse_directory():
 
-    if os.path.exists(DATASET_FILE_NAME):
+    if os.path.exists(get_dataset_file_name()):
         print('The corpus directory has already been parsed')
         return
 
@@ -78,7 +83,7 @@ def run_local_parse_directory():
         parse_directory_command,
         Constants.GENERATED_TEXT_FILES_FOLDER,
         '-o',
-        DATASET_FILE_NAME,
+        get_dataset_file_name(),
         '--tfidf',
         '--norm',
         '--df',
@@ -111,7 +116,7 @@ def run_generate_nmf():
     command = [
         PYTHON_COMMAND,
         generate_nmf_command,
-        DATASET_FILE_NAME + '.pkl',
+        get_dataset_file_name() + '.pkl',
         '-k',
         str(Constants.TOPIC_MODEL_NUM_TOPICS),
         '-r',
@@ -145,7 +150,7 @@ def run_generate_kfold(seed=None):
     command = [
         PYTHON_COMMAND,
         generate_nmf_command,
-        DATASET_FILE_NAME + '.pkl',
+        get_dataset_file_name() + '.pkl',
         '-k',
         str(Constants.TOPIC_MODEL_NUM_TOPICS),
         '-r',
@@ -187,7 +192,7 @@ def run_combine_nmf(seed=None):
     command = [
         PYTHON_COMMAND,
         generate_nmf_command,
-        DATASET_FILE_NAME + '.pkl',
+        get_dataset_file_name() + '.pkl',
         ]
     command.extend(base_files)
     command.extend([
