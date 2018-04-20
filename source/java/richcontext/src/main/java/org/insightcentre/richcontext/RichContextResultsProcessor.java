@@ -410,11 +410,11 @@ public class RichContextResultsProcessor {
             results.put("fold_" + i + "_precision", String.valueOf(precision.getValueAt(at)));
         }
 
-        results.put("Dataset", dataset.toString());
+        results.put("Dataset", dataset.toString().toLowerCase());
         results.put("Algorithm", algorithm);
         results.put("Num_Topics", String.valueOf(numTopics));
-        results.put("Strategy", strategy.toString());
-        results.put("Context_Format", contextFormat.toString());
+        results.put("Strategy", strategy.toString().toLowerCase());
+        results.put("Context_Format", contextFormat.toString().toLowerCase());
         results.put("Cold-start", String.valueOf(coldStart));
         results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
         results.put("Precision@" + at, String.valueOf(precisionRes / numFolds));
