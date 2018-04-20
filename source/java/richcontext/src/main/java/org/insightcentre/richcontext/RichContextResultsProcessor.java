@@ -125,7 +125,7 @@ public class RichContextResultsProcessor {
                 paramNumTopics;
         coldStart = properties.getEvaluateColdStart();
         outputFile = outputFolder +
-                "rival_" + properties.getDataset() + "_results_folds_4.csv";
+                "rival_" + dataset.toString() + "_results_folds_4.csv";
 
         String jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
