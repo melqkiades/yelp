@@ -57,6 +57,10 @@ def run_parse_directory():
 
 def run_local_parse_directory():
 
+    if os.path.exists(DATASET_FILE_NAME):
+        print('The corpus directory has already been parsed')
+        return
+
     parse_directory_command = PYTHON_CODE_FOLDER + 'topicmodeling/' \
         'belford_tfidf.py'
 
