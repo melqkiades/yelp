@@ -139,6 +139,7 @@ public class RichContextResultsProcessor {
 
         headers = new String[] {
                 "Algorithm",
+                "Dataset",
                 "Num_Topics",
                 "Strategy",
                 "Context_Format",
