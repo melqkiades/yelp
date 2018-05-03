@@ -32,8 +32,7 @@ def run_rival(task, dataset=None):
         '-d',
         Constants.CACHE_FOLDER,
         '-o',
-        # Constants.RESULTS_FOLDER
-        '/tmp/results2/'
+        Constants.RESULTS_FOLDER
     ]
 
     if dataset is not None:
