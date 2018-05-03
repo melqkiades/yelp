@@ -1,12 +1,6 @@
 
-
-# 1. Run the ReviewsPreprocessor
-# 2. Run the RiVaL prepare_libfm
-# 3. Run the libfm_caller
-# 4. Run the RiVaL process_libfm_results
 import argparse
 import time
-import uuid
 
 import subprocess
 
@@ -38,7 +32,8 @@ def run_rival(task, dataset=None):
         '-d',
         Constants.CACHE_FOLDER,
         '-o',
-        Constants.RESULTS_FOLDER
+        # Constants.RESULTS_FOLDER
+        '/tmp/results2/'
     ]
 
     if dataset is not None:
@@ -47,22 +42,16 @@ def run_rival(task, dataset=None):
     print(jar_folder)
     print(command)
 
-    unique_id = uuid.uuid4().hex
-    log_file_name = Constants.GENERATED_FOLDER + Constants.ITEM_TYPE + '_' + \
-        Constants.TOPIC_MODEL_TARGET_REVIEWS + '_parse_directory_' +\
-        unique_id + '.log'
-
-    log_file = open(log_file_name, "w")
     p = subprocess.Popen(command, cwd=jar_folder)
     p.wait()
 
 
-def full_cycle():
+def full_cycle(evaluation_set):
     reviews_preprocessor = ReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
     run_rival('prepare_libfm')
     libfm_caller.main()
-    run_rival('process_libfm_results', 'test_users')
+    run_rival('process_libfm_results', evaluation_set)
 
 
 def main():
@@ -73,9 +62,14 @@ def main():
     parser.add_argument(
         '-i', '--itemtype', metavar='string', type=str,
         nargs=1, help='The type of items')
+    parser.add_argument(
+        '-s', '--evaluationset', metavar='string', type=str,
+        nargs=1, help='The evaluation set')
     args = parser.parse_args()
     num_topics = args.numtopics[0] if args.numtopics is not None else None
-    item_type = args.itemtype[0] if args.numtopics is not None else None
+    item_type = args.itemtype[0] if args.itemtype is not None else None
+    evaluation_set =\
+        args.evaluationset[0] if args.evaluationset is not None else None
 
     if num_topics is not None:
         Constants.update_properties(
@@ -84,7 +78,7 @@ def main():
         Constants.update_properties(
             {Constants.BUSINESS_TYPE_FIELD: item_type})
 
-    full_cycle()
+    full_cycle(evaluation_set)
 
 
 # start = time.time()

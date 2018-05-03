@@ -75,8 +75,9 @@ def main():
         train_file = ratings_fold_folder + 'libfm_train.libfm'
         predictions_file = ratings_fold_folder + 'libfm_predictions_' + \
                     prediction_type + '.libfm'
+        fm_num_factors = Constants.FM_NUM_FACTORS
         results_file = ratings_fold_folder + 'libfm_results_' + \
-                           prediction_type + '.txt'
+            prediction_type + '_fmfactors-' + str(fm_num_factors) + '.txt'
 
         if use_cache and os.path.exists(results_file):
             print("Fold %d file already exists ('%s') " % (fold, results_file))
