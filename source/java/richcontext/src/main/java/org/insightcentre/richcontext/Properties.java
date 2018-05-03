@@ -30,6 +30,8 @@ public class Properties {
     private String strategy;
     @JsonProperty("topic_model_num_topics")
     private int numTopics;
+    @JsonProperty("fm_num_factors")
+    private int fmNumFactors;
 
     @JsonProperty("context_format")
     private String contextFormat;
@@ -110,6 +112,14 @@ public class Properties {
         this.numTopics = numTopics;
     }
 
+    public int getFmNumFactors() {
+        return fmNumFactors;
+    }
+
+    public void setFmNumFactors(int fmNumFactors) {
+        this.fmNumFactors = fmNumFactors;
+    }
+
     public String getContextFormat() {
         return contextFormat;
     }
@@ -144,6 +154,7 @@ public class Properties {
                 ", seed=" + seed +
                 ", strategy='" + strategy + '\'' +
                 ", numTopics='" + numTopics + '\'' +
+                ", fmNumFactors='" + fmNumFactors + '\'' +
                 ", contextFormat='" + contextFormat + '\'' +
                 ", dataset='" + dataset + '\'' +
                 ", coldStart='" + evaluateColdStart + '\'' +

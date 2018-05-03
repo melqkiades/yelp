@@ -34,6 +34,7 @@ public class RichContextResultsProcessor {
     private int at;
     private int additionalItems;
     private int numTopics;
+    private int fmNumFactors;
     private double relevanceThreshold;
     private long seed;
     private Strategy strategy;
@@ -101,7 +102,7 @@ public class RichContextResultsProcessor {
     public RichContextResultsProcessor(
             String cacheFolder, String outputFolder, String propertiesFile,
             EvaluationSet evaluationSet, Integer paramNumTopics,
-            String itemType)
+            Integer paramFmNumFactors,String itemType)
             throws IOException {
 
 
@@ -123,9 +124,12 @@ public class RichContextResultsProcessor {
         numTopics = (paramNumTopics == null) ?
                 properties.getNumTopics() :
                 paramNumTopics;
+        fmNumFactors = (paramFmNumFactors == null) ?
+                properties.getFmNumFactors() :
+                paramFmNumFactors;
         coldStart = properties.getEvaluateColdStart();
         outputFile = outputFolder +
-                "rival_" + dataset.toString().toLowerCase() + "_results_folds_4.csv";
+                "rival_" + dataset.toString().toLowerCase() + "_results_folds.csv";
 
         String jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
@@ -143,7 +147,8 @@ public class RichContextResultsProcessor {
                 "Num_Topics",
                 "Strategy",
                 "Context_Format",
-                "Cold-start",
+                "Evaluation_Set",
+                "fm_num_factors",
                 "NDCG@" + at,
                 "Precision@" + at,
                 "Recall@" + at,
@@ -202,7 +207,8 @@ public class RichContextResultsProcessor {
 //            String testFile = foldPath + "test.csv";
             String predictionsFile;
             String libfmResultsFile = foldPath + "libfm_results_" +
-                    strategy.getPredictionType() + ".txt";
+                    strategy.getPredictionType() + "_fmfactors-" +
+                    fmNumFactors + ".txt";
 
             // Results will be stored in this file, which is RiVal compatible
             String rivalRecommendationsFile =
@@ -348,8 +354,6 @@ public class RichContextResultsProcessor {
                     System.out.println("Num test users = " + testUsers.size());
                     Set<Long> users;
 
-                    System.out.println("Evaluation set: " + evaluationSet);
-
                     switch (evaluationSet) {
 
                         case TEST_USERS:
@@ -415,7 +419,8 @@ public class RichContextResultsProcessor {
         results.put("Num_Topics", String.valueOf(numTopics));
         results.put("Strategy", strategy.toString().toLowerCase());
         results.put("Context_Format", contextFormat.toString().toLowerCase());
-        results.put("Cold-start", String.valueOf(coldStart));
+        results.put("Evaluation_Set", String.valueOf(evaluationSet).toLowerCase());
+        results.put("fm_num_factors", String.valueOf(fmNumFactors));
         results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
         results.put("Precision@" + at, String.valueOf(precisionRes / numFolds));
         results.put("Recall@" + at, String.valueOf(recallRes / numFolds));
@@ -427,7 +432,8 @@ public class RichContextResultsProcessor {
         System.out.println("Num Topics: " + numTopics);
         System.out.println("Strategy: " + strategy.toString());
         System.out.println("Context_Format: " + contextFormat.toString());
-        System.out.println("Cold-start: " + coldStart);
+        System.out.println("Evaluation_Set: " + evaluationSet);
+        System.out.println("fm_num_factors: " + coldStart);
         System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
         System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
         System.out.println("Recall@" + at + ": " + recallRes / numFolds);
@@ -452,12 +458,13 @@ public class RichContextResultsProcessor {
      */
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet, Integer numTopics, String itemType)
+            EvaluationSet evaluationSet, Integer numTopics,
+            Integer fmNumFactors, String itemType)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor evaluator = new RichContextResultsProcessor(
                 cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics, itemType);
+                numTopics, fmNumFactors, itemType);
         evaluator.parseRecommendationResultsLibfm();
         evaluator.prepareStrategy("libfm");
         Map<String, String> results = evaluator.evaluate("libfm");

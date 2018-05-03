@@ -28,6 +28,8 @@ public class AlejandroRichContextEvaluator {
         options.addOption("p", true, "The properties file path");
         options.addOption("s", true, "The evaluation set");
         options.addOption("k", true, "The number of topics");
+        options.addOption(
+                "f", true, "The number of factorization machines factors");
         options.addOption("i", true, "The type of items");
 
         CommandLineParser parser = new DefaultParser();
@@ -45,12 +47,16 @@ public class AlejandroRichContextEvaluator {
 
         RichContextResultsProcessor.ProcessingTask processingTask;
         processingTask =
-                RichContextResultsProcessor.ProcessingTask.valueOf(cmd.getOptionValue("t", defaultProcessingTask).toUpperCase());
+                RichContextResultsProcessor.ProcessingTask.valueOf(
+                        cmd.getOptionValue("t", defaultProcessingTask).toUpperCase());
         String cacheFolder = cmd.getOptionValue("d", defaultCacheFolder);
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
         Integer numTopics = cmd.hasOption("k") ?
                 Integer.parseInt(cmd.getOptionValue("k", defaultPropertiesFile)) :
+                null;
+        Integer fmNumFactors = cmd.hasOption("f") ?
+                Integer.parseInt(cmd.getOptionValue("f", defaultPropertiesFile)) :
                 null;
         String itemType = cmd.hasOption("i") ?
                 cmd.getOptionValue("i", defaultPropertiesFile) :
@@ -69,7 +75,7 @@ public class AlejandroRichContextEvaluator {
             case PROCESS_LIBFM_RESULTS:
                 RichContextResultsProcessor.processLibfmResults(
                         cacheFolder, outputFolder, propertiesFile,
-                        evaluationSet, numTopics, itemType);
+                        evaluationSet, numTopics, fmNumFactors, itemType);
                 break;
             default:
                 throw new UnsupportedOperationException(
