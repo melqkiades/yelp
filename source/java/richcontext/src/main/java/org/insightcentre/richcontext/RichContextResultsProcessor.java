@@ -433,7 +433,7 @@ public class RichContextResultsProcessor {
         System.out.println("Strategy: " + strategy.toString());
         System.out.println("Context_Format: " + contextFormat.toString());
         System.out.println("Evaluation_Set: " + evaluationSet);
-        System.out.println("fm_num_factors: " + coldStart);
+        System.out.println("fm_num_factors: " + fmNumFactors);
         System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
         System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
         System.out.println("Recall@" + at + ": " + recallRes / numFolds);
