@@ -39,9 +39,6 @@ public class Properties {
     @JsonProperty("business_type")
     private String dataset;
 
-    @JsonProperty("evaluate_cold_start")
-    private boolean evaluateColdStart;
-
 
     public static Properties loadProperties(String fileName) throws IOException {
 
@@ -136,14 +133,6 @@ public class Properties {
         this.dataset = dataset;
     }
 
-    public boolean getEvaluateColdStart() {
-        return evaluateColdStart;
-    }
-
-    public void setEvaluateColdStart(boolean evaluateColdStart) {
-        this.evaluateColdStart = evaluateColdStart;
-    }
-
     @Override
     public String toString() {
         return "Properties{" +
@@ -157,7 +146,6 @@ public class Properties {
                 ", fmNumFactors='" + fmNumFactors + '\'' +
                 ", contextFormat='" + contextFormat + '\'' +
                 ", dataset='" + dataset + '\'' +
-                ", coldStart='" + evaluateColdStart + '\'' +
                 '}';
     }
 

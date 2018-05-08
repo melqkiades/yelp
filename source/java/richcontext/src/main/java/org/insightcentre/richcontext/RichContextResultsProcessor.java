@@ -41,7 +41,6 @@ public class RichContextResultsProcessor {
     private ContextFormat contextFormat;
     private Dataset dataset;
     private String outputFile;
-    private boolean coldStart;
 
 
     private String ratingsFolderPath;
@@ -127,7 +126,6 @@ public class RichContextResultsProcessor {
         fmNumFactors = (paramFmNumFactors == null) ?
                 properties.getFmNumFactors() :
                 paramFmNumFactors;
-        coldStart = properties.getEvaluateColdStart();
         outputFile = outputFolder +
                 "rival_" + dataset.toString().toLowerCase() + "_results_folds.csv";
 
@@ -332,51 +330,12 @@ public class RichContextResultsProcessor {
             File strategyFile = new File(strategyFileName);
             DataModelIF<Long, Long> testModel = new CsvParser().parseData(testFile);
             DataModelIF<Long, Long> recModel;
+            Set<Long> users = getUsersToEvaluate(foldPath, testModel);
 
             switch (strategy) {
                 case TEST_ITEMS:
                 case USER_TEST:
-                    recModel = new CsvParser().parseData(strategyFile);
-                    break;
                 case REL_PLUS_N:
-                    File trainingFile = new File(foldPath + "train.csv");
-                    DataModelIF<Long, Long> trainModel = new CsvParser().parseData(trainingFile);
-                    Set<Long> trainUsers = new HashSet<>();
-                    for (Long user : trainModel.getUsers()) {
-                        trainUsers.add(user);
-                    }
-                    System.out.println("Num train users = " + trainUsers.size());
-
-                    Set<Long> testUsers = new HashSet<>();
-                    for (Long user : testModel.getUsers()) {
-                        testUsers.add(user);
-                    }
-                    System.out.println("Num test users = " + testUsers.size());
-                    Set<Long> users;
-
-                    switch (evaluationSet) {
-
-                        case TEST_USERS:
-                            users = testUsers;
-                            break;
-                        case TRAIN_USERS:
-                            users = trainUsers;
-                            break;
-                        case TEST_ONLY_USERS:
-                            testUsers.removeAll(trainUsers);
-                            users = testUsers;
-                            break;
-                        case TRAIN_ONLY_USERS:
-                            trainUsers.removeAll(testUsers);
-                            users = trainUsers;
-                            break;
-                        default:
-                            String msg =
-                                    "Evaluation set " + evaluationSet +
-                                            " not supported";
-                            throw new UnsupportedOperationException(msg);
-
-                    }
                     recModel = new CsvParser().parseData(strategyFile, users);
 //                    recModel = new CsvParser().parseData(strategyFile);
                     break;
@@ -441,6 +400,57 @@ public class RichContextResultsProcessor {
         System.out.println("MAE: " + maeRes / numFolds);
 
         return results;
+    }
+
+
+    private Set<Long> getUsersToEvaluate(
+            String foldPath, DataModelIF<Long, Long> testModel)
+            throws IOException {
+
+        File trainingFile = new File(foldPath + "train.csv");
+        DataModelIF<Long, Long> trainModel = new CsvParser().parseData(trainingFile);
+        Set<Long> trainUsers = new HashSet<>();
+        for (Long user : trainModel.getUsers()) {
+            trainUsers.add(user);
+        }
+        System.out.println("Num train users = " + trainUsers.size());
+
+        Set<Long> testUsers = new HashSet<>();
+        for (Long user : testModel.getUsers()) {
+            testUsers.add(user);
+        }
+        System.out.println("Num test users = " + testUsers.size());
+        Set<Long> users;
+
+        switch (evaluationSet) {
+
+            case TEST_USERS:
+                users = testUsers;
+                break;
+            case TRAIN_USERS:
+                users = trainUsers;
+                break;
+            case TEST_ONLY_USERS:
+                System.out.println("Printing Train Users");
+                System.out.println(trainUsers);
+                System.out.println("\nPrinting Test Users");
+                System.out.println(testUsers);
+                testUsers.removeAll(trainUsers);
+                users = testUsers;
+                break;
+            case TRAIN_ONLY_USERS:
+                trainUsers.removeAll(testUsers);
+                users = trainUsers;
+                break;
+            default:
+                String msg =
+                        "Evaluation set " + evaluationSet +
+                                " not supported";
+                throw new UnsupportedOperationException(msg);
+
+        }
+
+        return users;
     }
 
 
