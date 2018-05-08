@@ -25,7 +25,6 @@ public class RichContextDataInitializer {
     private final int numFolds;
     private final long seed;
     private final RichContextResultsProcessor.Strategy strategy;
-    private final boolean coldStart;
 
 
     private Map<String, Review> reviewsMap;
@@ -50,7 +49,6 @@ public class RichContextDataInitializer {
         int numTopics = (paramNumTopics == null) ?
                 properties.getNumTopics() :
                 paramNumTopics;
-        coldStart = properties.getEvaluateColdStart();
 
         jsonRatingsFile = cacheFolder + itemType.toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
