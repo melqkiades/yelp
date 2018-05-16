@@ -357,8 +357,6 @@ public class LibfmExporter {
             }
         }
 
-
-
         // Select one review with high rating randomly (preferred item)
         // obtain its context and for all the items in the training set create
         // reviews that have the same context
@@ -373,19 +371,6 @@ public class LibfmExporter {
 //                "Export user recommendations", testUsersSet.size(), 1000,
 //                System.out, ProgressBarStyle.ASCII);
 //        progressBar.start();
-
-        List<String> firstRow = new ArrayList<>();
-        firstRow.add("user");
-        firstRow.add("item");
-        firstRow.add("predicted_rating");
-
-//        Set<String> contextKeys = trainReviews.get(0).getContext().keySet();
-//        for (String context : contextKeys) {
-//            firstRow.add(context);
-//        }
-        String delimiter = "\t";
-        // Write the header of the CSV file
-        predictionsWriter.write(String.join(delimiter, firstRow) + "\n");
 
         for (Long user : testUsersSet) {
 
@@ -408,6 +393,10 @@ public class LibfmExporter {
 
             for (Long item : trainItemsSet) {
                 Review review = new Review(user, item);
+                // In case we have a duplicate (user,item) pair, we skip it
+                if (user == relevantReview.getUserId() && item == relevantReview.getItemId()) {
+                    continue;
+                }
                 review.setContext(context);
 //                exportReviews.add(review);
                 writeReviewToFile(review, predictionsWriter);

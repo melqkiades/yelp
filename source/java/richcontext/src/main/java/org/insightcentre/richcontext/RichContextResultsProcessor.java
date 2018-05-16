@@ -223,7 +223,7 @@ public class RichContextResultsProcessor {
                 case REL_PLUS_N:
                     predictionsFile = foldPath + "predictions.csv";
                     LibfmResultsParser.parseResults(
-                            predictionsFile, libfmResultsFile, true, rivalRecommendationsFile);
+                            predictionsFile, libfmResultsFile, false, rivalRecommendationsFile);
                     break;
                 default:
                     String msg = strategy.toString() +
@@ -431,10 +431,6 @@ public class RichContextResultsProcessor {
                 users = trainUsers;
                 break;
             case TEST_ONLY_USERS:
-                System.out.println("Printing Train Users");
-                System.out.println(trainUsers);
-                System.out.println("\nPrinting Test Users");
-                System.out.println(testUsers);
                 testUsers.removeAll(trainUsers);
                 users = testUsers;
                 break;
