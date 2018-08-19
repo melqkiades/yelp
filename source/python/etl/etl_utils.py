@@ -253,13 +253,14 @@ class ETLUtils:
         return train, test
 
     @staticmethod
-    def load_csv_file(file_path, delimiter=','):
+    def load_csv_file(file_path, delimiter=',', fieldnames=None):
 
         records = []
 
         with open(file_path) as read_file:
             # read rows into a dictionary format
-            reader = csv.DictReader(read_file, delimiter=delimiter)
+            reader = csv.DictReader(
+                read_file, delimiter=delimiter, fieldnames=fieldnames)
             for row in reader:
                 dictionary = {}
                 # go over each column name and value
