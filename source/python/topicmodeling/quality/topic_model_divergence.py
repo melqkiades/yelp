@@ -1,10 +1,13 @@
+import os
 import numpy
 import time
 from scipy import stats
 
 from etl import ETLUtils
 from etl.reviews_preprocessor import ReviewsPreprocessor
+from topicmodeling import topic_ensemble_caller
 from topicmodeling.nmf_topic_extractor import NmfTopicExtractor
+from utils import utilities
 from utils.constants import Constants
 
 
@@ -54,7 +57,7 @@ def my_symmetric_kl(a, b):
     return my_kl(a, b) + my_kl(b, a)
 
 
-def create_topic_models():
+def preprocess_data():
     my_list = range(2, 61)
 
     for i in my_list:
@@ -106,9 +109,36 @@ def test():
     ETLUtils.save_json_file(json_file_path, results)
 
 
+def create_topic_model(num_topics):
+    print('%s: evaluating topic model' %
+          time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    Constants.update_properties({
+        Constants.NUMPY_RANDOM_SEED_FIELD: Constants.NUMPY_RANDOM_SEED + 10,
+        Constants.RANDOM_SEED_FIELD: Constants.RANDOM_SEED + 10,
+        Constants.TOPIC_MODEL_NUM_TOPICS_FIELD: num_topics
+    })
+    utilities.plant_seeds()
+    Constants.print_properties()
+
+    file_path = Constants.ENSEMBLED_RESULTS_FOLDER + \
+                "factors_final_k%02d.pkl" % Constants.TOPIC_MODEL_NUM_TOPICS
+
+    if os.path.exists(file_path):
+        print('Ensemble topic model already exists')
+        return
+
+    # topic_ensemble_caller.run_local_parse_directory()
+    topic_ensemble_caller.run_generate_kfold()
+    topic_ensemble_caller.run_combine_nmf()
+
+
 def main():
-    # create_topic_models()
-    test()
+    # preprocess_data()
+    # for num_topics in range(4, 41):
+    #     create_topic_model(num_topics)
+    create_topic_model(60)
+    # test()
 
 
 start = time.time()
