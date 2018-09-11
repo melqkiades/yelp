@@ -92,6 +92,9 @@ def remove_items_with_low_reviews(reviews, min_reviews):
     that just have been reviewed once
     """
     items = get_item_list(reviews, min_reviews)
+    all_items = get_groupby_list(reviews, Constants.ITEM_ID_FIELD)
+    num_discarded_items = len(all_items) - len(items)
+    print('Discarded %d items due to low count' % num_discarded_items)
     return ETLUtils.filter_records(reviews, Constants.ITEM_ID_FIELD, items)
 
 
