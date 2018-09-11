@@ -86,6 +86,24 @@ class ReviewsPreprocessor:
 
         self.records = new_records
 
+    def transform_records(self):
+        if 'yelp' in Constants.ITEM_TYPE:
+            self.transform_yelp_records()
+        elif 'fourcity' in Constants.ITEM_TYPE:
+            self.transform_fourcity_records()
+
+    def summarize_dataset(self):
+        rda = ReviewsDatasetAnalyzer(self.records)
+        print('density: %f' % rda.calculate_density_approx())
+        print('sparsity: %f' % rda.calculate_sparsity_approx())
+        print('total_records: %d' % len(self.records))
+        user_ids = \
+            extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
+        item_ids = \
+            extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
+        print('total users', len(user_ids))
+        print('total items', len(item_ids))
+
     def add_integer_ids(self):
         users_map = {}
         items_map = {}
@@ -154,9 +172,13 @@ class ReviewsPreprocessor:
         # Remove from the dataset users with a low number of reviews
         min_reviews_per_user = Constants.MIN_REVIEWS_PER_USER
         if min_reviews_per_user is None or min_reviews_per_user < 2:
+            print('No records where removed')
             return
+        num_records_before = len(self.records)
         self.records = extractor.remove_users_with_low_reviews(
             self.records, min_reviews_per_user)
+        num_records_removed = num_records_before - len(self.records)
+        print('A total of %d records where removed' % num_records_removed)
 
     def remove_items_with_low_reviews(self):
         print('%s: remove items with low reviews' % time.strftime(
@@ -165,9 +187,13 @@ class ReviewsPreprocessor:
         # Remove from the dataset items with a low number of reviews
         min_reviews_per_item = Constants.MIN_REVIEWS_PER_ITEM
         if min_reviews_per_item is None or min_reviews_per_item < 2:
+            print('No records where removed')
             return
+        num_records_before = len(self.records)
         self.records = extractor.remove_items_with_low_reviews(
             self.records, min_reviews_per_item)
+        num_records_removed = num_records_before - len(self.records)
+        print('A total of %d records where removed' % num_records_removed)
 
     def clean_reviews(self):
         print('%s: clean reviews' % time.strftime("%Y/%m/%d-%H:%M:%S"))
@@ -639,12 +665,8 @@ class ReviewsPreprocessor:
     def preprocess(self):
 
         self.load_records()
-
-        if 'yelp' in Constants.ITEM_TYPE:
-            self.transform_yelp_records()
-        elif 'fourcity' in Constants.ITEM_TYPE:
-            self.transform_fourcity_records()
-
+        self.transform_records()
+        self.summarize_dataset()
         self.add_integer_ids()
         self.clean_reviews()
         self.remove_duplicate_reviews()
@@ -669,16 +691,7 @@ class ReviewsPreprocessor:
         self.count_specific_generic_ratio()
         self.export_to_triplet()
 
-        rda = ReviewsDatasetAnalyzer(self.records)
-        print('density: %f' % rda.calculate_density_approx())
-        print('sparsity: %f' % rda.calculate_sparsity_approx())
-        print('total_records: %d' % len(self.records))
-        user_ids = \
-            extractor.get_groupby_list(self.records, Constants.USER_ID_FIELD)
-        item_ids = \
-            extractor.get_groupby_list(self.records, Constants.ITEM_ID_FIELD)
-        print('total users', len(user_ids))
-        print('total items', len(item_ids))
+        self.summarize_dataset()
 
     def full_cycle(self):
         Constants.print_properties()
