@@ -62,15 +62,9 @@ def main():
     prediction_type = prediction_type_map[Constants.RIVAL_EVALUATION_STRATEGY]
     use_cache = True
 
-    libfm_ratings_fold_folder = Constants.generate_file_name(
-        'recsys_formatted_context_records', '',
-        Constants.CACHE_FOLDER + 'rival/',
-        None, None, True, True, uses_carskit=False, normalize_topics=True,
-        format_context=True)[:-1] + '/fold_%d/'
-
     for fold in range(Constants.CROSS_VALIDATION_NUM_FOLDS):
 
-        ratings_fold_folder = libfm_ratings_fold_folder % fold
+        ratings_fold_folder = Constants.RIVAL_RATINGS_FOLD_FOLDER % fold
         # ratings_fold_folder = Constants.CACHE_FOLDER + 'rival/contextaa/fold_%d/' % fold
         train_file = ratings_fold_folder + 'libfm_train.libfm'
         predictions_file = ratings_fold_folder + 'libfm_predictions_' + \

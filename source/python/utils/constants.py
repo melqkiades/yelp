@@ -202,6 +202,7 @@ class Constants(object):
     TEXT_FILES_FOLDER = CACHE_FOLDER + 'text_files/'
     TOPIC_MODEL_FOLDER = CACHE_FOLDER + 'topic_models/'
     ENSEMBLE_FOLDER = TOPIC_MODEL_FOLDER + 'ensemble/'
+    RIVAL_FOLDER = CACHE_FOLDER + 'rival/'
     GENERATED_TEXT_FILES_FOLDER = None
     # RECORDS_FILE = DATASET_FOLDER + 'yelp_training_set_review_' +\
     #                ITEM_TYPE + 's_shuffled_tagged.json'
@@ -238,6 +239,7 @@ class Constants(object):
         ITEM_TYPE + '.pkl'
     ENSEMBLED_RESULTS_FOLDER = None
     CARSKIT_RATINGS_FOLDER = None
+    RIVAL_RATINGS_FOLD_FOLDER = None
 
     @classmethod
     def get_properties_copy(cls):
@@ -364,6 +366,7 @@ class Constants(object):
         Constants.TEXT_FILES_FOLDER = Constants.CACHE_FOLDER + 'text_files/'
         Constants.TOPIC_MODEL_FOLDER = Constants.CACHE_FOLDER + 'topic_models/'
         Constants.ENSEMBLE_FOLDER = Constants.TOPIC_MODEL_FOLDER + 'ensemble/'
+        Constants.RIVAL_FOLDER = Constants.CACHE_FOLDER + 'rival/'
         Constants.GENERATED_TEXT_FILES_FOLDER = Constants.generate_file_name(
             'bow_files', '', Constants.TEXT_FILES_FOLDER, None, None, False,
             True)[:-1] + '/'
@@ -426,6 +429,10 @@ class Constants(object):
         Constants.CARSKIT_RATINGS_FOLDER = Constants.generate_file_name(
             'carskit_ratings', '', Constants.CACHE_FOLDER + 'rival/', None,
             None, True, True, True, True)[:-1] + '/'
+        Constants.RIVAL_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
+            'recsys_formatted_context_records', '',
+            Constants.RIVAL_FOLDER, None, None, True, True, uses_carskit=False,
+            normalize_topics=True, format_context=True)[:-1] + '/fold_%d/'
 
     @staticmethod
     def print_properties():
@@ -524,3 +531,7 @@ Constants.ENSEMBLED_RESULTS_FOLDER = Constants.generate_file_name(
 Constants.CARSKIT_RATINGS_FOLDER = Constants.generate_file_name(
     'carskit_ratings', '', Constants.CACHE_FOLDER + 'rival/', None,
     None, True, True, True, True)[:-1] + '/'
+Constants.RIVAL_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
+    'recsys_formatted_context_records', '', Constants.RIVAL_FOLDER, None, None,
+    True, True, uses_carskit=False, normalize_topics=True,
+    format_context=True)[:-1] + '/fold_%d/'
