@@ -1,18 +1,18 @@
 package org.insightcentre.richcontext;
 
-import com.opencsv.CSVWriter;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by fpena on 27/03/2017.
  */
-public class CarskitExporter {
+public class CarskitExporter extends ReviewsExporter {
+
 
     public static void  exportWithContext(
             List<Review> reviews, String filePath) throws IOException {
@@ -107,9 +107,56 @@ public class CarskitExporter {
                 "document_level-review_targettype-context_" +
                 "min_item_reviews-10.json";
 
+        System.out.println(cacheFolder + jsonFile);
+
         List<Review> reviews = JsonParser.readReviews(new File(cacheFolder + jsonFile));
 
-        String outFile = "/Users/fpena/tmp/carskit_test_reviews.csv";
+        String outFile = "/tmp/carskit_test_reviews.csv";
+        String outFile2 = "/tmp/carskit_test_reviews2.csv";
         exportWithContext(reviews, outFile);
+        CarskitExporter exporter = new CarskitExporter();
+        exporter.exportRecommendations(reviews, outFile2, null);
+    }
+
+    @Override
+    protected String getDelimiter() {
+        return ",";
+    }
+
+    @Override
+    protected void writeHeader(List<String> contextKeys, BufferedWriter writer) throws IOException {
+
+        List<String> headers = new ArrayList<>();
+        headers.add("user_id");
+        headers.add("business_id");
+        headers.add("stars");
+
+        contextKeys.remove("na");
+
+        for (String contextKey: contextKeys) {
+            headers.add("context:" + contextKey);
+        }
+        headers.add("context:na");
+
+        writer.write(String.join(DELIMITER, headers) + "\n");
+    }
+
+    @Override
+    protected void writeLibfmReviewToFile(Review review, Map<String, Integer> oneHotIdMap, BufferedWriter bufferedWriter) throws IOException {
+
+        List<String> row = new ArrayList<>();
+        row.add(String.valueOf(review.getUserId()));
+        row.add(String.valueOf(review.getItemId()));
+        row.add(String.valueOf(review.getRating()));
+
+        List<String> contextKeys = new ArrayList<>(review.getContext().keySet());
+        contextKeys.remove("na");
+        for (String contextColumn : contextKeys) {
+            row.add(String.valueOf(review.getContext().get(contextColumn).intValue()));
+        }
+        row.add(String.valueOf(review.getContext().get("na").intValue()));
+
+        bufferedWriter.write(String.join(DELIMITER, row) + "\n");
+
     }
 }

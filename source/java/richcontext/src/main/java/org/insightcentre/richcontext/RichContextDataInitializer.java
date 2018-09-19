@@ -165,17 +165,18 @@ public class RichContextDataInitializer {
         Map<String, Integer> oneHotIdMap =
                 LibfmExporter.getOneHot(reviewsMap.values());
 
-        LibfmExporter.exportRecommendations(
+        LibfmExporter exporter = new LibfmExporter();
+        exporter.exportRecommendations(
                 completeTrainReviews, libfmTrainFile, oneHotIdMap);
 
         switch (strategy) {
             case TEST_ITEMS:
             case USER_TEST:
-                LibfmExporter.exportRecommendations(
+                exporter.exportRecommendations(
                         completeTestReviews, libfmPredictionsFile, oneHotIdMap);
                 break;
             case REL_PLUS_N: {
-                LibfmExporter.exportRankingPredictionsFile(
+                exporter.exportRankingPredictionsFile(
                         completeTrainReviews, completeTestReviews,
                         libfmPredictionsFile, oneHotIdMap, predictionsFile
                 );
