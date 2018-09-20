@@ -142,6 +142,8 @@ public abstract class ReviewsExporter {
                 new BufferedWriter(new FileWriter(predictionsFile));
         BufferedWriter libfmWriter =
                 new BufferedWriter(new FileWriter(predictionsFilePath));
+        List<String> contextKeys = new ArrayList<>(trainReviews.get(0).getContext().keySet());
+        writeHeader(contextKeys, libfmWriter);
 
         for (Long user : testUsersSet) {
 
