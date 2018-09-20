@@ -126,16 +126,21 @@ public class RichContextDataInitializer {
      *
      * @param fold the cross-validation fold
      */
-    private void transformSplitToLibfm(int fold) throws IOException {
+    private void transformSplitToLibfm(int fold, RecommenderLibrary library)
+            throws IOException {
 
         System.out.println("Transform split " + fold + " to LibFM");
         boolean overwrite = false;
 
+        String libraryName = library.getName();
+        String extension = library.getExtension();
+        ReviewsExporter exporter = library.getReviewsExporter();
+
         String foldPath = ratingsFolderPath + "fold_" + fold + "/";
-        String libfmTrainFile = foldPath + "libfm_train.libfm";
+        String libfmTrainFile = foldPath + libraryName + "_train." + extension;
 //        String libfmTestFile = foldPath + "libfm_test.libfm";
-        String libfmPredictionsFile = foldPath + "libfm_predictions_" +
-                strategy.getPredictionType() + ".libfm";
+        String libfmPredictionsFile = foldPath + libraryName + "_predictions_" +
+                strategy.getPredictionType() + "." + extension;
 
         if (new File(libfmTrainFile).exists() &&
                 new File(libfmPredictionsFile).exists() && !overwrite) {
@@ -165,7 +170,7 @@ public class RichContextDataInitializer {
         Map<String, Integer> oneHotIdMap =
                 LibfmExporter.getOneHot(reviewsMap.values());
 
-        LibfmExporter exporter = new LibfmExporter();
+//        LibfmExporter exporter = new LibfmExporter();
         exporter.exportRecommendations(
                 completeTrainReviews, libfmTrainFile, oneHotIdMap);
 
@@ -194,10 +199,11 @@ public class RichContextDataInitializer {
      * Transform the cross-validation splits into the format required by
      * LibFM
      */
-    private void transformSplitsToLibfm() throws IOException {
+    private void transformSplitsToLibfm(RecommenderLibrary library)
+            throws IOException {
 
         for (int fold = 0; fold < numFolds; fold++) {
-            transformSplitToLibfm(fold);
+            transformSplitToLibfm(fold, library);
         }
     }
 
@@ -212,12 +218,12 @@ public class RichContextDataInitializer {
      */
     public static void prepareLibfm(
             String cacheFolder, String propertiesFile, Integer numTopics,
-            String itemType)
+            String itemType, RecommenderLibrary library)
             throws IOException {
 
         RichContextDataInitializer evaluator = new RichContextDataInitializer(
                 cacheFolder, propertiesFile, numTopics, itemType);
         evaluator.prepareSplits();
-        evaluator.transformSplitsToLibfm();
+        evaluator.transformSplitsToLibfm(library);
     }
 }

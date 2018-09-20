@@ -70,7 +70,13 @@ public class AlejandroRichContextEvaluator {
         switch (processingTask) {
             case PREPARE_LIBFM:
                 RichContextDataInitializer.prepareLibfm(
-                        cacheFolder, propertiesFile, numTopics, itemType);
+                        cacheFolder, propertiesFile, numTopics, itemType,
+                        RecommenderLibrary.LIBFM);
+                break;
+            case PREPARE_CARSKIT:
+                RichContextDataInitializer.prepareLibfm(
+                        cacheFolder, propertiesFile, numTopics, itemType,
+                        RecommenderLibrary.CARSKIT);
                 break;
             case PROCESS_LIBFM_RESULTS:
                 RichContextResultsProcessor.processLibfmResults(

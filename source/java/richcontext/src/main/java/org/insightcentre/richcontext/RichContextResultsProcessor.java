@@ -94,6 +94,8 @@ public class RichContextResultsProcessor {
     public enum ProcessingTask {
         PREPARE_LIBFM,
         PROCESS_LIBFM_RESULTS,
+        PREPARE_CARSKIT,
+        PROCESS_CARSKIT_RESULTS,
         EVALUATE_LIBFM_RESULTS
     }
 
