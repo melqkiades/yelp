@@ -31,6 +31,8 @@ public class AlejandroRichContextEvaluator {
         options.addOption(
                 "f", true, "The number of factorization machines factors");
         options.addOption("i", true, "The type of items");
+        options.addOption(
+                "carskit_model", true, "The CARSKit model to evaluate");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -64,6 +66,9 @@ public class AlejandroRichContextEvaluator {
         RichContextResultsProcessor.EvaluationSet evaluationSet =
                 RichContextResultsProcessor.EvaluationSet.valueOf(
                 cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
+        String carskitModel = cmd.hasOption("carskit_model") ?
+                cmd.getOptionValue("carskit_model", null) :
+                null;
 
         long startTime = System.currentTimeMillis();
 
@@ -82,6 +87,13 @@ public class AlejandroRichContextEvaluator {
                 RichContextResultsProcessor.processLibfmResults(
                         cacheFolder, outputFolder, propertiesFile,
                         evaluationSet, numTopics, fmNumFactors, itemType);
+                break;
+            case PROCESS_CARSKIT_RESULTS:
+                String modelName = "carskit_" + carskitModel;
+                RichContextResultsProcessor.processLibfmResults(
+                        cacheFolder, outputFolder, propertiesFile,
+                        evaluationSet, numTopics, fmNumFactors, itemType,
+                        modelName);
                 break;
             default:
                 throw new UnsupportedOperationException(
