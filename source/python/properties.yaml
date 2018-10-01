@@ -72,7 +72,7 @@ topic_model_target_reviews: specific
 nmf_regularization: 0.0
 nmf_regularization_ratio: 0.0
 topic_model_folds: 10
-carskit_recommenders: globalavg
+carskit_recommenders: GlobalAvg
 carskit_nominal_format: no_context
 carskit_item_ranking: True
 topic_model_normalize: True

@@ -112,11 +112,11 @@ class Constants(object):
     DATASET_FOLDER = '/home/fpena/data/'
     LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
     TOPIC_ENSEMBLE_FOLDER = '/home/fpena/topic-ensemble/'
-    CARSKIT_FOLDER = '/home/fpena/CARSKit/'
+    CARSKIT_FOLDER = '/home/fpena/CARSKit/jar/'
     # DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
     # LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
     # TOPIC_ENSEMBLE_FOLDER = '/Users/fpena/tmp/topic-ensemble/'
-    # CARSKIT_FOLDER = '/Users/fpena/tmp/CARSKit/'
+    # CARSKIT_FOLDER = '/Users/fpena/tmp/trial-carskit/CARSKit/out/artifacts/CARSKit_jar/'
     GENERATED_FOLDER = DATASET_FOLDER + 'generated_context/'
     RESULTS_FOLDER = DATASET_FOLDER + 'results/'
 

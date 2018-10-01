@@ -11,26 +11,29 @@ import jprops
 import pandas
 
 from etl import ETLUtils
-from tripadvisor.fourcity import extractor
 from utils.constants import Constants
 
 JAVA_COMMAND = 'java'
-CARSKIT_JAR = 'CARSKit-v0.3.0.jar'
+# CARSKIT_JAR = 'CARSKit-v0.3.0.jar'
+CARSKIT_JAR = 'CARSKit.jar'
 CARSKIT_ORIGINAL_CONF_FILE = Constants.CARSKIT_FOLDER + 'setting.conf'
 # CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
 #         'recsys_contextual_records', '', Constants.CACHE_FOLDER + 'rival/',
 #         None, None, True, True, normalize_topics=True)[:-1] + '/fold_%d/'
-CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
-        'recsys_formatted_context_records', '', Constants.CACHE_FOLDER + 'rival/',
-        None, None, True, True, uses_carskit=False, normalize_topics=True,
-        format_context=True)[:-1] + '/fold_%d/'
-CARSKIT_MODIFIED_CONF_FILE = CARSKIT_RATINGS_FOLD_FOLDER + '%s.conf'
+# CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
+#         'recsys_formatted_context_records', '', Constants.CACHE_FOLDER + 'rival/',
+#         None, None, True, True, uses_carskit=False, normalize_topics=True,
+#         format_context=True)[:-1] + '/fold_%d/'
+CARSKIT_CONF_FOLD_FOLDER = Constants.RIVAL_RATINGS_FOLD_FOLDER + 'carskit/'
+CARSKIT_MODIFIED_CONF_FILE = CARSKIT_CONF_FOLD_FOLDER + '%s.conf'
 OUTPUT_FOLDER = Constants.DATASET_FOLDER + 'carskit_results/'
 
 
 def run_carskit(fold):
 
-    jar_file = Constants.CARSKIT_FOLDER + 'jar/' + CARSKIT_JAR
+    jar_file = Constants.CARSKIT_FOLDER + CARSKIT_JAR
+    # carskit_folder = '/Users/fpena/tmp/trial-carskit/CARSKit/out/artifacts/CARSKit_jar/'
+    # jar_file = carskit_folder + CARSKIT_JAR
 
     command = [
         JAVA_COMMAND,
@@ -40,7 +43,7 @@ def run_carskit(fold):
         CARSKIT_MODIFIED_CONF_FILE % (fold, Constants.CARSKIT_RECOMMENDERS),
     ]
 
-    print(command)
+    print(" ".join(command))
 
     unique_id = uuid.uuid4().hex
     log_file_name = Constants.GENERATED_FOLDER + Constants.ITEM_TYPE + '_' + \
@@ -113,22 +116,50 @@ def save_results(results):
         write_results_to_json(json_file, result)
 
 
+def export_results(fold):
+
+    recommender = Constants.CARSKIT_RECOMMENDERS
+    ratings_fold_folder = Constants.RIVAL_RATINGS_FOLD_FOLDER % fold
+    prediction_type_map = {
+        'user_test': 'rating',
+        'test_items': 'rating',
+        'rel_plus_n': 'ranking'
+    }
+    prediction_type = prediction_type_map[Constants.RIVAL_EVALUATION_STRATEGY]
+    # ratings_file = ratings_fold_folder + 'UserSplitting-BiasedMF-rating-predictions.txt'
+    ratings_file = ratings_fold_folder + recommender + '-rating-predictions.txt'
+    results_file = ratings_fold_folder + 'carskit_' + recommender +\
+                   '_results_' + prediction_type + '.txt'
+
+    records = ETLUtils.load_csv_file(ratings_file, '\t')
+    predictions = [record['prediction'] for record in records]
+
+    with open(results_file, 'w') as f:
+        for prediction in predictions:
+            f.write("%s\n" % prediction)
+
+
 def full_cycle(fold):
-    file_name = 'results_all_2016.txt'
-    carskit_results_file = OUTPUT_FOLDER + file_name
+    # file_name = 'results_all_2016.txt'
+    # carskit_results_file = OUTPUT_FOLDER + file_name
 
     # modify_properties_file(fold)
     run_carskit(fold)
+    export_results(fold)
 
-    with open(carskit_results_file) as results_file:
-        results = results_file.readlines()
+    # TODO: take the GlobalAvg-rating-predictions.txt file, extract the last
+    # TODO: column and export it in a file with the same format as
+    # TODO: libfm_results_ranking_fmfactors-10.txt
 
-    results_list = [result_to_dict(result) for result in results]
-    save_results(results_list)
+    # with open(carskit_results_file) as results_file:
+    #     results = results_file.readlines()
+
+    # results_list = [result_to_dict(result) for result in results]
+    # save_results(results_list)
 
     # We remove the carskit results file because if not then we would be saving
     # the results from previous runs and we would have them duplicated
-    os.remove(carskit_results_file)
+    # os.remove(carskit_results_file)
 
 
 def modify_properties_file(fold):
@@ -136,29 +167,31 @@ def modify_properties_file(fold):
         properties = jprops.load_properties(read_file, collections.OrderedDict)
 
     recommender = Constants.CARSKIT_RECOMMENDERS
-    ratings_fold_folder = CARSKIT_RATINGS_FOLD_FOLDER % fold
+    carskit_conf_fold_folder = CARSKIT_CONF_FOLD_FOLDER % fold
+    ratings_fold_folder = Constants.RIVAL_RATINGS_FOLD_FOLDER % fold
+    prediction_type_map = {
+        'user_test': 'rating',
+        'test_items': 'rating',
+        'rel_plus_n': 'ranking'
+    }
+    prediction_type = prediction_type_map[Constants.RIVAL_EVALUATION_STRATEGY]
 
-    if not os.path.exists(ratings_fold_folder):
-        os.makedirs(ratings_fold_folder)
+    if not os.path.exists(carskit_conf_fold_folder):
+        os.makedirs(carskit_conf_fold_folder)
 
     modified_file = CARSKIT_MODIFIED_CONF_FILE % (fold, recommender)
     properties['recommender'] = recommender
-    properties['dataset.ratings.lins'] = \
-        ratings_fold_folder + 'carskit_train.csv'
-    test_file = ratings_fold_folder + 'carskit_test.csv'
+    train_file = ratings_fold_folder + 'carskit_train.csv'
+    test_file = \
+        ratings_fold_folder + 'carskit_predictions_%s.csv' % (prediction_type)
+    properties['dataset.ratings.lins'] = train_file
     properties['evaluation.setup'] = \
         'test-set -f %s --rand-seed 1 --test-view all' % test_file
+    properties['item.ranking'] = 'off'
 
-    records = ETLUtils.load_json_file(
-        Constants.RECSYS_CONTEXTUAL_PROCESSED_RECORDS_FILE)
-    num_items = \
-        len(extractor.get_groupby_list(records, Constants.ITEM_ID_FIELD))
-    extra_items = num_items
-    # extra_items = 10
-    if Constants.CARSKIT_ITEM_RANKING:
-        properties['item.ranking'] = 'on -topN %d' % extra_items
-    else:
-        properties['item.ranking'] = 'off'
+    properties['output.setup'] =\
+        '-folder %s -verbose on, off --to-file %s%s_summary.txt' % (
+            ratings_fold_folder, ratings_fold_folder, recommender)
 
     with open(modified_file, 'w') as write_file:
         jprops.store_properties(write_file, properties)
@@ -196,6 +229,16 @@ def main():
 
     # modify_properties_file()
     # run_carskit()
+
+    # baseline-Avg recommender: GlobalAvg, UserAvg, ItemAvg, UserItemAvg
+    # baseline-Context average recommender: ContextAvg, ItemContextAvg, UserContextAvg
+    # baseline-CF recommender: ItemKNN, UserKNN, SlopeOne, PMF, BPMF, BiasedMF, NMF, SVD++
+    # baseline-Top-N ranking recommender: SLIM, BPR, RankALS, RankSGD, LRMF
+    # CARS - splitting approaches: UserSplitting, ItemSplitting, UISplitting; algorithm options: e.g., usersplitting -traditional biasedmf -minlenu 2 -minleni 2
+    # CARS - filtering approaches: SPF, DCR, DCW
+    # CARS - independent models: CPTF
+    # CARS - dependent-dev models: CAMF_CI, CAMF_CU, CAMF_C, CAMF_CUCI, CSLIM_C, CSLIM_CI, CSLIM_CU, CSLIM_CUCI, GCSLIM_CC
+    # CARS - dependent-sim models: CAMF_ICS, CAMF_LCS, CAMF_LCS, CSLIM_ICS, CSLIM_LCS, CSLIM_MCS, GCSLIM_ICS, GCSLIM_LCS, GCSLIM_MCS
 
     if Constants.CARSKIT_ITEM_RANKING:
         all_recommenders = [
@@ -267,7 +310,8 @@ def main():
         'cslim_mcs', 'gcslim_ics', 'gcslim_lcs', 'gcslim_mcs'
     ]
 
-    recommenders = all_recommenders
+    # recommenders = all_recommenders
+    recommenders = ['CAMF_CU']
 
     print('num recommenders: %d' % len(recommenders))
     index = 1
@@ -289,8 +333,8 @@ def main():
     # analyze_results()
 
 
-start = time.time()
-main()
-end = time.time()
-total_time = end - start
-print("Total time = %f seconds" % total_time)
+# start = time.time()
+# main()
+# end = time.time()
+# total_time = end - start
+# print("Total time = %f seconds" % total_time)
