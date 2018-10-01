@@ -81,7 +81,6 @@ class Constants(object):
     TOPIC_MODEL_ITERATIONS_FIELD = 'topic_model_iterations'
     TOPIC_MODEL_NUM_TOPICS_FIELD = 'topic_model_num_topics'
     TOPIC_MODEL_PASSES_FIELD = 'topic_model_passes'
-    TOPIC_MODEL_REVIEW_TYPE_FIELD = 'topic_model_review_type'
     TOPIC_MODEL_STABILITY_SAMPLE_RATIO_FIELD =\
         'topic_model_stability_sample_ratio'
     TOPIC_MODEL_TARGET_FIELD = 'topic_model_target'
@@ -123,7 +122,6 @@ class Constants(object):
     _properties = load_properties()
     ITEM_TYPE = _properties['business_type']
     FM_REVIEW_TYPE = _properties['fm_review_type']
-    TOPIC_MODEL_REVIEW_TYPE = _properties['topic_model_review_type']
     TOPN_N = _properties['topn_n']
     TOPN_NUM_ITEMS = _properties['topn_num_items']
     RANDOM_SEED = _properties['random_seed']
@@ -251,8 +249,6 @@ class Constants(object):
 
         Constants.ITEM_TYPE = Constants._properties['business_type']
         Constants.FM_REVIEW_TYPE = Constants._properties['fm_review_type']
-        Constants.TOPIC_MODEL_REVIEW_TYPE = \
-            Constants._properties['topic_model_review_type']
         Constants.TOPN_N = Constants._properties['topn_n']
         Constants.TOPN_NUM_ITEMS = Constants._properties['topn_num_items']
         Constants.RANDOM_SEED = Constants._properties['random_seed']
