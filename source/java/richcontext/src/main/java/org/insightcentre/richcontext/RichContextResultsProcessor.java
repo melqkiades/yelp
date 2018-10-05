@@ -103,7 +103,7 @@ public class RichContextResultsProcessor {
     public RichContextResultsProcessor(
             String cacheFolder, String outputFolder, String propertiesFile,
             EvaluationSet evaluationSet, Integer paramNumTopics,
-            Integer paramFmNumFactors,String itemType)
+            Integer paramFmNumFactors,String itemType, String contextFormat)
             throws IOException {
 
 
@@ -115,8 +115,11 @@ public class RichContextResultsProcessor {
         strategy = Strategy.valueOf(
                 (properties.getStrategy().toUpperCase(Locale.ENGLISH)));
         additionalItems = properties.getTopnNumItems();
-        contextFormat = RichContextResultsProcessor.ContextFormat.valueOf(
-                properties.getContextFormat().toUpperCase(Locale.ENGLISH));
+        this.contextFormat = (contextFormat == null) ?
+                RichContextResultsProcessor.ContextFormat.valueOf(
+                    properties.getContextFormat().toUpperCase(Locale.ENGLISH)) :
+                RichContextResultsProcessor.ContextFormat.valueOf(
+                        contextFormat.toUpperCase(Locale.ENGLISH));
         dataset = (itemType == null) ?
                 RichContextResultsProcessor.Dataset.valueOf(
                         properties.getDataset().toUpperCase(Locale.ENGLISH)) :
@@ -134,7 +137,7 @@ public class RichContextResultsProcessor {
         String jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
                 "numtopics-" + numTopics + "_iterations-100_passes-10_targetreview-specific_" +
-                "normalized_contextformat-" + contextFormat.toString().toLowerCase()
+                "normalized_contextformat-" + this.contextFormat.toString().toLowerCase()
                 + "_lang-en_bow-NN_document_level-review_targettype-context_" +
                 "min_item_reviews-10.json";
         this.evaluationSet = evaluationSet;
@@ -514,12 +517,12 @@ public class RichContextResultsProcessor {
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
             EvaluationSet evaluationSet, Integer numTopics,
-            Integer fmNumFactors, String itemType)
+            Integer fmNumFactors, String itemType, String contextFormat)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor.processLibfmResults(
                 cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics, fmNumFactors, itemType, "libfm"
+                numTopics, fmNumFactors, itemType, contextFormat, "libfm"
         );
     }
 
@@ -539,12 +542,13 @@ public class RichContextResultsProcessor {
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
             EvaluationSet evaluationSet, Integer numTopics,
-            Integer fmNumFactors, String itemType, String model)
+            Integer fmNumFactors, String itemType, String contextFormat,
+            String model)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor evaluator = new RichContextResultsProcessor(
                 cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics, fmNumFactors, itemType);
+                numTopics, fmNumFactors, itemType, contextFormat);
 
         if (model.equals("libfm")) {
             evaluator.parseRecommendationResultsLibfm();

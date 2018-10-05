@@ -34,7 +34,7 @@ public class RichContextDataInitializer {
 
     public RichContextDataInitializer(
             String cacheFolder, String propertiesFile, Integer paramNumTopics,
-            String itemType)
+            String itemType, String contextFormatPar)
             throws IOException {
 
         Properties properties = Properties.loadProperties(propertiesFile);
@@ -42,8 +42,12 @@ public class RichContextDataInitializer {
         seed = properties.getSeed();
         strategy = RichContextResultsProcessor.Strategy.valueOf(
                 (properties.getStrategy().toUpperCase(Locale.ENGLISH)));
-        RichContextResultsProcessor.ContextFormat contextFormat = RichContextResultsProcessor.ContextFormat.valueOf(
-                properties.getContextFormat().toUpperCase(Locale.ENGLISH));
+        RichContextResultsProcessor.ContextFormat contextFormat =
+                (contextFormatPar == null) ?
+                RichContextResultsProcessor.ContextFormat.valueOf(
+                        properties.getContextFormat().toUpperCase(Locale.ENGLISH)) :
+                RichContextResultsProcessor.ContextFormat.valueOf(
+                        contextFormatPar.toUpperCase(Locale.ENGLISH));
         RichContextResultsProcessor.Dataset dataset = RichContextResultsProcessor.Dataset.valueOf(
                 properties.getDataset().toUpperCase(Locale.ENGLISH));
         int numTopics = (paramNumTopics == null) ?
@@ -218,11 +222,13 @@ public class RichContextDataInitializer {
      */
     public static void prepareLibfm(
             String cacheFolder, String propertiesFile, Integer numTopics,
-            String itemType, RecommenderLibrary library)
+            String itemType, String contextFormat, RecommenderLibrary library)
             throws IOException {
 
         RichContextDataInitializer evaluator = new RichContextDataInitializer(
-                cacheFolder, propertiesFile, numTopics, itemType);
+                cacheFolder, propertiesFile, numTopics, itemType,
+                contextFormat
+        );
         evaluator.prepareSplits();
         evaluator.transformSplitsToLibfm(library);
     }

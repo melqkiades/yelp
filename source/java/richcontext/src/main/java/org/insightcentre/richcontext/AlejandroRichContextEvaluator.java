@@ -29,8 +29,10 @@ public class AlejandroRichContextEvaluator {
         options.addOption("s", true, "The evaluation set");
         options.addOption("k", true, "The number of topics");
         options.addOption(
-                "f", true, "The number of factorization machines factors");
+            "f", true, "The number of factorization machines factors");
         options.addOption("i", true, "The type of items");
+        options.addOption(
+            "cf", true, "The strategy to extract the contextual information");
         options.addOption(
                 "carskit_model", true, "The CARSKit model to evaluate");
 
@@ -55,13 +57,16 @@ public class AlejandroRichContextEvaluator {
         String outputFolder = cmd.getOptionValue("o", defaultOutputFolder);
         String propertiesFile = cmd.getOptionValue("p", defaultPropertiesFile);
         Integer numTopics = cmd.hasOption("k") ?
-                Integer.parseInt(cmd.getOptionValue("k", defaultPropertiesFile)) :
+                Integer.parseInt(cmd.getOptionValue("k")) :
                 null;
         Integer fmNumFactors = cmd.hasOption("f") ?
-                Integer.parseInt(cmd.getOptionValue("f", defaultPropertiesFile)) :
+                Integer.parseInt(cmd.getOptionValue("f")) :
                 null;
         String itemType = cmd.hasOption("i") ?
-                cmd.getOptionValue("i", defaultPropertiesFile) :
+                cmd.getOptionValue("i") :
+                null;
+        String contextFormat = cmd.hasOption("cf") ?
+                cmd.getOptionValue("cf") :
                 null;
         RichContextResultsProcessor.EvaluationSet evaluationSet =
                 RichContextResultsProcessor.EvaluationSet.valueOf(
@@ -76,24 +81,25 @@ public class AlejandroRichContextEvaluator {
             case PREPARE_LIBFM:
                 RichContextDataInitializer.prepareLibfm(
                         cacheFolder, propertiesFile, numTopics, itemType,
-                        RecommenderLibrary.LIBFM);
+                        contextFormat, RecommenderLibrary.LIBFM);
                 break;
             case PREPARE_CARSKIT:
                 RichContextDataInitializer.prepareLibfm(
                         cacheFolder, propertiesFile, numTopics, itemType,
-                        RecommenderLibrary.CARSKIT);
+                        contextFormat, RecommenderLibrary.CARSKIT);
                 break;
             case PROCESS_LIBFM_RESULTS:
                 RichContextResultsProcessor.processLibfmResults(
                         cacheFolder, outputFolder, propertiesFile,
-                        evaluationSet, numTopics, fmNumFactors, itemType);
+                        evaluationSet, numTopics, fmNumFactors, itemType,
+                        contextFormat);
                 break;
             case PROCESS_CARSKIT_RESULTS:
                 String modelName = "carskit_" + carskitModel;
                 RichContextResultsProcessor.processLibfmResults(
                         cacheFolder, outputFolder, propertiesFile,
                         evaluationSet, numTopics, fmNumFactors, itemType,
-                        modelName);
+                        contextFormat, modelName);
                 break;
             default:
                 throw new UnsupportedOperationException(
