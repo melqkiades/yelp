@@ -5,13 +5,14 @@ import time
 import subprocess
 
 from etl.reviews_preprocessor import ReviewsPreprocessor
+from external.carskit import carskit_caller
 from external.libfm import libfm_caller
 from utils.constants import Constants, JAVA_CODE_FOLDER, PROPERTIES_FILE
 
 JAVA_COMMAND = 'java'
 
 
-def run_rival(task, dataset=None):
+def run_rival(task, dataset=None, carskit_model=None):
     print('%s: Run RiVaL' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     jar_file = 'richcontext-1.0-SNAPSHOT-jar-with-dependencies.jar'
@@ -32,25 +33,39 @@ def run_rival(task, dataset=None):
         '-d',
         Constants.CACHE_FOLDER,
         '-o',
-        Constants.RESULTS_FOLDER
+        Constants.RESULTS_FOLDER,
+        '-cf',
+        Constants.CONTEXT_FORMAT
     ]
 
     if dataset is not None:
         command.extend(['-s', dataset])
 
+    if carskit_model is not None:
+        command.extend(['-carskit_model', carskit_model])
+
     print(jar_folder)
-    print(command)
+    print(" ".join(command))
 
     p = subprocess.Popen(command, cwd=jar_folder)
     p.wait()
 
 
-def full_cycle(evaluation_set):
+def full_cycle_libfm(evaluation_set):
     reviews_preprocessor = ReviewsPreprocessor(use_cache=True)
     reviews_preprocessor.full_cycle()
     run_rival('prepare_libfm')
     libfm_caller.main()
     run_rival('process_libfm_results', evaluation_set)
+
+
+def full_cycle_carskit(evaluation_set):
+    reviews_preprocessor = ReviewsPreprocessor(use_cache=True)
+    reviews_preprocessor.full_cycle()
+    run_rival('prepare_carskit')
+    carskit_caller.main()
+    run_rival(
+        'process_carskit_results', carskit_model=Constants.CARSKIT_RECOMMENDERS)
 
 
 def main():
@@ -64,11 +79,21 @@ def main():
     parser.add_argument(
         '-s', '--evaluationset', metavar='string', type=str,
         nargs=1, help='The evaluation set')
+    parser.add_argument(
+        '-cf', '--contextformat', metavar='string', type=str, nargs=1,
+        help='The strategy to extract the contextual information')
+    parser.add_argument(
+        '-a', '--algorithm', metavar='string', type=str,
+        nargs=1, help='The algorithm used to produce recommendations')
     args = parser.parse_args()
     num_topics = args.numtopics[0] if args.numtopics is not None else None
     item_type = args.itemtype[0] if args.itemtype is not None else None
     evaluation_set =\
         args.evaluationset[0] if args.evaluationset is not None else None
+    context_format =\
+        args.contextformat[0] if args.contextformat is not None else None
+    algorithm =\
+        args.algorithm[0] if args.algorithm is not None else 'libfm'
 
     if num_topics is not None:
         Constants.update_properties(
@@ -76,8 +101,20 @@ def main():
     if item_type is not None:
         Constants.update_properties(
             {Constants.BUSINESS_TYPE_FIELD: item_type})
+    if context_format is not None:
+        Constants.update_properties(
+            {Constants.CONTEXT_FORMAT_FIELD: context_format})
+        print('\n\n%s\n\n' % context_format)
+    if algorithm.startswith('carskit_'):
+        carskit_recommender = algorithm.split('carskit_')[1]
+        Constants.update_properties(
+            {'carskit_recommenders': carskit_recommender})
+        full_cycle_carskit(evaluation_set)
+    elif algorithm == 'libfm':
+        full_cycle_libfm(evaluation_set)
+    else:
+        raise ValueError('Unknown algorithm \'%s\'' % algorithm)
 
-    full_cycle(evaluation_set)
 
 
 # start = time.time()

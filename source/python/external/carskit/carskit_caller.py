@@ -17,23 +17,14 @@ JAVA_COMMAND = 'java'
 # CARSKIT_JAR = 'CARSKit-v0.3.0.jar'
 CARSKIT_JAR = 'CARSKit.jar'
 CARSKIT_ORIGINAL_CONF_FILE = Constants.CARSKIT_FOLDER + 'setting.conf'
-# CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
-#         'recsys_contextual_records', '', Constants.CACHE_FOLDER + 'rival/',
-#         None, None, True, True, normalize_topics=True)[:-1] + '/fold_%d/'
-# CARSKIT_RATINGS_FOLD_FOLDER = Constants.generate_file_name(
-#         'recsys_formatted_context_records', '', Constants.CACHE_FOLDER + 'rival/',
-#         None, None, True, True, uses_carskit=False, normalize_topics=True,
-#         format_context=True)[:-1] + '/fold_%d/'
-CARSKIT_CONF_FOLD_FOLDER = Constants.RIVAL_RATINGS_FOLD_FOLDER + 'carskit/'
-CARSKIT_MODIFIED_CONF_FILE = CARSKIT_CONF_FOLD_FOLDER + '%s.conf'
 OUTPUT_FOLDER = Constants.DATASET_FOLDER + 'carskit_results/'
 
 
 def run_carskit(fold):
 
     jar_file = Constants.CARSKIT_FOLDER + CARSKIT_JAR
-    # carskit_folder = '/Users/fpena/tmp/trial-carskit/CARSKit/out/artifacts/CARSKit_jar/'
-    # jar_file = carskit_folder + CARSKIT_JAR
+    CARSKIT_CONF_FOLD_FOLDER = Constants.RIVAL_RATINGS_FOLD_FOLDER + 'carskit/'
+    CARSKIT_MODIFIED_CONF_FILE = CARSKIT_CONF_FOLD_FOLDER + '%s.conf'
 
     command = [
         JAVA_COMMAND,
@@ -143,13 +134,9 @@ def full_cycle(fold):
     # file_name = 'results_all_2016.txt'
     # carskit_results_file = OUTPUT_FOLDER + file_name
 
-    # modify_properties_file(fold)
+    modify_properties_file(fold)
     run_carskit(fold)
     export_results(fold)
-
-    # TODO: take the GlobalAvg-rating-predictions.txt file, extract the last
-    # TODO: column and export it in a file with the same format as
-    # TODO: libfm_results_ranking_fmfactors-10.txt
 
     # with open(carskit_results_file) as results_file:
     #     results = results_file.readlines()
@@ -166,6 +153,8 @@ def modify_properties_file(fold):
     with open(CARSKIT_ORIGINAL_CONF_FILE) as read_file:
         properties = jprops.load_properties(read_file, collections.OrderedDict)
 
+    CARSKIT_CONF_FOLD_FOLDER = Constants.RIVAL_RATINGS_FOLD_FOLDER + 'carskit/'
+    CARSKIT_MODIFIED_CONF_FILE = CARSKIT_CONF_FOLD_FOLDER + '%s.conf'
     recommender = Constants.CARSKIT_RECOMMENDERS
     carskit_conf_fold_folder = CARSKIT_CONF_FOLD_FOLDER % fold
     ratings_fold_folder = Constants.RIVAL_RATINGS_FOLD_FOLDER % fold
@@ -225,7 +214,7 @@ def analyze_results():
     data_frame.to_csv('/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_carskit.csv')
 
 
-def main():
+def old_main():
 
     # modify_properties_file()
     # run_carskit()
@@ -325,7 +314,7 @@ def main():
         cycle_start = time.time()
         num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
         for fold in range(num_folds):
-            modify_properties_file(fold)
+            # modify_properties_file(fold)
             full_cycle(fold)
         cycle_end = time.time()
         cycle_time = cycle_end - cycle_start
@@ -333,8 +322,19 @@ def main():
     # analyze_results()
 
 
+def main():
+
+    cycle_start = time.time()
+    num_folds = Constants.CROSS_VALIDATION_NUM_FOLDS
+    for fold in range(num_folds):
+        full_cycle(fold)
+    cycle_end = time.time()
+    cycle_time = cycle_end - cycle_start
+    print("Cycle time = %f seconds" % cycle_time)
+
+
 # start = time.time()
-# main()
+# old_main()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
