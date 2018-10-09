@@ -35,6 +35,9 @@ public class AlejandroRichContextEvaluator {
             "cf", true, "The strategy to extract the contextual information");
         options.addOption(
                 "carskit_model", true, "The CARSKit model to evaluate");
+        options.addOption(
+                "carskit_params", true,
+                "The hyperparameters for the CARSKit model");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
@@ -71,9 +74,8 @@ public class AlejandroRichContextEvaluator {
         RichContextResultsProcessor.EvaluationSet evaluationSet =
                 RichContextResultsProcessor.EvaluationSet.valueOf(
                 cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
-        String carskitModel = cmd.hasOption("carskit_model") ?
-                cmd.getOptionValue("carskit_model", null) :
-                null;
+        String carskitModel = cmd.getOptionValue("carskit_model", null);
+        String carskitParams = cmd.getOptionValue("carskit_params", "");
 
         long startTime = System.currentTimeMillis();
 
@@ -99,7 +101,7 @@ public class AlejandroRichContextEvaluator {
                 RichContextResultsProcessor.processLibfmResults(
                         cacheFolder, outputFolder, propertiesFile,
                         evaluationSet, numTopics, fmNumFactors, itemType,
-                        contextFormat, modelName);
+                        contextFormat, modelName, carskitParams);
                 break;
             default:
                 throw new UnsupportedOperationException(

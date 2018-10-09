@@ -132,7 +132,8 @@ public class RichContextResultsProcessor {
                 properties.getFmNumFactors() :
                 paramFmNumFactors;
         outputFile = outputFolder +
-                "rival_" + dataset.toString().toLowerCase() + "_results_folds.csv";
+                "rival_" + dataset.toString().toLowerCase() +
+                "_results_folds_params.csv";
 
         String jsonRatingsFile = cacheFolder + dataset.toString().toLowerCase() +
                 "_recsys_formatted_context_records_ensemble_" +
@@ -364,7 +365,8 @@ public class RichContextResultsProcessor {
      * @return a {@link Map} with the hyperparameters of the algorithm and the
      * performance metrics.
      */
-    private Map<String, String> evaluate(String algorithm) throws IOException {
+    private Map<String, String> evaluate(String algorithm, String params)
+            throws IOException {
 
         System.out.println("Evaluate");
 
@@ -432,6 +434,7 @@ public class RichContextResultsProcessor {
         results.put("Context_Format", contextFormat.toString().toLowerCase());
         results.put("Evaluation_Set", String.valueOf(evaluationSet).toLowerCase());
         results.put("fm_num_factors", String.valueOf(fmNumFactors));
+        results.put("Parameters", params);
         results.put("NDCG@" + at, String.valueOf(ndcgRes / numFolds));
         results.put("Precision@" + at, String.valueOf(precisionRes / numFolds));
         results.put("Recall@" + at, String.valueOf(recallRes / numFolds));
@@ -445,6 +448,7 @@ public class RichContextResultsProcessor {
         System.out.println("Context_Format: " + contextFormat.toString());
         System.out.println("Evaluation_Set: " + evaluationSet);
         System.out.println("fm_num_factors: " + fmNumFactors);
+        System.out.println("Parameters: " + params);
         System.out.println("NDCG@" + at + ": " + ndcgRes / numFolds);
         System.out.println("Precision@" + at + ": " + precisionRes / numFolds);
         System.out.println("Recall@" + at + ": " + recallRes / numFolds);
@@ -522,7 +526,7 @@ public class RichContextResultsProcessor {
 
         RichContextResultsProcessor.processLibfmResults(
                 cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics, fmNumFactors, itemType, contextFormat, "libfm"
+                numTopics, fmNumFactors, itemType, contextFormat, "libfm", ""
         );
     }
 
@@ -543,7 +547,7 @@ public class RichContextResultsProcessor {
             String cacheFolder, String outputFolder, String propertiesFile,
             EvaluationSet evaluationSet, Integer numTopics,
             Integer fmNumFactors, String itemType, String contextFormat,
-            String model)
+            String model, String params)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor evaluator = new RichContextResultsProcessor(
@@ -561,7 +565,7 @@ public class RichContextResultsProcessor {
             throw new UnsupportedOperationException(msg);
         }
         evaluator.prepareStrategy(model);
-        Map<String, String> results = evaluator.evaluate(model);
+        Map<String, String> results = evaluator.evaluate(model, params);
 
         List<Map<String, String>> resultsList = new ArrayList<>();
         resultsList.add(results);
