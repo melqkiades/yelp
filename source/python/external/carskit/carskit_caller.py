@@ -182,8 +182,24 @@ def modify_properties_file(fold):
         '-folder %s -verbose on, off --to-file %s%s_summary.txt' % (
             ratings_fold_folder, ratings_fold_folder, recommender)
 
+    params = process_carskit_parameters(Constants.CARSKIT_PARAMETERS)
+
+    for key, value in params.items():
+        properties[key] = value
+
     with open(modified_file, 'w') as write_file:
         jprops.store_properties(write_file, properties)
+
+
+def process_carskit_parameters(carskit_parameters):
+
+    if carskit_parameters is None:
+        return None
+
+    print(carskit_parameters)
+
+    param_map = dict(item.split("=") for item in carskit_parameters.split(","))
+    return param_map
 
 
 def write_results_to_json(json_file, results):
@@ -332,9 +348,12 @@ def main():
     cycle_time = cycle_end - cycle_start
     print("Cycle time = %f seconds" % cycle_time)
 
+    # params = 'num.factors=10;num.max.iter=100;num.neighbors=5;DCW=-wt 0.9 -wd 0.4 -p 5 -lp 2.05 -lg 2.05 -th 0.8'
+    # print(process_carskit_parameters(params))
+
 
 # start = time.time()
-# old_main()
+# main()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)

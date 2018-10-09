@@ -44,6 +44,9 @@ def run_rival(task, dataset=None, carskit_model=None):
     if carskit_model is not None:
         command.extend(['-carskit_model', carskit_model])
 
+    if Constants.CARSKIT_PARAMETERS is not None:
+        command.extend(['-carskit_params', Constants.CARSKIT_PARAMETERS])
+
     print(jar_folder)
     print(" ".join(command))
 
@@ -85,6 +88,9 @@ def main():
     parser.add_argument(
         '-a', '--algorithm', metavar='string', type=str,
         nargs=1, help='The algorithm used to produce recommendations')
+    parser.add_argument(
+        '-cp', '--carskitparams', metavar='string', type=str,
+        nargs=1, help='The hyperparameters for the CARSKit model')
     args = parser.parse_args()
     num_topics = args.numtopics[0] if args.numtopics is not None else None
     item_type = args.itemtype[0] if args.itemtype is not None else None
@@ -94,6 +100,8 @@ def main():
         args.contextformat[0] if args.contextformat is not None else None
     algorithm =\
         args.algorithm[0] if args.algorithm is not None else 'libfm'
+    carskit_params =\
+        args.carskitparams[0] if args.carskitparams is not None else None
 
     if num_topics is not None:
         Constants.update_properties(
@@ -104,7 +112,9 @@ def main():
     if context_format is not None:
         Constants.update_properties(
             {Constants.CONTEXT_FORMAT_FIELD: context_format})
-        print('\n\n%s\n\n' % context_format)
+    if carskit_params is not None:
+        Constants.update_properties(
+            {Constants.CARSKIT_PARAMETERS_FIELD: carskit_params})
     if algorithm.startswith('carskit_'):
         carskit_recommender = algorithm.split('carskit_')[1]
         Constants.update_properties(

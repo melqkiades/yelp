@@ -30,10 +30,12 @@ class Constants(object):
     BOW_TYPE_FIELD = 'bow_type'
     BUSINESS_TYPE_FIELD = 'business_type'
     CACHE_TOPIC_MODEL_FIELD = 'cache_topic_model'
+    CARSKIT_PARAMETERS_FIELD = 'carskit_parameters'
     CONTEXT_EXTRACTOR_ALPHA_FIELD = 'context_extractor_alpha'
     CONTEXT_EXTRACTOR_BETA_FIELD = 'context_extractor_beta'
     CONTEXT_EXTRACTOR_EPSILON_FIELD = 'context_extractor_epsilon'
     CONTEXT_FIELD = 'context'
+    CONTEXT_FORMAT_FIELD = 'context_format'
     CONTEXT_TOPICS_FIELD = 'context_topics'
     CONTEXT_WORDS_FIELD = 'context_words'
     CORPUS_FIELD = 'corpus'
@@ -111,7 +113,7 @@ class Constants(object):
     DATASET_FOLDER = '/home/fpena/data/'
     LIBFM_FOLDER = '/home/fpena/libfm-master/bin/'
     TOPIC_ENSEMBLE_FOLDER = '/home/fpena/topic-ensemble/'
-    CARSKIT_FOLDER = '/home/fpena/CARSKit/jar/'
+    CARSKIT_FOLDER = '/home/fpena/CARSKit/'
     # DATASET_FOLDER = '/Users/fpena/UCC/Thesis/datasets/context/stuff/'
     # LIBFM_FOLDER = '/Users/fpena/tmp/libfm-master/bin/'
     # TOPIC_ENSEMBLE_FOLDER = '/Users/fpena/tmp/topic-ensemble/'
@@ -193,6 +195,7 @@ class Constants(object):
     TOPIC_MODEL_NORMALIZE = _properties['topic_model_normalize']
     CONTEXT_FORMAT = _properties['context_format']
     RIVAL_EVALUATION_STRATEGY = _properties['rival_evaluation_strategy']
+    CARSKIT_PARAMETERS = _properties['carskit_parameters']
 
     # Main Files
     CACHE_FOLDER = DATASET_FOLDER + 'cache_context/'
@@ -355,6 +358,8 @@ class Constants(object):
             Constants._properties['context_format']
         Constants.RIVAL_EVALUATION_STRATEGY = \
             Constants._properties['rival_evaluation_strategy']
+        Constants.CARSKIT_PARAMETERS = \
+            Constants._properties['carskit_parameters']
 
         # Main Files
         Constants.CACHE_FOLDER = Constants.DATASET_FOLDER + 'cache_context/'
