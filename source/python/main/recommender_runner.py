@@ -3,10 +3,16 @@ import argparse
 import time
 
 import subprocess
+import uuid
+
+from os.path import expanduser
+
+import itertools
 
 from etl.reviews_preprocessor import ReviewsPreprocessor
 from external.carskit import carskit_caller
 from external.libfm import libfm_caller
+from utils import constants
 from utils.constants import Constants, JAVA_CODE_FOLDER, PROPERTIES_FILE
 
 JAVA_COMMAND = 'java'
@@ -126,9 +132,88 @@ def main():
         raise ValueError('Unknown algorithm \'%s\'' % algorithm)
 
 
+def generate_execution_scripts():
+    print('%s: Generating recommender_runner scripts' %
+          time.strftime("%Y/%m/%d-%H:%M:%S"))
+
+    algorithms = [
+        'carskit_CAMF_C',
+        'carskit_CAMF_CI',
+        'carskit_CAMF_CU',
+        'carskit_CAMF_CUCI',
+        'carskit_DCR',
+        'carskit_DCW',
+        'libfm',
+    ]
+
+    algorithm_params_map = {
+        'carskit_CAMF_C': {'num.factors': [10, 20, 30, 40]},
+        'carskit_CAMF_CI': {'num.factors': [10, 20, 30, 40]},
+        'carskit_CAMF_CU': {'num.factors': [10, 20, 30, 40]},
+        'carskit_CAMF_CUCI': {'num.factors': [10, 20, 30, 40]},
+        'carskit_DCR': {
+            'DCR': [
+                '-wt 0.9 -wd 0.4 -p 3 -lp 2.05 -lg 2.05',
+                '-wt 0.9 -wd 0.4 -p 5 -lp 2.05 -lg 2.05',
+            ]
+        },
+        'carskit_DCW': {
+            'DCW': [
+                '-wt 0.9 -wd 0.4 -p 3 -lp 2.05 -lg 2.05 -th 0.5',
+                '-wt 0.9 -wd 0.4 -p 3 -lp 2.05 -lg 2.05 -th 0.8',
+                '-wt 0.9 -wd 0.4 -p 5 -lp 2.05 -lg 2.05 -th 0.5',
+                '-wt 0.9 -wd 0.4 -p 5 -lp 2.05 -lg 2.05 -th 0.8',
+            ]
+        },
+        'libfm': {}
+    }
+
+    evaluation_sets = ['test_users', 'test_only_users']
+    context_formats = ['predefined_context', 'top_words']
+
+    code_path = constants.PYTHON_CODE_FOLDER
+    python_path = "PYTHONPATH='" + code_path[:-1] + "' "
+    python_command = "stdbuf -oL nohup python "
+    base_file_name = "recommender_runner-" + Constants.ITEM_TYPE
+    log_file = " > ~/logs/" + base_file_name + "_%s.log"
+    commands_dir = expanduser("~") + "/tmp/"
+    commands_file = commands_dir + base_file_name + ".sh"
+    command_list = []
+
+    for evaluation_set in evaluation_sets:
+        for context_format in context_formats:
+            for algorithm in algorithms:
+                for param_name, param_values in algorithm_params_map[algorithm].items():
+                    for param_value in param_values:
+                        # print(algorithm, param_name, param_value)
+
+                        params = "'%s=%s'" % (param_name, param_value)
+
+                        python_file = code_path + \
+                                      "main/recommender_runner.py -k %s -i %s -s %s -cf %s -a %s -cp %s" % (
+                                Constants.TOPIC_MODEL_NUM_TOPICS,
+                                Constants.ITEM_TYPE,
+                                evaluation_set,
+                                context_format,
+                                algorithm,
+                                params,
+                        )
+
+                        full_command =\
+                            python_path + python_command + python_file +\
+                            log_file % uuid.uuid4().hex
+                        # print(python_file)
+                        print(full_command)
+                        command_list.append(full_command)
+    #
+    with open(commands_file, "w") as write_file:
+        for command in command_list:
+            write_file.write("%s\n" % command)
+
 
 # start = time.time()
 # main()
+# generate_execution_scripts()
 # end = time.time()
 # total_time = end - start
 # print("Total time = %f seconds" % total_time)
