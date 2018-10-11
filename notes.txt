@@ -102,6 +102,8 @@
   \@usebib[natbib,har2nat]{agsm}{Harvard}{}  % Added by franpena
   Then recompile the uccthesis.ins file and move the generated files to the /Users/fpena/Library/texmf/tex/latex/ucc folder
   > pdflatex uccthesis.ins
+- Install from pip using proxy
+  http_proxy="http://csproxy.ucc.ie:80" https_proxy="http://csproxy.ucc.ie:80" pip install jprops
 
 ****************
 Update from a git server overwritting any local changes

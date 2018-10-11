@@ -194,9 +194,9 @@ def modify_properties_file(fold):
 def process_carskit_parameters(carskit_parameters):
 
     if carskit_parameters is None:
-        return None
+        return {}
 
-    print(carskit_parameters)
+    print('%s' % carskit_parameters)
 
     param_map = dict(item.split("=") for item in carskit_parameters.split(","))
     return param_map

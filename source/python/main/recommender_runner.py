@@ -7,8 +7,6 @@ import uuid
 
 from os.path import expanduser
 
-import itertools
-
 from etl.reviews_preprocessor import ReviewsPreprocessor
 from external.carskit import carskit_caller
 from external.libfm import libfm_caller
@@ -18,7 +16,7 @@ from utils.constants import Constants, JAVA_CODE_FOLDER, PROPERTIES_FILE
 JAVA_COMMAND = 'java'
 
 
-def run_rival(task, dataset=None, carskit_model=None):
+def run_rival(task, evaluation_set=None, carskit_model=None):
     print('%s: Run RiVaL' % time.strftime("%Y/%m/%d-%H:%M:%S"))
 
     jar_file = 'richcontext-1.0-SNAPSHOT-jar-with-dependencies.jar'
@@ -40,12 +38,14 @@ def run_rival(task, dataset=None, carskit_model=None):
         Constants.CACHE_FOLDER,
         '-o',
         Constants.RESULTS_FOLDER,
+        '-s',
+        Constants.RIVAL_EVALUATION_STRATEGY,
         '-cf',
         Constants.CONTEXT_FORMAT
     ]
 
-    if dataset is not None:
-        command.extend(['-s', dataset])
+    if evaluation_set is not None:
+        command.extend(['-e', evaluation_set])
 
     if carskit_model is not None:
         command.extend(['-carskit_model', carskit_model])
@@ -74,7 +74,8 @@ def full_cycle_carskit(evaluation_set):
     run_rival('prepare_carskit')
     carskit_caller.main()
     run_rival(
-        'process_carskit_results', carskit_model=Constants.CARSKIT_RECOMMENDERS)
+        'process_carskit_results', evaluation_set,
+        carskit_model=Constants.CARSKIT_RECOMMENDERS)
 
 
 def main():
@@ -86,7 +87,10 @@ def main():
         '-i', '--itemtype', metavar='string', type=str,
         nargs=1, help='The type of items')
     parser.add_argument(
-        '-s', '--evaluationset', metavar='string', type=str,
+        '-s', '--strategy', metavar='string', type=str,
+        nargs=1, help='The evaluation strategy (user_test or rel_plus_n)')
+    parser.add_argument(
+        '-e', '--evaluationset', metavar='string', type=str,
         nargs=1, help='The evaluation set')
     parser.add_argument(
         '-cf', '--contextformat', metavar='string', type=str, nargs=1,
@@ -100,6 +104,8 @@ def main():
     args = parser.parse_args()
     num_topics = args.numtopics[0] if args.numtopics is not None else None
     item_type = args.itemtype[0] if args.itemtype is not None else None
+    strategy =\
+        args.strategy[0] if args.strategy is not None else None
     evaluation_set =\
         args.evaluationset[0] if args.evaluationset is not None else None
     context_format =\
@@ -118,6 +124,9 @@ def main():
     if context_format is not None:
         Constants.update_properties(
             {Constants.CONTEXT_FORMAT_FIELD: context_format})
+    if strategy is not None:
+        Constants.update_properties(
+            {Constants.RIVAL_EVALUATION_STRATEGY_FIELD: strategy})
     if carskit_params is not None:
         Constants.update_properties(
             {Constants.CARSKIT_PARAMETERS_FIELD: carskit_params})
@@ -168,6 +177,7 @@ def generate_execution_scripts():
         'libfm': {}
     }
 
+    strategies = ['user_test', 'rel_plus_n']
     evaluation_sets = ['test_users', 'test_only_users']
     context_formats = ['predefined_context', 'top_words']
 
@@ -175,36 +185,40 @@ def generate_execution_scripts():
     python_path = "PYTHONPATH='" + code_path[:-1] + "' "
     python_command = "stdbuf -oL nohup python "
     base_file_name = "recommender_runner-" + Constants.ITEM_TYPE
-    log_file = " > ~/logs/" + base_file_name + "_%s.log"
+    log_file = " > ~/logs/" + base_file_name + "_%d_%s.log"
     commands_dir = expanduser("~") + "/tmp/"
     commands_file = commands_dir + base_file_name + ".sh"
     command_list = []
+    i = 1
 
-    for evaluation_set in evaluation_sets:
-        for context_format in context_formats:
-            for algorithm in algorithms:
-                for param_name, param_values in algorithm_params_map[algorithm].items():
-                    for param_value in param_values:
-                        # print(algorithm, param_name, param_value)
+    for strategy in strategies:
+        for evaluation_set in evaluation_sets:
+            for context_format in context_formats:
+                for algorithm in algorithms:
+                    for param_name, param_values in algorithm_params_map[algorithm].items():
+                        for param_value in param_values:
+                            # print(algorithm, param_name, param_value)
 
-                        params = "'%s=%s'" % (param_name, param_value)
+                            params = "'%s=%s'" % (param_name, param_value)
 
-                        python_file = code_path + \
-                                      "main/recommender_runner.py -k %s -i %s -s %s -cf %s -a %s -cp %s" % (
-                                Constants.TOPIC_MODEL_NUM_TOPICS,
-                                Constants.ITEM_TYPE,
-                                evaluation_set,
-                                context_format,
-                                algorithm,
-                                params,
-                        )
+                            python_file = code_path + \
+                                          "main/recommender_runner.py -k %s -i %s -s %s -e %s -cf %s -a %s -cp %s" % (
+                                    Constants.TOPIC_MODEL_NUM_TOPICS,
+                                    Constants.ITEM_TYPE,
+                                    strategy,
+                                    evaluation_set,
+                                    context_format,
+                                    algorithm,
+                                    params,
+                            )
 
-                        full_command =\
-                            python_path + python_command + python_file +\
-                            log_file % uuid.uuid4().hex
-                        # print(python_file)
-                        print(full_command)
-                        command_list.append(full_command)
+                            full_command =\
+                                python_path + python_command + python_file +\
+                                log_file % (i, uuid.uuid4().hex)
+                            # print(python_file)
+                            # print(full_command)
+                            command_list.append(full_command)
+                            i += 1
     #
     with open(commands_file, "w") as write_file:
         for command in command_list:
