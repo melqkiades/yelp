@@ -75,6 +75,7 @@ class Constants(object):
     RATING_FIELD = 'stars'
     RESAMPLER_FIELD = 'resampler'
     REVIEW_ID_FIELD = 'review_id'
+    RIVAL_EVALUATION_STRATEGY_FIELD = 'rival_evaluation_strategy'
     SHUFFLE_DATA_FIELD = 'shuffle_data'
     SOLVER_FIELD = 'solver'
     TEST_CONTEXT_REVIEWS_ONLY_FIELD = 'test_context_reviews_only'
