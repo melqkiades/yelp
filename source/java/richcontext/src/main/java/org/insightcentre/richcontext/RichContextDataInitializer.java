@@ -33,15 +33,18 @@ public class RichContextDataInitializer {
 
 
     public RichContextDataInitializer(
-            String cacheFolder, String propertiesFile, Integer paramNumTopics,
-            String itemType, String contextFormatPar)
+            String cacheFolder, String propertiesFile,
+            RichContextResultsProcessor.Strategy strategy,
+            Integer paramNumTopics, String itemType, String contextFormatPar)
             throws IOException {
 
         Properties properties = Properties.loadProperties(propertiesFile);
         numFolds = properties.getCrossValidationNumFolds();
         seed = properties.getSeed();
-        strategy = RichContextResultsProcessor.Strategy.valueOf(
-                (properties.getStrategy().toUpperCase(Locale.ENGLISH)));
+        this.strategy = (strategy == null) ?
+                RichContextResultsProcessor.Strategy.valueOf(
+                        properties.getStrategy().toUpperCase(Locale.ENGLISH)) :
+                strategy;
         RichContextResultsProcessor.ContextFormat contextFormat =
                 (contextFormatPar == null) ?
                 RichContextResultsProcessor.ContextFormat.valueOf(
@@ -221,12 +224,13 @@ public class RichContextDataInitializer {
      * recommender
      */
     public static void prepareLibfm(
-            String cacheFolder, String propertiesFile, Integer numTopics,
+            String cacheFolder, String propertiesFile,
+            RichContextResultsProcessor.Strategy strategy, Integer numTopics,
             String itemType, String contextFormat, RecommenderLibrary library)
             throws IOException {
 
         RichContextDataInitializer evaluator = new RichContextDataInitializer(
-                cacheFolder, propertiesFile, numTopics, itemType,
+                cacheFolder, propertiesFile, strategy, numTopics, itemType,
                 contextFormat
         );
         evaluator.prepareSplits();

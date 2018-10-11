@@ -102,8 +102,9 @@ public class RichContextResultsProcessor {
 
     public RichContextResultsProcessor(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet, Integer paramNumTopics,
-            Integer paramFmNumFactors,String itemType, String contextFormat)
+            Strategy strategy, EvaluationSet evaluationSet,
+            Integer paramNumTopics, Integer paramFmNumFactors,String itemType,
+            String contextFormat)
             throws IOException {
 
 
@@ -112,8 +113,10 @@ public class RichContextResultsProcessor {
         at = properties.getTopN();
         relevanceThreshold = properties.getRelevanceThreshold();
         seed = properties.getSeed();
-        strategy = Strategy.valueOf(
-                (properties.getStrategy().toUpperCase(Locale.ENGLISH)));
+        this.strategy = (strategy == null) ?
+                RichContextResultsProcessor.Strategy.valueOf(
+                    properties.getStrategy().toUpperCase(Locale.ENGLISH)) :
+                strategy;
         additionalItems = properties.getTopnNumItems();
         this.contextFormat = (contextFormat == null) ?
                 RichContextResultsProcessor.ContextFormat.valueOf(
@@ -520,13 +523,14 @@ public class RichContextResultsProcessor {
      */
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet, Integer numTopics,
+            Strategy strategy, EvaluationSet evaluationSet, Integer numTopics,
             Integer fmNumFactors, String itemType, String contextFormat)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor.processLibfmResults(
-                cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics, fmNumFactors, itemType, contextFormat, "libfm", ""
+                cacheFolder, outputFolder, propertiesFile, strategy,
+                evaluationSet, numTopics, fmNumFactors, itemType, contextFormat,
+                "libfm", ""
         );
     }
 
@@ -545,14 +549,15 @@ public class RichContextResultsProcessor {
      */
     public static void processLibfmResults(
             String cacheFolder, String outputFolder, String propertiesFile,
-            EvaluationSet evaluationSet, Integer numTopics,
+            Strategy strategy, EvaluationSet evaluationSet, Integer numTopics,
             Integer fmNumFactors, String itemType, String contextFormat,
             String model, String params)
             throws IOException, InterruptedException {
 
         RichContextResultsProcessor evaluator = new RichContextResultsProcessor(
-                cacheFolder, outputFolder, propertiesFile, evaluationSet,
-                numTopics, fmNumFactors, itemType, contextFormat);
+                cacheFolder, outputFolder, propertiesFile, strategy,
+                evaluationSet, numTopics, fmNumFactors, itemType, contextFormat
+        );
 
         if (model.equals("libfm")) {
             evaluator.parseRecommendationResultsLibfm();

@@ -26,7 +26,9 @@ public class AlejandroRichContextEvaluator {
         options.addOption("d", true, "The folder containing the data file");
         options.addOption("o", true, "The folder containing the output file");
         options.addOption("p", true, "The properties file path");
-        options.addOption("s", true, "The evaluation set");
+        options.addOption(
+                "s", true, "The evaluation strategy (user_test or rel_plus_n");
+        options.addOption("e", true, "The evaluation set");
         options.addOption("k", true, "The number of topics");
         options.addOption(
             "f", true, "The number of factorization machines factors");
@@ -49,6 +51,7 @@ public class AlejandroRichContextEvaluator {
         String defaultCacheFolder =
                 "/Users/fpena/UCC/Thesis/datasets/context/stuff/cache_context/";
         String defaultEvaluationSet = "test_users";
+        String defaultStrategy = "user_test";
 //        String defaultProcessingTask = "prepare_libfm";
         String defaultProcessingTask = "process_libfm_results";
 
@@ -71,9 +74,12 @@ public class AlejandroRichContextEvaluator {
         String contextFormat = cmd.hasOption("cf") ?
                 cmd.getOptionValue("cf") :
                 null;
+        RichContextResultsProcessor.Strategy strategy =
+                RichContextResultsProcessor.Strategy.valueOf(
+                cmd.getOptionValue("s", defaultStrategy).toUpperCase());
         RichContextResultsProcessor.EvaluationSet evaluationSet =
                 RichContextResultsProcessor.EvaluationSet.valueOf(
-                cmd.getOptionValue("s", defaultEvaluationSet).toUpperCase());
+                cmd.getOptionValue("e", defaultEvaluationSet).toUpperCase());
         String carskitModel = cmd.getOptionValue("carskit_model", null);
         String carskitParams = cmd.getOptionValue("carskit_params", "");
 
@@ -82,24 +88,24 @@ public class AlejandroRichContextEvaluator {
         switch (processingTask) {
             case PREPARE_LIBFM:
                 RichContextDataInitializer.prepareLibfm(
-                        cacheFolder, propertiesFile, numTopics, itemType,
-                        contextFormat, RecommenderLibrary.LIBFM);
+                        cacheFolder, propertiesFile, strategy, numTopics,
+                        itemType, contextFormat, RecommenderLibrary.LIBFM);
                 break;
             case PREPARE_CARSKIT:
                 RichContextDataInitializer.prepareLibfm(
-                        cacheFolder, propertiesFile, numTopics, itemType,
-                        contextFormat, RecommenderLibrary.CARSKIT);
+                        cacheFolder, propertiesFile, strategy, numTopics,
+                        itemType, contextFormat, RecommenderLibrary.CARSKIT);
                 break;
             case PROCESS_LIBFM_RESULTS:
                 RichContextResultsProcessor.processLibfmResults(
-                        cacheFolder, outputFolder, propertiesFile,
+                        cacheFolder, outputFolder, propertiesFile, strategy,
                         evaluationSet, numTopics, fmNumFactors, itemType,
                         contextFormat);
                 break;
             case PROCESS_CARSKIT_RESULTS:
                 String modelName = "carskit_" + carskitModel;
                 RichContextResultsProcessor.processLibfmResults(
-                        cacheFolder, outputFolder, propertiesFile,
+                        cacheFolder, outputFolder, propertiesFile, strategy,
                         evaluationSet, numTopics, fmNumFactors, itemType,
                         contextFormat, modelName, carskitParams);
                 break;
