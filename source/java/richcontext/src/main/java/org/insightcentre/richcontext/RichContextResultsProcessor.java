@@ -156,6 +156,7 @@ public class RichContextResultsProcessor {
                 "Context_Format",
                 "Evaluation_Set",
                 "fm_num_factors",
+                "Parameters",
                 "NDCG@" + at,
                 "Precision@" + at,
                 "Recall@" + at,
