@@ -152,6 +152,9 @@ def generate_execution_scripts():
         'carskit_CAMF_CUCI',
         'carskit_DCR',
         'carskit_DCW',
+        'BPMF',
+        'BiasedMF',
+        'NMF',
         'libfm',
     ]
 
@@ -160,6 +163,9 @@ def generate_execution_scripts():
         'carskit_CAMF_CI': {'num.factors': [10, 20, 30, 40]},
         'carskit_CAMF_CU': {'num.factors': [10, 20, 30, 40]},
         'carskit_CAMF_CUCI': {'num.factors': [10, 20, 30, 40]},
+        'BPMF': {'num.factors': [10, 20, 30, 40]},
+        'BiasedMF': {'num.factors': [10, 20, 30, 40]},
+        'NMF': {'num.factors': [10, 20, 30, 40]},
         'carskit_DCR': {
             'DCR': [
                 '-wt 0.9 -wd 0.4 -p 3 -lp 2.05 -lg 2.05',
