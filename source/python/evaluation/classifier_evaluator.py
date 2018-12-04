@@ -326,12 +326,20 @@ def full_cycle():
     count_specific_generic(my_records)
 
     # Error estimation
+    error_estimation_results = []
     best_classifier = None
     best_score = 0.0
     for classifier, params in PARAM_GRID_MAP.items():
         # print('Classifier: %s' % classifier)
         cv = StratifiedKFold(Constants.CROSS_VALIDATION_NUM_FOLDS)
         score = error_estimation(x_matrix, y_vector, params, cv, SCORE_METRIC).mean()
+        error_estimation_results.append(
+            {
+                'classifier': classifier,
+                'accuracy': score,
+                Constants.BUSINESS_TYPE_FIELD: Constants.ITEM_TYPE
+            }
+        )
         print('%s score: %f' % (classifier, score))
 
         if score > best_score:
@@ -359,10 +367,21 @@ def full_cycle():
     # json_file_name = Constants.generate_file_name(
     #     'classifier_results', 'json', Constants.RESULTS_FOLDER, None,
     #     None, False)
+    csv_file_name2 = Constants.RESULTS_FOLDER + 'classifier_results.csv'
+    json_file_name2 = Constants.RESULTS_FOLDER + 'classifier_results.json'
+
 
     # results = get_scores(final_grid_search_cv.cv_results_)
     # csv_file = '/Users/fpena/tmp/' + Constants.ITEM_TYPE + '_new_reviews_classifier_results.csv'
-    # ETLUtils.save_csv_file(csv_file, results, results[0].keys())
+    # ETLUtils.save_csv_file(
+    #     csv_file_name, error_estimation_results,
+    #     error_estimation_results[0].keys())
+    # ETLUtils.save_json_file(json_file_name, error_estimation_results)
+
+    for result in error_estimation_results:
+        ETLUtils.write_row_to_csv(
+            csv_file_name2, result)
+        ETLUtils.write_row_to_json(json_file_name2, result)
     #
     # print(csv_file)
 
