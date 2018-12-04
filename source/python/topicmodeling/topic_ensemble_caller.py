@@ -220,7 +220,7 @@ def create_several_topic_models():
 
     run_local_parse_directory()
 
-    random_seeds = range(1, 101)
+    random_seeds = range(1, Constants.TOPIC_MODEL_STABILITY_ITERATIONS + 1)
     total_topic_models = len(random_seeds)
     for seed in random_seeds:
         print('\n\n\nCreating %d of %d topic models' % (seed, total_topic_models))

@@ -6,6 +6,7 @@ import numpy
 import time
 
 from etl import ETLUtils
+from topicmodeling import topic_ensemble_caller
 from topicmodeling.context import topic_model_creator
 from topicmodeling.external.topicensemble.unsupervised import rankings
 from topicmodeling.external.topicensemble.unsupervised import util
@@ -108,6 +109,8 @@ def create_all_term_rankings_from_ensemble():
     print('%s: creating all term rankings from ensemble' %
           time.strftime("%Y/%m/%d-%H:%M:%S"))
 
+    # Create the topic models, comment this line if already created
+    topic_ensemble_caller.create_several_topic_models()
     file_paths = get_topic_ensemble_ranks_file_paths()
 
     all_term_rankings = []
